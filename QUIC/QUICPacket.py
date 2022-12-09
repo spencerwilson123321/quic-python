@@ -43,15 +43,13 @@ class Frame():
 class LongHeader():
     
     def __init__(self):
-        self.header_form = None                     # 1 byte
-        self.fixed_bit = None                       # 1 byte
-        self.long_packet_type = None                # 2 bytes
-        self.type_specific_bits = None              # 4 bytes
-        self.version = None                         # 32 bytes
-        self.destination_connection_id_len = None   # 8 bytes
-        self.destination_connection_id = None       # 0...160 bytes
-        self.source_connection_id_len = None        # 8 bytes
-        self.source_connection_id = None            # 0...160 bytes
+        self.header_form = None                     # first bit of first byte
+        self.type = None                            # remaining 7 bits of first byte
+        self.version = None                         # 4 bytes
+        self.destination_connection_id_len = None   # 1 byte
+        self.destination_connection_id = None       # 0...20 bytes
+        self.source_connection_id_len = None        # 1 bytes
+        self.source_connection_id = None            # 0...20 bytes
         self.packet_number_len = None               # 1 byte
         self.packet_number = None                   # 1 to 4 bytes long
         self.length = None                          # variable length integer.
