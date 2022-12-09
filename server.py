@@ -2,7 +2,7 @@
     Test QUIC server program.
 """
 
-from src import QUICSocket
+from QUIC import QUICSocket
 
 if __name__ == "__main__":
     sock = QUICSocket(is_server=True)
