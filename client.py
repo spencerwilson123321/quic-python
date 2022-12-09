@@ -1,8 +1,11 @@
-from QUICSocket import QUICSocket
-from socket import socket, AF_INET, SOCK_DGRAM
+"""
+    Test QUIC Client program.
+"""
+
+from QUIC import QUICSocket
 
 if __name__ == "__main__":
-    sock = QUICSocket(is_server=False)
+    sock = QUICSocket()
     sock.bind(("10.65.104.245", 8000))
     sock.connect(("10.65.104.245", 8001))
     msg = b"Hello from client."

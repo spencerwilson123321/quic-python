@@ -1,3 +1,8 @@
+"""
+    QUIC Packet module. Contains all classes that
+    are used to represent each QUIC packet.
+"""
+
 import struct
 
 

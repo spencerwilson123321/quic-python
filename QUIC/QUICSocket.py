@@ -7,14 +7,13 @@
 
 from socket import socket, AF_INET, SOCK_DGRAM, SO_REUSEADDR, SO_REUSEPORT, SOL_SOCKET
 
-
 class QUICSocket:
 
-    def __init__(self, is_server: bool):
+    def __init__(self):
         self.__socket = socket(AF_INET, SOCK_DGRAM)
         self.__socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         self.__socket.setsockopt(SOL_SOCKET, SO_REUSEPORT, 1)
-        self.__is_server = is_server
+        self.__is_server = False
         self.__is_listening = False
 
     def connect(self, address: tuple):
@@ -32,7 +31,6 @@ class QUICSocket:
     def accept(self):
         handshake, addr = self.__socket.recvfrom(1024)
         print(f"Received connection from: {addr[0]}:{addr[1]}")
-        # Create client socket
         client_sock = socket(AF_INET, SOCK_DGRAM)
         client_sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         client_sock.bind(("", 8001))
@@ -45,6 +43,7 @@ class QUICSocket:
 
     def bind(self, address):
         self.__socket.bind(address)
+        self.__is_server = True
 
     def close(self):
         print("Closing socket.")
@@ -56,11 +55,3 @@ class QUICSocket:
     def recv(self, nbytes: int):
         return self.__socket.recv(nbytes)
 
-if __name__ == "__main__":
-    sock = QUICSocket(is_server=True)
-    sock.bind(("", 8001))
-    sock.listen(5)
-    client, addr = sock.accept()
-    data = client.recv(1024)
-    client.send(data + b" Hello from server!")
-    sock.close()
