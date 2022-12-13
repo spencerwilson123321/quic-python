@@ -99,9 +99,12 @@ class ResetStreamFrame:
 
     def __init__(self):
         self.type = RESETSTREAM
+        self.stream_id = b""
+        self.error_code = b""
+        self.final_size = b""
 
     def raw(self):
-        return self.type
+        return self.type + self.stream_id + self.error_code + self.final_size
 
 class StopSendingFrame:
     
