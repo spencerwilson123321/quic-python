@@ -15,7 +15,7 @@ class Packet():
     def __init__(self):
         self.type = None
         self.header = None
-        self.frame = None
+        self.frames = [] # A packet can contain multiple frames.
 
 
 # ------------------ QUIC FRAMES ------------------------
@@ -118,59 +118,70 @@ class StopSendingFrame:
 
 class MaxDataFrame:
     
-    def __init__(self):
+    def __init__(self, max_data=b""):
         self.type = MAXDATA
+        self.max_data = max_data
     
     def raw(self):
-        return self.type
+        return self.type + self.max_data
 
 class MaxStreamDataFrame:
     
-    def __init__(self):
+    def __init__(self, stream_id=b"", max_stream_data=b""):
         self.type = MAXSTREAMDATA
+        self.stream_id = stream_id
+        self.max_stream_data = max_stream_data
     
     def raw(self):
-        return self.type
+        return self.type + self.stream_id + self.max_stream_data
 
 class MaxStreamsFrame:
     
-    def __init__(self):
+    def __init__(self, max_streams=b""):
         self.type = MAXSTREAMS
+        self.max_streams = max_streams
     
     def raw(self):
-        return self.type
+        return self.type + self.max_streams
 
 class DataBlockedFrame:
     
-    def __init__(self):
+    def __init__(self, max_data=b""):
         self.type = DATABLOCKED
+        self.max_data = max_data
     
     def raw(self):
-        return self.type
+        return self.type + self.max_data
 
 class StreamDataBlockedFrame:
     
-    def __init__(self):
+    def __init__(self, stream_id=b"", max_stream_data=b""):
         self.type = STREAMDATABLOCKED
+        self.stream_id = stream_id
+        self.max_stream_data = max_stream_data
     
     def raw(self):
-        return self.type
+        return self.type + self.stream_id + self.max_stream_data
 
 class StreamsBlockedFrame:
     
-    def __init__(self):
+    def __init__(self, max_streams=b""):
         self.type = STREAMSBLOCKED
+        self.max_streams = max_streams
     
     def raw(self):
-        return self.type
+        return self.type + self.max_streams
 
 class ConnectionCloseFrame:
     
-    def __init__(self):
+    def __init__(self, error_code=b"", reason_phrase_len=b"", reason_phrase=b""):
         self.type = CONNECTIONCLOSE
+        self.error_code = error_code
+        self.reason_phrase_len = reason_phrase_len
+        self.reason_phrase = reason_phrase
     
     def raw(self):
-        return self.type
+        return self.type + self.error_code + self.reason_phrase_len + self.reason_phrase
 
 class HandshakeDoneFrame:
     
@@ -201,10 +212,11 @@ class HandshakeDoneFrame:
 # |                          Payload (*)                        ...
 # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-class LongHeader():
-    
+class InitialLongHeader:
+
     def __init__(self):
         self.header_form = None                     # first bit of first byte
+        self.fixed_bit = None
         self.type = None                            # remaining 7 bits of first byte
         self.version = None                         # 4 bytes
         self.destination_connection_id_len = None   # 1 byte
@@ -215,6 +227,20 @@ class LongHeader():
         self.packet_number = None                   # 1 to 4 bytes long
         self.length = None                          # variable length integer.
 
+class HandshakeLongHeader:
+
+    def __init__(self):
+        self.header_form = None                     # first bit of first byte
+        self.fixed_bit = None
+        self.type = None                            # remaining 7 bits of first byte
+        self.version = None                         # 4 bytes
+        self.destination_connection_id_len = None   # 1 byte
+        self.destination_connection_id = None       # 0...20 bytes
+        self.source_connection_id_len = None        # 1 bytes
+        self.source_connection_id = None            # 0...20 bytes
+        self.packet_number_len = None               # 1 byte
+        self.packet_number = None                   # 1 to 4 bytes long
+        self.length = None                          # variable length integer - The length of the rest of the packet.
 
 # ----------------- Short Header Format ---------------------------
 #  0                   1                   2                   3
