@@ -95,14 +95,6 @@ class PaddingFrame:
     def raw(self):
         return self.type
 
-class PingFrame:
-
-    def __init__(self):
-        self.type = PING
-    
-    def raw(self):
-        return self.type
-
 class ResetStreamFrame:
 
     def __init__(self):
