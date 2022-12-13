@@ -97,22 +97,24 @@ class PaddingFrame:
 
 class ResetStreamFrame:
 
-    def __init__(self):
+    def __init__(self, stream_id=b"", error_code=b"", final_size=b""):
         self.type = RESETSTREAM
-        self.stream_id = b""
-        self.error_code = b""
-        self.final_size = b""
+        self.stream_id = stream_id
+        self.error_code = error_code
+        self.final_size = final_size
 
     def raw(self):
         return self.type + self.stream_id + self.error_code + self.final_size
 
 class StopSendingFrame:
     
-    def __init__(self):
+    def __init__(self, stream_id=b"", error_code=b""):
         self.type = STOPSENDING
+        self.stream_id = stream_id
+        self.error_code = error_code
     
     def raw(self):
-        return self.type
+        return self.type + self.stream_id + self.error_code
 
 class MaxDataFrame:
     
