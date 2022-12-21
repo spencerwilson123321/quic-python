@@ -18,5 +18,12 @@ class QUICPacketBuilder:
     def __init__(self):
         pass
 
-    def create_initial_packet(self):
-        pass
+    def create_empty_packet(self):
+        return Packet()
+
+    def parse_packet(self, raw: bytes):
+        """
+            This parses the packet from raw bytes and returns
+            a Packet object.
+        """
+        return Packet()

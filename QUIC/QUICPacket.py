@@ -257,7 +257,7 @@ class HandshakeLongHeader:
 # |                     Protected Payload (*)                   ...
 # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-class ShortHeader():
+class ShortHeader:
     
     def __init__(self):
         self.header_form = None         # first bit of first byte
