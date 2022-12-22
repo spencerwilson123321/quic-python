@@ -24,7 +24,7 @@ class QUICSocket:
         """
         print(f"Connecting to server at: {address[0]}:{address[1]}")
         self.__socket.sendto(b"HANDSHAKE #1", address)
-        data, addr = self.__socket.recvfrom(1024)
+        _, addr = self.__socket.recvfrom(1024)
         print(addr)
         print(f"Handshake complete!")
 
