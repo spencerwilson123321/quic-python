@@ -3,7 +3,6 @@
     are used to represent QUIC packets.
 """
 
-from enum import Enum
 import struct
 
 
