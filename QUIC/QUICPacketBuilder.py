@@ -20,6 +20,15 @@ class QUICPacketBuilder:
 
     def create_empty_packet(self):
         return Packet()
+    
+    def create_initial_packet(self):
+        pass
+
+    def create_handshake_packet(self):
+        pass
+
+    def create_data_packet(self):
+        pass
 
     def parse_packet(self, raw: bytes):
         """
