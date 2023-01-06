@@ -1,3 +1,4 @@
+from typing import List
 """
     This module will contain code which makes it simple to
     create QUIC packets as needed. Essentially it is an 
@@ -18,17 +19,28 @@ class QUICPacketBuilder:
     def __init__(self):
         pass
 
-    def create_empty_packet(self):
-        return Packet()
+    def create_packet(self, frame_types: List[str], header_type) -> Packet:
+        frames = self.create_frames(frame_types)
+        header = self.create_header(header_type)
+        return Packet(frames=frames, header=header)
     
-    def create_initial_packet(self):
+    def create_header(self, header_type: str) -> LongHeader or ShortHeader:
         pass
 
-    def create_handshake_packet(self):
-        pass
+    # def create_initial_packet(self) -> Packet:
+    #     pass
 
-    def create_data_packet(self):
-        pass
+    # def create_handshake_packet(self) -> Packet:
+    #     pass
+
+    # def create_data_packet(self) -> Packet:
+    #     data_packet = Packet()
+    #     data_packet.frames = [StreamFrame()]
+    #     data_packet.header = ShortHeader()
+    #     return data_packet
+    
+    # def create_ack_packet(self) -> Packet:
+    #     return Packet()
 
     def parse_packet(self, raw: bytes):
         """
@@ -36,3 +48,8 @@ class QUICPacketBuilder:
             a Packet object.
         """
         return Packet()
+
+if __name__ == "__main__":
+    builder = QUICPacketBuilder()
+    conn_state  = {}
+    pkt = builder.create_packet(frame_types=['stream'], header_form='short', header_type="1rtt", connection_state=conn_state)
