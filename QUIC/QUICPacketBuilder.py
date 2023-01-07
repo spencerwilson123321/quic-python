@@ -6,7 +6,7 @@ from typing import List
     used in the QUICSocket module.
 """
 
-from QUICPacket import *
+from .QUICPacket import *
 
 class QUICPacketBuilder:
     """
