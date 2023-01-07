@@ -4,3 +4,4 @@ from .QUICPacket import *
 from .QUICPacketBuilder import *
 from .QUICProtocol import *
 from .QUICCongestionControl import *
+from .QUICConnection import *
