@@ -10,7 +10,7 @@ from socket import socket, AF_INET, SOCK_DGRAM, SO_REUSEADDR, SOL_SOCKET
 from .QUICConnection import ConnectionContext
 from .QUICEncryption import EncryptionContext
 from .QUICPacket import *
-from .QUICPacketBuilder import QUICPacketBuilder
+from .QUICPacketParser import QUICPacketBuilder
 
 class QUICSocket:
     """
