@@ -7,16 +7,20 @@
 
 
 from socket import socket, AF_INET, SOCK_DGRAM, SO_REUSEADDR, SOL_SOCKET
-from QUICConnection import ConnectionContext
+from .QUICConnection import ConnectionContext
+from .QUICEncryption import EncryptionContext
 
 
 class QUICSocket:
+    """
+        
+    """
 
-
-    def __init__(self, connection_context=ConnectionContext()):
+    def __init__(self, connection_context=ConnectionContext(), encryption_context=EncryptionContext()):
         self.__socket = socket(AF_INET, SOCK_DGRAM)
         self.__socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         self.__connection_context = connection_context
+        self.__encryption_context = encryption_context
 
 
     def connect(self, address: tuple):
@@ -25,8 +29,12 @@ class QUICSocket:
                 1. Associate the given address with the underlying UDP socket using it's connect call.
                 2. Perform the QUIC handshake.
         """
+        # TODO update this function so that it updates the socket connection context and encryption context.
+        # TODO update this function so that it uses real QUIC packets.
+        # TODO update this function so that it actually performs the QUIC handshake.
+        self.__socket.connect(address)
         print(f"Connecting to server at: {address[0]}:{address[1]}")
-        self.__socket.sendto(b"HANDSHAKE #1", address)
+        self.__socket.sendto(b"INITIAL Packet", address)
         _, addr = self.__socket.recvfrom(1024)
         print(addr)
         print(f"Handshake complete!")
@@ -63,18 +71,32 @@ class QUICSocket:
         # UDP socket with the address of the connected client. We also pass the created connection
         # context to this new QUIC socket so that it can manage its own connection state.
         client = QUICSocket(connection_context=connection_context)
-        client.bind(("10.0.0.159", 8001)) # Bind the socket to the server address.
+        client.bind(("", 8001)) # Bind the socket to the server address.
         client.__socket.connect(addr)     # This 'connect' call is on the underlying UDP socket so that the kernel can track the connection properly.
         return client
 
 
     def listen(self, backlog: int):
-        self.__is_listening = True
+        """
+            TODO there isn't much of a need for this function since the kernel will
+            handle queuing received datagrams. However, it could still be used to set
+            state variables that would indicate that the current socket is a server socket
+            that is expecting to receive connections. There might be a different way to handle
+            this that removes the use for this function.
+        """
+        pass
+
+
+    def send(self, data: bytes):
+        return self.__socket.send(data)
+
+
+    def recv(self, num_bytes):
+        return self.__socket.recvfrom(num_bytes)
 
 
     def bind(self, address):
         self.__socket.bind(address)
-        self.__is_server = True
 
 
     def close(self):
@@ -85,10 +107,3 @@ class QUICSocket:
     def set_connection_context(self, connection_context):
         self.__connection_context = connection_context
 
-
-if __name__ == "__main__":
-    server_addr = ("", 8001)
-    sock = QUICSocket()
-    sock.bind(server_addr)
-    sock.listen(5)
-    client = sock.accept()
