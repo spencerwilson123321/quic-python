@@ -42,7 +42,7 @@ class QUICPacketBuilder:
     # def create_ack_packet(self) -> Packet:
     #     return Packet()
 
-    def parse_packet(self, raw: bytes):
+    def parse_bytes(self, raw: bytes):
         """
             This parses the packet from raw bytes and returns
             a Packet object.
