@@ -9,18 +9,22 @@
 from socket import socket, AF_INET, SOCK_DGRAM, SO_REUSEADDR, SOL_SOCKET
 from .QUICConnection import ConnectionContext
 from .QUICEncryption import EncryptionContext
-
+from .QUICPacket import *
+from .QUICPacketBuilder import QUICPacketBuilder
 
 class QUICSocket:
     """
         
     """
 
+
     def __init__(self, connection_context=ConnectionContext(), encryption_context=EncryptionContext()):
         self.__socket = socket(AF_INET, SOCK_DGRAM)
         self.__socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        self.__packet_builder = QUICPacketBuilder()
         self.__connection_context = connection_context
         self.__encryption_context = encryption_context
+        self.__datagrams_to_send = []
 
 
     def connect(self, address: tuple):
@@ -29,15 +33,17 @@ class QUICSocket:
                 1. Associate the given address with the underlying UDP socket using it's connect call.
                 2. Perform the QUIC handshake.
         """
-        # TODO update this function so that it updates the socket connection context and encryption context.
-        # TODO update this function so that it uses real QUIC packets.
-        # TODO update this function so that it actually performs the QUIC handshake.
+        # TODO 1 update this function so that it updates the socket connection context and encryption context.
+        # TODO 2 update this function so that it uses real QUIC packets.
+        # TODO 3 update this function so that it actually performs the QUIC handshake.
         self.__socket.connect(address)
-        print(f"Connecting to server at: {address[0]}:{address[1]}")
-        self.__socket.sendto(b"INITIAL Packet", address)
-        _, addr = self.__socket.recvfrom(1024)
+        initial_pkt = Packet(header=LongHeader(type="initial", ), frames=[CryptoFrame()])
+        print(initial_pkt.raw())
+        self.__socket.sendto(initial_pkt.raw(), address)
+        pkt_bytes, addr = self.__socket.recvfrom(1024)
+        response_pkt = self.__packet_builder.parse_bytes(pkt_bytes)
         print(addr)
-        print(f"Handshake complete!")
+        print(response_pkt)
 
 
     def accept(self):
@@ -56,7 +62,7 @@ class QUICSocket:
         addr = None
         pkt = None
         while not initial_packet_received:
-            pkt, addr = self.__socket.recvfrom(1024)
+            pkt, addr = self.__socket.recvfrom(1024) # HANGS HERE
             if pkt: # TODO if the pkt is indeed an initial packet, then exit the loop and proceed.
                 initial_packet_received = True
         
@@ -87,7 +93,10 @@ class QUICSocket:
         pass
 
 
-    def send(self, data: bytes):
+    # Maybe when a connection is created we return the stream ID.
+    # This way the programmer using this API can reference the specific stream_id
+    # to send data to.
+    def send(self, data: bytes, stream_id: int): 
         return self.__socket.send(data)
 
 
