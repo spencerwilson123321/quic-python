@@ -15,7 +15,11 @@ if __name__ == "__main__":
     # unpacked = struct.unpack("!BLL", hdr.raw())
     # print(unpacked)
 
-    frame = StreamFrame(stream_id=1, offset=1182123, length=10, data=b"HelloWorld")
+    # frame = StreamFrame(stream_id=1, offset=1182123, length=10, data=b"HelloWorld")
+    # print(frame)
+    # print(frame.raw())
+    
+    frame = CryptoFrame(offset=1182123, length=10, data=b"HelloWorld")
     print(frame)
     print(frame.raw())
     
