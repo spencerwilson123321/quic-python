@@ -27,10 +27,10 @@ class Packet():
     def __init__(self, header=None, frames=[]):
         self.header = header
         self.frames = frames
-    
+
     def raw(self) -> bytes:
         return self.header.raw()
-    
+
     def __repr__(self) -> str:
         return f"----- Header -----\n {self.header}\n"
 
@@ -42,59 +42,91 @@ class Packet():
 
 # ------------------ FRAME TYPES ------------------------
 # Each type is a single byte packed in big endian byte order.
-FT_PADDING = struct.pack("!B", 0x00)
-FT_PING = struct.pack("!B", 0x01)
-FT_ACK = struct.pack("!B", 0x02)
-FT_RESETSTREAM = struct.pack("!B", 0x04)
-FT_STOPSENDING = struct.pack("!B", 0x05)
-FT_CRYPTO = struct.pack("!B", 0x06)
-FT_STREAM = struct.pack("!B", 0x08)
-FT_MAXDATA = struct.pack("!B", 0x10)
-FT_MAXSTREAMDATA = struct.pack("!B", 0x11)
-FT_MAXSTREAMS = struct.pack("!B", 0x12)
-FT_DATABLOCKED = struct.pack("!B", 0x14)
-FT_STREAMDATABLOCKED = struct.pack("!B", 0x15)
-FT_STREAMSBLOCKED = struct.pack("!B", 0x16)
-FT_CONNECTIONCLOSE = struct.pack("!B", 0x1c)
-FT_HANDSHAKEDONE = struct.pack("!B", 0x1e)
+FT_PADDING = 0x00
+FT_PING = 0x01
+FT_ACK = 0x02
+FT_RESETSTREAM = 0x04
+FT_STOPSENDING = 0x05
+FT_CRYPTO = 0x06
+FT_STREAM = 0x08
+FT_MAXDATA = 0x10
+FT_MAXSTREAMDATA = 0x11
+FT_MAXSTREAMS = 0x12
+FT_DATABLOCKED = 0x14
+FT_STREAMDATABLOCKED = 0x15
+FT_STREAMSBLOCKED = 0x16
+FT_CONNECTIONCLOSE = 0x1c
+FT_HANDSHAKEDONE = 0x1e
 
+frame_type_string_map = {
+    FT_STREAM: "Stream Frame",
+    FT_ACK: "Acknowledgement Frame",
+    FT_CRYPTO: "Crypto Frame"
+}
 
 class AckFrame:
 
     def __init__(self,
-                largest_acknowledged = None,
-                ack_delay = None,
-                ack_range_count = None,
-                first_ack_range = None,
-                ack_range = None):
+                largest_acknowledged = 0,
+                ack_delay = 0,
+                ack_range_count = 0,
+                first_ack_range = 0,
+                ack_range = 0):
         self.type = FT_ACK
         self.largest_acknowledged = largest_acknowledged
         self.ack_delay = ack_delay
         self.ack_range_count = ack_range_count
         self.first_ack_range = first_ack_range
         self.ack_range = ack_range
-    
+
     def raw(self) -> bytes:
         return b""
 
 class CryptoFrame:
-    
+    """
+
+    """
+
     def __init__(self, offset=None, length=None, data=None):
         self.type = FT_CRYPTO
         self.offset = offset
         self.length = length
         self.data = data
-    
+
     def raw(self) -> bytes:
         return self.type + self.offset + self.length + self.data
+    
+    def __repr__(self) -> str:
+        representation = ""
+        representation += "------ FRAME ------\n"
+        representation += f"Type: {frame_type_string_map[self.type]}\n"
+        representation += f"Offset: {self.offset}\n"
+        representation += f"Length: {self.length}\n"
+        representation += f"Data: {self.data}\n"
+        representation += "-------------------"
+        return representation
 
 class StreamFrame:
+    """
+        StreamFrame format:
+            Type:
+                First Byte of the frame. Identifies the frame type.
+            Stream ID:
+                Second Byte of the frame. Identifies the stream.
+            Offset:
+                The next 8 bytes are the byte offset for the data in this stream frame.
+                It needs to support large values
+            Length:
+                The next 2 bytes are the length (number of bytes) of the stream data contained in the stream frame.
+            Stream Data:
+                The stream bytes to be delivered at the given offset value in the identified stream.
+    """
 
-    def __init__(self, 
-                stream_id = None,
-                offset = None,
-                length = None,
-                data = None):
+    def __init__(self,
+                stream_id = 0,
+                offset = 0,
+                length = 0,
+                data = b""):
         self.type = FT_STREAM
         self.stream_id = stream_id
         self.offset = offset
@@ -102,13 +134,24 @@ class StreamFrame:
         self.data = data
 
     def raw(self):
-        return self.type + self.stream_id + self.offset + self.length + self.data
+        return struct.pack("!BBQH", self.type, self.stream_id, self.offset, self.length) + self.data
+
+    def __repr__(self) -> str:
+        representation = ""
+        representation += "------ FRAME ------\n"
+        representation += f"Type: {frame_type_string_map[self.type]}\n"
+        representation += f"Stream ID: {self.stream_id}\n"
+        representation += f"Offset: {self.offset}\n"
+        representation += f"Length: {self.length}\n"
+        representation += f"Data: {self.data}\n"
+        representation += "-------------------"
+        return representation
 
 class PaddingFrame:
 
     def __init__(self):
         self.type = FT_PADDING
-    
+
     def raw(self):
         return self.type
 
@@ -124,84 +167,84 @@ class ResetStreamFrame:
         return self.type + self.stream_id + self.error_code + self.final_size
 
 class StopSendingFrame:
-    
+
     def __init__(self, stream_id=b"", error_code=b""):
         self.type = FT_STOPSENDING
         self.stream_id = stream_id
         self.error_code = error_code
-    
+
     def raw(self):
         return self.type + self.stream_id + self.error_code
 
-class MaxDataFrame:
-    
-    def __init__(self, max_data=b""):
-        self.type = FT_MAXDATA
-        self.max_data = max_data
-    
-    def raw(self):
-        return self.type + self.max_data
+# class MaxDataFrame:
 
-class MaxStreamDataFrame:
-    
-    def __init__(self, stream_id=b"", max_stream_data=b""):
-        self.type = FT_MAXSTREAMDATA
-        self.stream_id = stream_id
-        self.max_stream_data = max_stream_data
-    
-    def raw(self):
-        return self.type + self.stream_id + self.max_stream_data
+#     def __init__(self, max_data=b""):
+#         self.type = FT_MAXDATA
+#         self.max_data = max_data
 
-class MaxStreamsFrame:
-    
-    def __init__(self, max_streams=b""):
-        self.type = FT_MAXSTREAMS
-        self.max_streams = max_streams
-    
-    def raw(self):
-        return self.type + self.max_streams
+#     def raw(self):
+#         return self.type + self.max_data
 
-class DataBlockedFrame:
-    
-    def __init__(self, max_data=b""):
-        self.type = FT_DATABLOCKED
-        self.max_data = max_data
-    
-    def raw(self):
-        return self.type + self.max_data
+# class MaxStreamDataFrame:
 
-class StreamDataBlockedFrame:
-    
-    def __init__(self, stream_id=b"", max_stream_data=b""):
-        self.type = FT_STREAMDATABLOCKED
-        self.stream_id = stream_id
-        self.max_stream_data = max_stream_data
-    
-    def raw(self):
-        return self.type + self.stream_id + self.max_stream_data
+#     def __init__(self, stream_id=b"", max_stream_data=b""):
+#         self.type = FT_MAXSTREAMDATA
+#         self.stream_id = stream_id
+#         self.max_stream_data = max_stream_data
 
-class StreamsBlockedFrame:
-    
-    def __init__(self, max_streams=b""):
-        self.type = FT_STREAMSBLOCKED
-        self.max_streams = max_streams
-    
-    def raw(self):
-        return self.type + self.max_streams
+#     def raw(self):
+#         return self.type + self.stream_id + self.max_stream_data
+
+# class MaxStreamsFrame:
+
+#     def __init__(self, max_streams=b""):
+#         self.type = FT_MAXSTREAMS
+#         self.max_streams = max_streams
+
+#     def raw(self):
+#         return self.type + self.max_streams
+
+# class DataBlockedFrame:
+
+#     def __init__(self, max_data=b""):
+#         self.type = FT_DATABLOCKED
+#         self.max_data = max_data
+
+#     def raw(self):
+#         return self.type + self.max_data
+
+# class StreamDataBlockedFrame:
+
+#     def __init__(self, stream_id=b"", max_stream_data=b""):
+#         self.type = FT_STREAMDATABLOCKED
+#         self.stream_id = stream_id
+#         self.max_stream_data = max_stream_data
+
+#     def raw(self):
+#         return self.type + self.stream_id + self.max_stream_data
+
+# class StreamsBlockedFrame:
+
+#     def __init__(self, max_streams=b""):
+#         self.type = FT_STREAMSBLOCKED
+#         self.max_streams = max_streams
+
+#     def raw(self):
+#         return self.type + self.max_streams
 
 class ConnectionCloseFrame:
-    
+
     def __init__(self, error_code=b"", reason_phrase_len=b"", reason_phrase=b""):
         self.type = FT_CONNECTIONCLOSE
         self.error_code = error_code
         self.reason_phrase_len = reason_phrase_len
         self.reason_phrase = reason_phrase
-    
+
     def raw(self):
         return self.type + self.error_code + self.reason_phrase_len + self.reason_phrase
 
 class HandshakeDoneFrame:
-    
+
     def __init__(self):
         self.type = FT_HANDSHAKEDONE
 
@@ -218,7 +261,7 @@ class LongHeader:
         Fields:
             Header Form:
                 The first bit of first byte. Represented in hex as 0x80 or 0x00 for long header and short header respectively.
-            
+
             Type:
                 The next seven bits of first byte. Can be Initial, Handshake, Retry, or 0-RTT: 0x00, 0x01, 0x02, 0x03 respectively.
 
@@ -228,24 +271,24 @@ class LongHeader:
             Destination Connection ID Length:
                 The next byte represents the destination connection ID length. This is a fixed value in units of bytes.
                 The destination connection ID length will always be 4. Therefore this value should always be set to 0x04.
-            
+
             Destination Connection ID:
                 The destination connection ID is contained in the next 4 bytes.
 
             Source Connection ID Length:
                 The next byte represents the source connection ID length. This is a fixed value in units of bytes.
                 The source connection ID length will always be 4. Therefore this value should always be set to 0x04.
-            
+
             Source Connection ID:
                 The source connection ID is contained in the next 4 bytes.
 
             Packet Number Length:
                 The next byte represents the packet number length. This is a fixed value in units of bytes.
                 The packet number length will always be 4. Therefore this value should always be set to 0x04.
-            
+
             Packet Number:
                 The packet number is contained in the next 4 bytes.
-            
+
             Length:
                 The length is a 2 byte long field at the end of the header.
                 The length of the rest of the packet i.e. the payload length (frames) in BYTES.
@@ -253,20 +296,20 @@ class LongHeader:
 
 
     def __init__(self,
-                type="initial", 
-                destination_connection_id=0, 
+                type="initial",
+                destination_connection_id=0,
                 source_connection_id=0,
                 packet_number=0
                 ):
 
         # TODO add more error checking.
-    
+
         # If type_to_hex returns None, then type argument is invalid.
         type_check = self.type_to_hex(type)
         if type_check == None:
             print(f"Invalid long header type received: {type}")
             exit(1)
-        
+
         if destination_connection_id > MAX_CONN_ID:
             print(f"Invalid destination connection id: {destination_connection_id}.")
             print(f"Connection IDs must be less than {MAX_CONN_ID}.")
@@ -292,7 +335,7 @@ class LongHeader:
         self.packet_number_length = PKT_NUM_LEN
         self.packet_number = packet_number
         self.length = 0x0000 # 0x0000 to 0xFFFF
-    
+
 
     def type_to_hex(self, type: str) -> int:
         if type == "initial":
@@ -302,7 +345,7 @@ class LongHeader:
         if type == "retry":
             return 0x03
         return None
-    
+
 
     def hex_to_type(self, value: str) -> int:
         if value == 0x00:
@@ -312,7 +355,7 @@ class LongHeader:
         if value == 0x03:
             return "retry"
         return None
-    
+
 
     def raw(self) -> bytes:
         """
@@ -321,8 +364,8 @@ class LongHeader:
         first_byte = self.header_form | self.type_to_hex(self.type)
         raw_bytes = struct.pack("!BBBLBLBLI", first_byte, self.version, self.destination_connection_id_len, self.destination_connection_id, self.source_connection_id_len, self.source_connection_id, self.packet_number_length, self.packet_number, self.length)
         return raw_bytes
-    
-    
+
+
     def __repr__(self) -> str:
         representation = "------ HEADER ------\n"
         representation += "Header Form: Long Header\n"
@@ -347,7 +390,7 @@ class ShortHeader():
         the handshake is performed.
     """
     DATA_PKT = 0x04
-    
+
 
     def __init__(self, destination_connection_id, packet_number):
 
@@ -355,7 +398,7 @@ class ShortHeader():
             print(f"Invalid destination connection id: {destination_connection_id}.")
             print(f"Connection IDs must be less than {MAX_CONN_ID}.")
             exit(1)
-        
+
         if packet_number > MAX_PKT_NUM:
             print(f"Invalid packet number: {packet_number}.")
             print(f"Packet numbers must be less than {MAX_PKT_NUM}.")
@@ -364,11 +407,11 @@ class ShortHeader():
         self.type = self.DATA_PKT
         self.destination_connection_id = destination_connection_id       # 4 bytes
         self.packet_number = packet_number                               # 4 bytes
-    
+
 
     def raw(self)  -> bytes:
         return struct.pack("!BLL", self.type, self.destination_connection_id, self.packet_number)
-    
+
 
     def __repr__(self) -> str:
         representation = ""
