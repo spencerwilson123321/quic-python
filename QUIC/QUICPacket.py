@@ -59,9 +59,9 @@ FT_CONNECTIONCLOSE = 0x1c
 FT_HANDSHAKEDONE = 0x1e
 
 frame_type_string_map = {
-    FT_STREAM: "Stream Frame",
-    FT_ACK: "Acknowledgement Frame",
-    FT_CRYPTO: "Crypto Frame"
+    FT_STREAM: "Stream",
+    FT_ACK: "Acknowledgement",
+    FT_CRYPTO: "Crypto"
 }
 
 class AckFrame:
@@ -84,17 +84,25 @@ class AckFrame:
 
 class CryptoFrame:
     """
-
+        Crypto Frame Format:
+            Type:
+                The first byte represents the frame type.
+            Offset:
+                The next 8 bytes is the byte offset in the Crypto stream.
+            Length:
+                The next 2 bytes is the length of the frame data in bytes.
+            Data:
+                The crypto data bytes.                
     """
 
-    def __init__(self, offset=None, length=None, data=None):
+    def __init__(self, offset=0, length=0, data=b""):
         self.type = FT_CRYPTO
         self.offset = offset
         self.length = length
         self.data = data
 
     def raw(self) -> bytes:
-        return self.type + self.offset + self.length + self.data
+        return struct.pack("!BQH", self.type, self.offset, self.length) + self.data
     
     def __repr__(self) -> str:
         representation = ""
