@@ -11,7 +11,8 @@ SHORT_HEADER_FORM = 0x00
 QUIC_VERSION = 0x36
 CONN_ID_LEN = 0x04
 PKT_NUM_LEN = 0x04
-
+MAX_CONN_ID = 4294967295
+MAX_PKT_NUM = 4294967295
 
 # ------------------ QUIC PACKET ------------------------
 # All number fields are in Network-Byte Order (Big Endian)
@@ -265,11 +266,21 @@ class LongHeader:
             print(f"Invalid long header type received: {type}")
             exit(1)
         
-        if destination_connection_id > 0:
+        if destination_connection_id > MAX_CONN_ID:
             print(f"Invalid destination connection id: {destination_connection_id}.")
-            print(f"connection IDs must be less than x.")
+            print(f"Connection IDs must be less than {MAX_CONN_ID}.")
             exit(1)
-        
+
+        if source_connection_id > MAX_CONN_ID:
+            print(f"Invalid source connection id: {source_connection_id}.")
+            print(f"Connection IDs must be less than {MAX_CONN_ID}.")
+            exit(1)
+
+        if packet_number > MAX_PKT_NUM:
+            print(f"Invalid packet number: {packet_number}.")
+            print(f"Packet numbers must be less than {MAX_PKT_NUM}.")
+            exit(1)
+
         self.header_form = LONG_HEADER_FORM
         self.type = type
         self.version = QUIC_VERSION
@@ -303,8 +314,11 @@ class LongHeader:
     
 
     def raw(self) -> bytes:
-        raw_bytes = b""
-        raw_bytes += b""
+        """
+            Returns the header as raw bytes in network byte order.
+        """
+        first_byte = self.header_form | self.type_to_hex(self.type)
+        raw_bytes = struct.pack("!BBBLBLBLI", first_byte, self.version, self.destination_connection_id_len, self.destination_connection_id, self.source_connection_id_len, self.source_connection_id, self.packet_number_length, self.packet_number, self.length)
         return raw_bytes
     
     
@@ -315,28 +329,14 @@ class LongHeader:
         representation += f"Version: {self.version}\n"
         representation += f"Destination Connection ID Length: {self.destination_connection_id_len}\n"
         representation += f"Destination Connection ID: {self.destination_connection_id}\n"
-        representation += f"Source Connection ID: {self.source_connection_id_len}\n"
-        representation += f"Source Connection ID Length: {self.source_connection_id}\n"
+        representation += f"Source Connection ID Length: {self.source_connection_id_len}\n"
+        representation += f"Source Connection ID: {self.source_connection_id}\n"
         representation += f"Packet Number Length: {self.packet_number_length}\n"
         representation += f"Packet Number: {self.packet_number}\n"
         representation += f"Payload Length: {self.length}\n"
         representation += "--------------------\n"
         return representation
 
-# ----------------- Short Header Format ---------------------------
-#  0                   1                   2                   3
-#  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-# +-+-+-+-+-+-+-+-+
-# |    Type (8)   |
-# +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-# |                                                               |
-# +                     [Connection ID (64)]                      +
-# |                                                               |
-# +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-# |                      Packet Number (8/16/32)                ...
-# +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-# |                     Protected Payload (*)                   ...
-# +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 class ShortHeader():
     
@@ -348,5 +348,3 @@ class ShortHeader():
     def raw(self)  -> bytes:
         return self.type + self.destination_connection_id + self.packet_number
 
-if __name__ == "__main__":
-    pass
