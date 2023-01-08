@@ -14,6 +14,7 @@ PKT_NUM_LEN = 0x04
 MAX_CONN_ID = 4294967295
 MAX_PKT_NUM = 4294967295
 
+
 # ------------------ QUIC PACKET ------------------------
 # All number fields are in Network-Byte Order (Big Endian)
 
@@ -325,7 +326,7 @@ class LongHeader:
     def __repr__(self) -> str:
         representation = "------ HEADER ------\n"
         representation += "Header Form: Long Header\n"
-        representation += f"Type: {self.type} ({self.hex_to_type(self.type)})\n"
+        representation += f"Type: {self.type} ({self.type_to_hex(self.type)})\n"
         representation += f"Version: {self.version}\n"
         representation += f"Destination Connection ID Length: {self.destination_connection_id_len}\n"
         representation += f"Destination Connection ID: {self.destination_connection_id}\n"
@@ -339,12 +340,43 @@ class LongHeader:
 
 
 class ShortHeader():
+    """
+        ShortHeader can only have 1 type which is a 1RTT packet or Data packet.
+        It contains only the destination connection ID instead of source and destination
+        since the destination connection ID is used to identify the connection after
+        the handshake is performed.
+    """
+    DATA_PKT = 0x04
     
+
     def __init__(self, destination_connection_id, packet_number):
-        self.type = None
-        self.destination_connection_id = destination_connection_id       # 8 bytes
+
+        if destination_connection_id > MAX_CONN_ID:
+            print(f"Invalid destination connection id: {destination_connection_id}.")
+            print(f"Connection IDs must be less than {MAX_CONN_ID}.")
+            exit(1)
+        
+        if packet_number > MAX_PKT_NUM:
+            print(f"Invalid packet number: {packet_number}.")
+            print(f"Packet numbers must be less than {MAX_PKT_NUM}.")
+            exit(1)
+
+        self.type = self.DATA_PKT
+        self.destination_connection_id = destination_connection_id       # 4 bytes
         self.packet_number = packet_number                               # 4 bytes
     
+
     def raw(self)  -> bytes:
-        return self.type + self.destination_connection_id + self.packet_number
+        return struct.pack("!BLL", self.type, self.destination_connection_id, self.packet_number)
+    
+
+    def __repr__(self) -> str:
+        representation = ""
+        representation = "------ HEADER ------\n"
+        representation += f"Header Form: Short Header\n"
+        representation += f"Type: Data ({self.type})\n"
+        representation += f"Destination Connection ID: {self.destination_connection_id}\n"
+        representation += f"Packet Number: {self.packet_number}\n"
+        representation += "--------------------"
+        return representation
 
