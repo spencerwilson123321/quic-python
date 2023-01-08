@@ -256,9 +256,19 @@ class LongHeader:
                 source_connection_id=0,
                 packet_number=0
                 ):
+
+        # TODO add more error checking.
+    
         # If type_to_hex returns None, then type argument is invalid.
-        type = self.type_to_hex(type)
-        assert type != None
+        type_check = self.type_to_hex(type)
+        if type_check == None:
+            print(f"Invalid long header type received: {type}")
+            exit(1)
+        
+        if destination_connection_id > 0:
+            print(f"Invalid destination connection id: {destination_connection_id}.")
+            print(f"connection IDs must be less than x.")
+            exit(1)
         
         self.header_form = LONG_HEADER_FORM
         self.type = type
