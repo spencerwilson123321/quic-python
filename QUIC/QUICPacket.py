@@ -9,8 +9,15 @@ import struct
 
 
 # HEADER INFO:
-LONG_HEADER_FORM = 0x80
-SHORT_HEADER_FORM = 0x00
+HF_LONG = 0x80
+HF_SHORT = 0x00
+
+HT_INITIAL = 0x00
+HT_HANDSHAKE = 0x02
+HT_RETRY = 0x03
+HT_DATA = 0x04
+
+
 QUIC_VERSION = 0x36
 CONN_ID_LEN = 0x04
 PKT_NUM_LEN = 0x04
@@ -36,7 +43,49 @@ FT_CONNECTIONCLOSE = 0x1c
 FT_HANDSHAKEDONE = 0x1e
 
 
-# FRAME TYPE --> String
+# STRING CONSTANTS
+STR_INITIAL = "INITIAL"
+STR_HANDSHAKE = "HANDSHAKE"
+STR_RETRY = "RETRY"
+STR_PADDING = "PADDING"
+STR_PING = "PING"
+STR_ACK = "ACK"
+STR_RESETSTREAM = "RESETSTREAM"
+STR_STOPSENDING = "STOPSENDING"
+STR_CRYPTO = "CRYPTO"
+STR_STREAM = "STREAM"
+STR_MAXDATA = "MAXDATA"
+STR_MAXSTREAMDATA = "MAXSTREAMDATA"
+STR_MAXSTREAMS = "MAXSTREAMS"
+STR_DATABLOCKED = "DATABBLOCKED"
+STR_STREAMDATABLOCKED = "STREAMDATABLOCKED"
+STR_STREAMSBLOCKED = "STREAMSBLOCKED"
+STR_CONNECTIONCLOSE = "CONNECTIONCLOSE"
+STR_HANDSHAKEDONE = "HANDSHAKEDONE"
+
+
+# ------------------ FUNCTIONS ------------------
+
+def header_type_string_to_hex(type: str) -> int:
+    if type == STR_INITIAL:
+        return HT_INITIAL
+    if type == STR_HANDSHAKE:
+        return HT_HANDSHAKE
+    if type == STR_RETRY:
+        return HT_RETRY
+    return None
+
+
+def header_type_hex_to_string(type: int) -> str:
+    if type == HT_INITIAL:
+        return STR_INITIAL
+    if type == HT_HANDSHAKE:
+        return STR_HANDSHAKE
+    if type == HT_RETRY:
+        return STR_RETRY
+    return None
+
+
 frame_type_string_map = {
     FT_STREAM: "Stream",
     FT_ACK: "Acknowledgement",
@@ -44,8 +93,75 @@ frame_type_string_map = {
 }
 
 
-# ------------------ CLASSES/FUNCTIONS ------------------
+def frame_type_hex_to_string(type: int) -> str:
+    if type == FT_PADDING:
+        return STR_PADDING
+    if type == FT_PING:
+        return STR_PING
+    if type == FT_ACK:
+        return STR_ACK
+    if type == FT_RESETSTREAM:
+        return STR_RESETSTREAM
+    if type == FT_STOPSENDING:
+        return STR_STOPSENDING
+    if type == FT_CRYPTO:
+        return STR_CRYPTO
+    if type == FT_STREAM:
+        return STR_STREAM
+    if type == FT_MAXDATA:
+        return STR_MAXDATA
+    if type == FT_MAXSTREAMDATA:
+        return STR_MAXSTREAMDATA
+    if type == FT_MAXSTREAMS:
+        return STR_MAXSTREAMS
+    if type == FT_DATABLOCKED:
+        return STR_DATABLOCKED
+    if type == FT_STREAMDATABLOCKED:
+        return STR_STREAMDATABLOCKED
+    if type == FT_STREAMSBLOCKED:
+        return STR_STREAMSBLOCKED
+    if type == FT_CONNECTIONCLOSE:
+        return STR_CONNECTIONCLOSE
+    if type == FT_HANDSHAKEDONE:
+        return STR_HANDSHAKEDONE
+    return None
 
+
+def frame_type_string_to_hex(type: str) -> int:
+    if type == STR_PADDING:
+        return FT_PADDING
+    if type == STR_PING:
+        return FT_PING
+    if type == STR_ACK:
+        return FT_ACK
+    if type == STR_RESETSTREAM:
+        return FT_RESETSTREAM
+    if type == STR_STOPSENDING:
+        return FT_STOPSENDING
+    if type == STR_CRYPTO:
+        return FT_CRYPTO
+    if type == STR_STREAM:
+        return FT_STREAM
+    if type == STR_MAXDATA:
+        return FT_MAXDATA
+    if type == STR_MAXSTREAMDATA:
+        return FT_MAXSTREAMDATA
+    if type == STR_MAXSTREAMS:
+        return FT_MAXSTREAMS
+    if type == STR_DATABLOCKED:
+        return FT_DATABLOCKED
+    if type == STR_STREAMDATABLOCKED:
+        return FT_STREAMDATABLOCKED
+    if type == STR_STREAMSBLOCKED:
+        return FT_STREAMSBLOCKED
+    if type == STR_CONNECTIONCLOSE:
+        return FT_CONNECTIONCLOSE
+    if type == STR_HANDSHAKEDONE:
+        return FT_HANDSHAKEDONE
+    return None
+
+
+# ------------------ CLASSES ------------------
 
 class Packet():
     """
@@ -87,11 +203,11 @@ class AckFrame:
             Type:
                 The first byte of the frame is the type.
             Largest Acknowledged:
-                the largest packet number being acknowledged.
-                In other words, the largest packet number that the peer has received prior to creating
-                the Ack Frame.
+                The next 4 bytes is the Largest Acknowledged field.
+                The Largest Ackowledged field is the largest packet number being acknowledged i.e. the largest packet number seen so far.
+                In other words, the largest packet number that the peer has received prior to creating the Ack Frame.
             ACK Delay:
-                The acknowledgement delay in microseconds.
+                The next 4 bytes is the acknowledgement delay in microseconds.
             ACK Range Count:
                 The number of ack range fields in the frame. These Ack Ranges are modeled as objects which contain
                 two pieces of data: gap and ack_range_length. See class AckRange for implementation.
@@ -146,7 +262,7 @@ class CryptoFrame:
     def __repr__(self) -> str:
         representation = ""
         representation += "------ FRAME ------\n"
-        representation += f"Type: {frame_type_string_map[self.type]}\n"
+        representation += f"Type: {frame_type_hex_to_string(self.type)}\n"
         representation += f"Offset: {self.offset}\n"
         representation += f"Length: {self.length}\n"
         representation += f"Data: {self.data}"
@@ -186,7 +302,7 @@ class StreamFrame:
     def __repr__(self) -> str:
         representation = ""
         representation += "------ FRAME ------\n"
-        representation += f"Type: {frame_type_string_map[self.type]}\n"
+        representation += f"Type: {frame_type_hex_to_string(self.type)}\n"
         representation += f"Stream ID: {self.stream_id}\n"
         representation += f"Offset: {self.offset}\n"
         representation += f"Length: {self.length}\n"
@@ -351,7 +467,7 @@ class LongHeader:
         # TODO add more error checking.
 
         # If type_to_hex returns None, then type argument is invalid.
-        type_check = self.type_to_hex(type)
+        type_check = header_type_string_to_hex(type)
         if type_check == None:
             print(f"Invalid long header type received: {type}")
             exit(1)
@@ -371,7 +487,7 @@ class LongHeader:
             print(f"Packet numbers must be less than {MAX_PKT_NUM}.")
             exit(1)
 
-        self.header_form = LONG_HEADER_FORM
+        self.header_form = HF_LONG
         self.type = type
         self.version = QUIC_VERSION
         self.destination_connection_id_len = CONN_ID_LEN
@@ -383,31 +499,11 @@ class LongHeader:
         self.length = 0x0000 # 0x0000 to 0xFFFF
 
 
-    def type_to_hex(self, type: str) -> int:
-        if type == "initial":
-            return 0x00
-        if type == "handshake":
-            return 0x02
-        if type == "retry":
-            return 0x03
-        return None
-
-
-    def hex_to_type(self, value: str) -> int:
-        if value == 0x00:
-            return "initial"
-        if value == 0x02:
-            return "handshake"
-        if value == 0x03:
-            return "retry"
-        return None
-
-
     def raw(self) -> bytes:
         """
             Returns the header as raw bytes in network byte order.
         """
-        first_byte = self.header_form | self.type_to_hex(self.type)
+        first_byte = self.header_form | header_type_string_to_hex(self.type)
         raw_bytes = struct.pack("!BBBLBLBLI", first_byte, self.version, self.destination_connection_id_len, self.destination_connection_id, self.source_connection_id_len, self.source_connection_id, self.packet_number_length, self.packet_number, self.length)
         return raw_bytes
 
@@ -415,7 +511,7 @@ class LongHeader:
     def __repr__(self) -> str:
         representation = "------ HEADER ------\n"
         representation += "Header Form: Long Header\n"
-        representation += f"Type: {self.type} ({self.type_to_hex(self.type)})\n"
+        representation += f"Type: {self.type} ({header_type_string_to_hex(self.type)})\n"
         representation += f"Version: {self.version}\n"
         representation += f"Destination Connection ID Length: {self.destination_connection_id_len}\n"
         representation += f"Destination Connection ID: {self.destination_connection_id}\n"
@@ -434,8 +530,6 @@ class ShortHeader():
         since the destination connection ID is used to identify the connection after
         the handshake is performed.
     """
-    DATA_PKT = 0x04
-
 
     def __init__(self, destination_connection_id, packet_number):
 
@@ -449,7 +543,7 @@ class ShortHeader():
             print(f"Packet numbers must be less than {MAX_PKT_NUM}.")
             exit(1)
 
-        self.type = self.DATA_PKT
+        self.type = HT_DATA
         self.destination_connection_id = destination_connection_id       # 4 bytes
         self.packet_number = packet_number                               # 4 bytes
 
