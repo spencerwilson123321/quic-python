@@ -22,10 +22,3 @@ class ConnectionContext:
     def get_local_address(self, addr):
         return self.peer_address    
 
-if __name__ == "__main__":
-    conn = ConnectionContext()
-
-
-
-
-
