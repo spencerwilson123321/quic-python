@@ -5,7 +5,10 @@
 import struct
 
 
-# ------------------ CONSTANTS --------------------------
+# ------------------ DATA --------------------------
+
+
+# HEADER INFO:
 LONG_HEADER_FORM = 0x80
 SHORT_HEADER_FORM = 0x00
 QUIC_VERSION = 0x36
@@ -15,33 +18,7 @@ MAX_CONN_ID = 4294967295
 MAX_PKT_NUM = 4294967295
 
 
-# ------------------ QUIC PACKET ------------------------
-# All number fields are in Network-Byte Order (Big Endian)
-
-class Packet():
-    """
-        This represents any QUIC packet. A QUIC packet contains
-        a header and one or more frames.
-    """
-
-    def __init__(self, header=None, frames=[]):
-        self.header = header
-        self.frames = frames
-
-    def raw(self) -> bytes:
-        return self.header.raw()
-
-    def __repr__(self) -> str:
-        return f"----- Header -----\n {self.header}\n"
-
-
-# ------------------ QUIC FRAMES ------------------------
-# The first byte of every frame is the frame type, which is
-# then followed by other type-specific fields.
-
-
-# ------------------ FRAME TYPES ------------------------
-# Each type is a single byte packed in big endian byte order.
+# FRAME TYPES:
 FT_PADDING = 0x00
 FT_PING = 0x01
 FT_ACK = 0x02
@@ -58,20 +35,81 @@ FT_STREAMSBLOCKED = 0x16
 FT_CONNECTIONCLOSE = 0x1c
 FT_HANDSHAKEDONE = 0x1e
 
+
+# FRAME TYPE --> String
 frame_type_string_map = {
     FT_STREAM: "Stream",
     FT_ACK: "Acknowledgement",
     FT_CRYPTO: "Crypto"
 }
 
+
+# ------------------ CLASSES/FUNCTIONS ------------------
+
+
+class Packet():
+    """
+        This represents any QUIC packet. A QUIC packet contains
+        a header and one or more frames.
+    """
+
+    def __init__(self, header=None, frames=[]):
+        self.header = header
+        self.frames = frames
+
+    def raw(self) -> bytes:
+        return self.header.raw()
+
+    def __repr__(self) -> str:
+        representation = ""
+        representation += f"{self.header}\n"
+        for frame in self.frames:
+            representation += frame.__repr__() + "\n"
+        return representation
+
+
+class AckRange:
+    """
+        An ACK Range 
+    """
+
+    def __init__(self, gap, ack_range_length) -> None:
+        self.gap = gap
+        self.ack_range_length = ack_range_length
+    
+    def raw(self) -> bytes:
+        return b""
+
+
 class AckFrame:
+    """
+        ACK Frame Format:
+            Type:
+                The first byte of the frame is the type.
+            Largest Acknowledged:
+                the largest packet number being acknowledged.
+                In other words, the largest packet number that the peer has received prior to creating
+                the Ack Frame.
+            ACK Delay:
+                The acknowledgement delay in microseconds.
+            ACK Range Count:
+                The number of ack range fields in the frame. These Ack Ranges are modeled as objects which contain
+                two pieces of data: gap and ack_range_length. See class AckRange for implementation.
+            First ACK Range:
+                The number of packets preceding the Largest Acknowledged. All of these packets are also 
+                being acknowledged.
+            Ack Range:
+                This section consists of a number of AckRange objects which contain a gap and ack range length field.
+                The gap represents the number of unacknowledged packets from the preceding range. The ack range length
+                field represents the number of packets that are acknowledged preceding the gap.
+    """
 
     def __init__(self,
                 largest_acknowledged = 0,
                 ack_delay = 0,
                 ack_range_count = 0,
                 first_ack_range = 0,
-                ack_range = 0):
+                ack_range = []):
         self.type = FT_ACK
         self.largest_acknowledged = largest_acknowledged
         self.ack_delay = ack_delay
@@ -81,6 +119,7 @@ class AckFrame:
 
     def raw(self) -> bytes:
         return b""
+
 
 class CryptoFrame:
     """
@@ -110,9 +149,9 @@ class CryptoFrame:
         representation += f"Type: {frame_type_string_map[self.type]}\n"
         representation += f"Offset: {self.offset}\n"
         representation += f"Length: {self.length}\n"
-        representation += f"Data: {self.data}\n"
-        representation += "-------------------"
+        representation += f"Data: {self.data}"
         return representation
+
 
 class StreamFrame:
     """
@@ -151,9 +190,9 @@ class StreamFrame:
         representation += f"Stream ID: {self.stream_id}\n"
         representation += f"Offset: {self.offset}\n"
         representation += f"Length: {self.length}\n"
-        representation += f"Data: {self.data}\n"
-        representation += "-------------------"
+        representation += f"Data: {self.data}"
         return representation
+
 
 class PaddingFrame:
 
@@ -162,6 +201,7 @@ class PaddingFrame:
 
     def raw(self):
         return self.type
+
 
 class ResetStreamFrame:
 
@@ -174,6 +214,7 @@ class ResetStreamFrame:
     def raw(self):
         return self.type + self.stream_id + self.error_code + self.final_size
 
+
 class StopSendingFrame:
 
     def __init__(self, stream_id=b"", error_code=b""):
@@ -183,6 +224,7 @@ class StopSendingFrame:
 
     def raw(self):
         return self.type + self.stream_id + self.error_code
+
 
 # class MaxDataFrame:
 
@@ -240,28 +282,25 @@ class StopSendingFrame:
 #     def raw(self):
 #         return self.type + self.max_streams
 
-class ConnectionCloseFrame:
+# class ConnectionCloseFrame:
 
-    def __init__(self, error_code=b"", reason_phrase_len=b"", reason_phrase=b""):
-        self.type = FT_CONNECTIONCLOSE
-        self.error_code = error_code
-        self.reason_phrase_len = reason_phrase_len
-        self.reason_phrase = reason_phrase
+#     def __init__(self, error_code=b"", reason_phrase_len=b"", reason_phrase=b""):
+#         self.type = FT_CONNECTIONCLOSE
+#         self.error_code = error_code
+#         self.reason_phrase_len = reason_phrase_len
+#         self.reason_phrase = reason_phrase
 
-    def raw(self):
-        return self.type + self.error_code + self.reason_phrase_len + self.reason_phrase
+#     def raw(self):
+#         return self.type + self.error_code + self.reason_phrase_len + self.reason_phrase
 
-class HandshakeDoneFrame:
+# class HandshakeDoneFrame:
 
-    def __init__(self):
-        self.type = FT_HANDSHAKEDONE
+#     def __init__(self):
+#         self.type = FT_HANDSHAKEDONE
 
-    def raw(self):
-        return self.type
+#     def raw(self):
+#         return self.type
 
-# ----------------------- QUIC HEADERS ------------------------------
-# QUIC Packets have two header formats: Long Header and Short Header.
-# The type is set in the first octet of the QUIC header.
 
 class LongHeader:
     """
@@ -301,7 +340,6 @@ class LongHeader:
                 The length is a 2 byte long field at the end of the header.
                 The length of the rest of the packet i.e. the payload length (frames) in BYTES.
     """
-
 
     def __init__(self,
                 type="initial",
@@ -385,8 +423,7 @@ class LongHeader:
         representation += f"Source Connection ID: {self.source_connection_id}\n"
         representation += f"Packet Number Length: {self.packet_number_length}\n"
         representation += f"Packet Number: {self.packet_number}\n"
-        representation += f"Payload Length: {self.length}\n"
-        representation += "--------------------\n"
+        representation += f"Payload Length: {self.length}"
         return representation
 
 
@@ -427,7 +464,6 @@ class ShortHeader():
         representation += f"Header Form: Short Header\n"
         representation += f"Type: Data ({self.type})\n"
         representation += f"Destination Connection ID: {self.destination_connection_id}\n"
-        representation += f"Packet Number: {self.packet_number}\n"
-        representation += "--------------------"
+        representation += f"Packet Number: {self.packet_number}"
         return representation
 
