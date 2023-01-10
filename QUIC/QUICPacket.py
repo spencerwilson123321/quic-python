@@ -251,7 +251,15 @@ class CryptoFrame:
 
     def __init__(self, offset=0, length=0, data=b""):
 
-
+        if offset > MAX_LONG:
+            print(f"Invalid offset value: {offset}")
+            print(f"offset must be less than {MAX_LONG}")
+            exit(1)
+        
+        if length > MAX_SHORT:
+            print(f"Invalid length value: {offset}")
+            print(f"length must be less than {MAX_SHORT}")
+            exit(1)
 
         self.type = FT_CRYPTO
         self.offset = offset
