@@ -7,6 +7,12 @@ import struct
 
 # ------------------ DATA --------------------------
 
+# DATA SIZES:
+MAX_LONG = 18446744073709551615   # 8 bytes max
+MAX_INT = 4294967295              # 4 bytes max
+MAX_SHORT = 65535                 # 2 bytes max
+MAX_CHAR = 255                    # 1 byte max
+
 
 # HEADER INFO:
 HF_LONG = 0x80
@@ -17,12 +23,9 @@ HT_HANDSHAKE = 0x02
 HT_RETRY = 0x03
 HT_DATA = 0x04
 
-
 QUIC_VERSION = 0x36
 CONN_ID_LEN = 0x04
 PKT_NUM_LEN = 0x04
-MAX_CONN_ID = 4294967295
-MAX_PKT_NUM = 4294967295
 
 
 # FRAME TYPES:
@@ -84,13 +87,6 @@ def header_type_hex_to_string(type: int) -> str:
     if type == HT_RETRY:
         return STR_RETRY
     return None
-
-
-frame_type_string_map = {
-    FT_STREAM: "Stream",
-    FT_ACK: "Acknowledgement",
-    FT_CRYPTO: "Crypto"
-}
 
 
 def frame_type_hex_to_string(type: int) -> str:
@@ -174,7 +170,10 @@ class Packet():
         self.frames = frames
 
     def raw(self) -> bytes:
-        return self.header.raw()
+        frame_data = b""
+        for frame in self.frames:
+            frame_data += frame.raw()
+        return self.header.raw() + frame_data
 
     def __repr__(self) -> str:
         representation = ""
@@ -251,6 +250,9 @@ class CryptoFrame:
     """
 
     def __init__(self, offset=0, length=0, data=b""):
+
+
+
         self.type = FT_CRYPTO
         self.offset = offset
         self.length = length
@@ -319,27 +321,27 @@ class PaddingFrame:
         return self.type
 
 
-class ResetStreamFrame:
+# class ResetStreamFrame:
 
-    def __init__(self, stream_id=b"", error_code=b"", final_size=b""):
-        self.type = FT_RESETSTREAM
-        self.stream_id = stream_id
-        self.error_code = error_code
-        self.final_size = final_size
+#     def __init__(self, stream_id=b"", error_code=b"", final_size=b""):
+#         self.type = FT_RESETSTREAM
+#         self.stream_id = stream_id
+#         self.error_code = error_code
+#         self.final_size = final_size
 
-    def raw(self):
-        return self.type + self.stream_id + self.error_code + self.final_size
+#     def raw(self):
+#         return self.type + self.stream_id + self.error_code + self.final_size
 
 
-class StopSendingFrame:
+# class StopSendingFrame:
 
-    def __init__(self, stream_id=b"", error_code=b""):
-        self.type = FT_STOPSENDING
-        self.stream_id = stream_id
-        self.error_code = error_code
+#     def __init__(self, stream_id=b"", error_code=b""):
+#         self.type = FT_STOPSENDING
+#         self.stream_id = stream_id
+#         self.error_code = error_code
 
-    def raw(self):
-        return self.type + self.stream_id + self.error_code
+#     def raw(self):
+#         return self.type + self.stream_id + self.error_code
 
 
 # class MaxDataFrame:
@@ -464,27 +466,25 @@ class LongHeader:
                 packet_number=0
                 ):
 
-        # TODO add more error checking.
-
         # If type_to_hex returns None, then type argument is invalid.
         type_check = header_type_string_to_hex(type)
         if type_check == None:
             print(f"Invalid long header type received: {type}")
             exit(1)
 
-        if destination_connection_id > MAX_CONN_ID:
+        if destination_connection_id > MAX_INT:
             print(f"Invalid destination connection id: {destination_connection_id}.")
-            print(f"Connection IDs must be less than {MAX_CONN_ID}.")
+            print(f"Connection IDs must be less than {MAX_INT}.")
             exit(1)
 
-        if source_connection_id > MAX_CONN_ID:
+        if source_connection_id > MAX_INT:
             print(f"Invalid source connection id: {source_connection_id}.")
-            print(f"Connection IDs must be less than {MAX_CONN_ID}.")
+            print(f"Connection IDs must be less than {MAX_INT}.")
             exit(1)
 
-        if packet_number > MAX_PKT_NUM:
+        if packet_number > MAX_INT:
             print(f"Invalid packet number: {packet_number}.")
-            print(f"Packet numbers must be less than {MAX_PKT_NUM}.")
+            print(f"Packet numbers must be less than {MAX_INT}.")
             exit(1)
 
         self.header_form = HF_LONG
@@ -533,14 +533,14 @@ class ShortHeader():
 
     def __init__(self, destination_connection_id, packet_number):
 
-        if destination_connection_id > MAX_CONN_ID:
+        if destination_connection_id > MAX_INT:
             print(f"Invalid destination connection id: {destination_connection_id}.")
-            print(f"Connection IDs must be less than {MAX_CONN_ID}.")
+            print(f"Connection IDs must be less than {MAX_INT}.")
             exit(1)
 
-        if packet_number > MAX_PKT_NUM:
+        if packet_number > MAX_INT:
             print(f"Invalid packet number: {packet_number}.")
-            print(f"Packet numbers must be less than {MAX_PKT_NUM}.")
+            print(f"Packet numbers must be less than {MAX_INT}.")
             exit(1)
 
         self.type = HT_DATA
