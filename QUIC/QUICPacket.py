@@ -253,12 +253,12 @@ class CryptoFrame:
 
         if offset > MAX_LONG:
             print(f"Invalid offset value: {offset}")
-            print(f"offset must be less than {MAX_LONG}")
+            print(f"offset must be less than {MAX_LONG+1}")
             exit(1)
         
         if length > MAX_SHORT:
             print(f"Invalid length value: {offset}")
-            print(f"length must be less than {MAX_SHORT}")
+            print(f"length must be less than {MAX_SHORT+1}")
             exit(1)
 
         self.type = FT_CRYPTO
@@ -295,11 +295,23 @@ class StreamFrame:
                 The stream bytes to be delivered at the given offset value in the identified stream.
     """
 
-    def __init__(self,
-                stream_id = 0,
-                offset = 0,
-                length = 0,
-                data = b""):
+    def __init__(self, stream_id = 0, offset = 0, length = 0, data = b""):
+
+        if stream_id > MAX_CHAR:
+            print(f"Invalid stream ID: {stream_id}")
+            print(f"Stream ID must be less than {MAX_CHAR+1}")
+            exit(1)
+        
+        if offset > MAX_LONG:
+            print(f"Invalid offset: {offset}")
+            print(f"Offset must be less than {MAX_LONG+1}")
+            exit(1)
+        
+        if length > MAX_SHORT:
+            print(f"Invalid length: {length}")
+            print(f"Length must be less than {MAX_SHORT+1}")
+            exit(1)
+        
         self.type = FT_STREAM
         self.stream_id = stream_id
         self.offset = offset
@@ -482,17 +494,17 @@ class LongHeader:
 
         if destination_connection_id > MAX_INT:
             print(f"Invalid destination connection id: {destination_connection_id}.")
-            print(f"Connection IDs must be less than {MAX_INT}.")
+            print(f"Connection IDs must be less than {MAX_INT+1}.")
             exit(1)
 
         if source_connection_id > MAX_INT:
             print(f"Invalid source connection id: {source_connection_id}.")
-            print(f"Connection IDs must be less than {MAX_INT}.")
+            print(f"Connection IDs must be less than {MAX_INT+1}.")
             exit(1)
 
         if packet_number > MAX_INT:
             print(f"Invalid packet number: {packet_number}.")
-            print(f"Packet numbers must be less than {MAX_INT}.")
+            print(f"Packet numbers must be less than {MAX_INT+1}.")
             exit(1)
 
         self.header_form = HF_LONG
@@ -543,12 +555,12 @@ class ShortHeader():
 
         if destination_connection_id > MAX_INT:
             print(f"Invalid destination connection id: {destination_connection_id}.")
-            print(f"Connection IDs must be less than {MAX_INT}.")
+            print(f"Connection IDs must be less than {MAX_INT+1}.")
             exit(1)
 
         if packet_number > MAX_INT:
             print(f"Invalid packet number: {packet_number}.")
-            print(f"Packet numbers must be less than {MAX_INT}.")
+            print(f"Packet numbers must be less than {MAX_INT+1}.")
             exit(1)
 
         self.type = HT_DATA
