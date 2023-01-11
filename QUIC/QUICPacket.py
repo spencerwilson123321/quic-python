@@ -277,7 +277,10 @@ class AckFrame:
                 ack_range = []):
         self.type = FT_ACK
 
-        
+        check_int_type("largest_acknowledged", largest_acknowledged)
+        check_int_type("ack_delay", ack_delay)
+        check_int_type("ack_range_count", ack_range_count)
+        check_int_type("first_ack_range", first_ack_range)
 
         self.largest_acknowledged = largest_acknowledged
         self.ack_delay = ack_delay
@@ -286,8 +289,10 @@ class AckFrame:
         self.ack_range = ack_range
 
     def raw(self) -> bytes:
-        data = b""
-        return b""
+        data = struct.pack("!IIII", self.largest_acknowledged, self.ack_delay, self.ack_range_count, self.first_ack_range)
+        for ar in self.ack_range:
+            data += ar.raw()
+        return data
 
 
 class CryptoFrame:
