@@ -234,16 +234,9 @@ class AckRange:
 
     def __init__(self, gap: int, ack_range_length: int):
 
-        if gap > MAX_INT+1:
-            print(f"Invalid gap value: {gap}")
-            print(f"Gap must be less than {MAX_INT+1}")
-            exit(1)
-        
-        if ack_range_length > MAX_INT+1:
-            print(f"Invalid ack_range_length value: {ack_range_length}")
-            print(f"ack_range_length must be less than {MAX_INT+1}")
-            exit(1)
-        
+        check_int_type("gap", gap)
+        check_int_type("ack_range_length", ack_range_length)
+
         self.gap = gap
         self.ack_range_length = ack_range_length
     
@@ -312,15 +305,8 @@ class CryptoFrame:
 
     def __init__(self, offset=0, length=0, data=b""):
 
-        if offset > MAX_LONG+1:
-            print(f"Invalid offset value: {offset}")
-            print(f"offset must be less than {MAX_LONG+1}")
-            exit(1)
-        
-        if length > MAX_SHORT+1:
-            print(f"Invalid length value: {offset}")
-            print(f"length must be less than {MAX_SHORT+1}")
-            exit(1)
+        check_long_type("offset", offset)
+        check_short_type("length", length)        
 
         self.type = FT_CRYPTO
         self.offset = offset
@@ -358,20 +344,9 @@ class StreamFrame:
 
     def __init__(self, stream_id = 0, offset = 0, length = 0, data = b""):
 
-        if stream_id > MAX_CHAR:
-            print(f"Invalid stream ID: {stream_id}")
-            print(f"Stream ID must be less than {MAX_CHAR+1}")
-            exit(1)
-        
-        if offset > MAX_LONG:
-            print(f"Invalid offset: {offset}")
-            print(f"Offset must be less than {MAX_LONG+1}")
-            exit(1)
-        
-        if length > MAX_SHORT:
-            print(f"Invalid length: {length}")
-            print(f"Length must be less than {MAX_SHORT+1}")
-            exit(1)
+        check_char_type("stream_id", stream_id)
+        check_long_type("offset", offset)
+        check_short_type("length", length)
         
         self.type = FT_STREAM
         self.stream_id = stream_id
@@ -559,20 +534,9 @@ class LongHeader:
             print(f"Invalid long header type received: {type}")
             exit(1)
 
-        if destination_connection_id > MAX_INT:
-            print(f"Invalid destination connection id: {destination_connection_id}.")
-            print(f"Connection IDs must be less than {MAX_INT+1}.")
-            exit(1)
-
-        if source_connection_id > MAX_INT:
-            print(f"Invalid source connection id: {source_connection_id}.")
-            print(f"Connection IDs must be less than {MAX_INT+1}.")
-            exit(1)
-
-        if packet_number > MAX_INT:
-            print(f"Invalid packet number: {packet_number}.")
-            print(f"Packet numbers must be less than {MAX_INT+1}.")
-            exit(1)
+        check_int_type("destination_connection_id", destination_connection_id)
+        check_int_type("source_connection_id", source_connection_id)
+        check_int_type("packet_number", packet_number)
 
         self.header_form = HF_LONG
         self.type = type
@@ -620,15 +584,8 @@ class ShortHeader():
 
     def __init__(self, destination_connection_id, packet_number):
 
-        if destination_connection_id > MAX_INT:
-            print(f"Invalid destination connection id: {destination_connection_id}.")
-            print(f"Connection IDs must be less than {MAX_INT+1}.")
-            exit(1)
-
-        if packet_number > MAX_INT:
-            print(f"Invalid packet number: {packet_number}.")
-            print(f"Packet numbers must be less than {MAX_INT+1}.")
-            exit(1)
+        check_int_type("destination_connection_id", destination_connection_id)
+        check_int_type("packet_number", packet_number)
 
         self.type = HT_DATA
         self.destination_connection_id = destination_connection_id       # 4 bytes
