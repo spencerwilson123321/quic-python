@@ -1,6 +1,7 @@
 """
     QUIC Packet module. Contains all classes that
-    are used to represent QUIC packets.
+    are used to represent QUIC packets. Contains
+    header and frame classes.
 """
 import struct
 
@@ -22,6 +23,9 @@ HT_INITIAL = 0x00
 HT_HANDSHAKE = 0x02
 HT_RETRY = 0x03
 HT_DATA = 0x04
+
+LONG_HEADER_SIZE = 19 # num bytes
+SHORT_HEADER_SIZE = 9 # num bytes
 
 QUIC_VERSION = 0x36
 CONN_ID_LEN = 0x04
