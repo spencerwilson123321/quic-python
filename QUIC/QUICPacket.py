@@ -8,10 +8,10 @@ import struct
 # ------------------ DATA --------------------------
 
 # DATA SIZES:
-MAX_LONG = 18446744073709551615   # 8 bytes max
-MAX_INT = 4294967295              # 4 bytes max
-MAX_SHORT = 65535                 # 2 bytes max
-MAX_CHAR = 255                    # 1 byte max
+MAX_LONG = 18446744073709551615   # 8 bytes max - Use Q in struct.pack
+MAX_INT = 4294967295              # 4 bytes max - Use I in struct.pack
+MAX_SHORT = 65535                 # 2 bytes max - Use H in struct.pack
+MAX_CHAR = 255                    # 1 byte max  - Use B in struct.pack
 
 
 # HEADER INFO:
@@ -66,8 +66,48 @@ STR_STREAMSBLOCKED = "STREAMSBLOCKED"
 STR_CONNECTIONCLOSE = "CONNECTIONCLOSE"
 STR_HANDSHAKEDONE = "HANDSHAKEDONE"
 
+# ------------------ EXCEPTIONS -----------------
+
+class ShortValueError(Exception): pass
+class LongValueError(Exception): pass
+class IntValueError(Exception): pass
+class CharValueError(Exception): pass
+
 
 # ------------------ FUNCTIONS ------------------
+
+
+def check_long_type(var_name: str, var: int) -> None:
+    if var < 0:
+        raise LongValueError(f"Variable '{var_name}' cannot be negative. '{var_name}' value: {var}")
+    if var > MAX_LONG:
+        raise LongValueError(f"Variable '{var_name}' cannot be greater than {MAX_LONG}. '{var_name}' value: {var}")
+    return None
+
+
+def check_int_type(var_name: str, var: int) -> None:
+    if var < 0:
+        raise IntValueError(f"Variable '{var_name}' cannot be negative. '{var_name}' value: {var}")
+    if var > MAX_INT:
+        raise IntValueError(f"Variable '{var_name}' cannot be greater than {MAX_INT}. '{var_name}' value: {var}")
+    return None
+
+
+def check_short_type(var_name: str, var: int) -> None:
+    if var < 0:
+        raise ShortValueError(f"Variable '{var_name}' cannot be negative. '{var_name}' value: {var}")
+    if var > MAX_SHORT:
+        raise ShortValueError(f"Variable '{var_name}' cannot be greater than {MAX_SHORT}. '{var_name}' value: {var}")
+    return None
+
+
+def check_char_type(var_name: str, var: int) -> None:
+    if var < 0:
+        raise CharValueError(f"Variable '{var_name}' cannot be negative. '{var_name}' value: {var}")
+    if var > MAX_CHAR:
+        raise ShortValueError(f"Variable '{var_name}' cannot be greater than {MAX_CHAR}. '{var_name}' value: {var}")
+    return None
+
 
 def header_type_string_to_hex(type: str) -> int:
     if type == STR_INITIAL:
@@ -227,6 +267,7 @@ class AckFrame:
                 The ACK range count is the number of ack range fields in the frame. These Ack Ranges are modeled as objects which contain
                 two pieces of data: gap and ack_range_length. See class AckRange for implementation.
             First ACK Range:
+                The next 4 bytes is the first Ack range.
                 The number of packets preceding the Largest Acknowledged. All of these packets are also 
                 being acknowledged.
             Ack Range:
@@ -242,6 +283,9 @@ class AckFrame:
                 first_ack_range = 0,
                 ack_range = []):
         self.type = FT_ACK
+
+        
+
         self.largest_acknowledged = largest_acknowledged
         self.ack_delay = ack_delay
         self.ack_range_count = ack_range_count
