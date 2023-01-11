@@ -185,7 +185,9 @@ class Packet():
 
 class AckRange:
     """
-        An ACK Range 
+        An ACK Range contains two fields:
+            Gap:
+                
     """
 
     def __init__(self, gap, ack_range_length) -> None:
@@ -208,7 +210,8 @@ class AckFrame:
             ACK Delay:
                 The next 4 bytes is the acknowledgement delay in microseconds.
             ACK Range Count:
-                The number of ack range fields in the frame. These Ack Ranges are modeled as objects which contain
+                The next 4 bytes is the ACK range count.
+                The ACK range count is the number of ack range fields in the frame. These Ack Ranges are modeled as objects which contain
                 two pieces of data: gap and ack_range_length. See class AckRange for implementation.
             First ACK Range:
                 The number of packets preceding the Largest Acknowledged. All of these packets are also 
@@ -233,6 +236,7 @@ class AckFrame:
         self.ack_range = ack_range
 
     def raw(self) -> bytes:
+        data = b""
         return b""
 
 
@@ -333,12 +337,18 @@ class StreamFrame:
 
 
 class PaddingFrame:
+    """
+        PaddingFrame class, a padding frame contains a single field:
+            Type:
+                The first byte is the type. The type field indicates the type of the frame.
+                Padding frames are identified as an empty byte 0x00. 
+    """
 
     def __init__(self):
         self.type = FT_PADDING
 
     def raw(self):
-        return self.type
+        return struct.pack("!B", self.type)
 
 
 # class ResetStreamFrame:
