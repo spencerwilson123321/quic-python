@@ -187,15 +187,28 @@ class AckRange:
     """
         An ACK Range contains two fields:
             Gap:
-                
+                The first 4 bytes of the ACK range is the Gap value.
+            Ack Range Length:
+                The next 4 bytes is the Ack Range Length. 
     """
 
-    def __init__(self, gap, ack_range_length) -> None:
+    def __init__(self, gap: int, ack_range_length: int):
+
+        if gap > MAX_INT+1:
+            print(f"Invalid gap value: {gap}")
+            print(f"Gap must be less than {MAX_INT+1}")
+            exit(1)
+        
+        if ack_range_length > MAX_INT+1:
+            print(f"Invalid ack_range_length value: {ack_range_length}")
+            print(f"ack_range_length must be less than {MAX_INT+1}")
+            exit(1)
+        
         self.gap = gap
         self.ack_range_length = ack_range_length
     
     def raw(self) -> bytes:
-        return b""
+        return struct.pack("!II", self.gap, self.ack_range_length)
 
 
 class AckFrame:
@@ -255,12 +268,12 @@ class CryptoFrame:
 
     def __init__(self, offset=0, length=0, data=b""):
 
-        if offset > MAX_LONG:
+        if offset > MAX_LONG+1:
             print(f"Invalid offset value: {offset}")
             print(f"offset must be less than {MAX_LONG+1}")
             exit(1)
         
-        if length > MAX_SHORT:
+        if length > MAX_SHORT+1:
             print(f"Invalid length value: {offset}")
             print(f"length must be less than {MAX_SHORT+1}")
             exit(1)
@@ -534,7 +547,7 @@ class LongHeader:
             Returns the header as raw bytes in network byte order.
         """
         first_byte = self.header_form | header_type_string_to_hex(self.type)
-        raw_bytes = struct.pack("!BBBLBLBLI", first_byte, self.version, self.destination_connection_id_len, self.destination_connection_id, self.source_connection_id_len, self.source_connection_id, self.packet_number_length, self.packet_number, self.length)
+        raw_bytes = struct.pack("!BBBLBLBLH", first_byte, self.version, self.destination_connection_id_len, self.destination_connection_id, self.source_connection_id_len, self.source_connection_id, self.packet_number_length, self.packet_number, self.length)
         return raw_bytes
 
 
