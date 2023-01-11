@@ -275,13 +275,13 @@ class AckFrame:
                 ack_range_count = 0,
                 first_ack_range = 0,
                 ack_range = []):
-        self.type = FT_ACK
 
         check_int_type("largest_acknowledged", largest_acknowledged)
         check_int_type("ack_delay", ack_delay)
         check_int_type("ack_range_count", ack_range_count)
         check_int_type("first_ack_range", first_ack_range)
 
+        self.type = FT_ACK
         self.largest_acknowledged = largest_acknowledged
         self.ack_delay = ack_delay
         self.ack_range_count = ack_range_count
@@ -289,7 +289,7 @@ class AckFrame:
         self.ack_range = ack_range
 
     def raw(self) -> bytes:
-        data = struct.pack("!IIII", self.largest_acknowledged, self.ack_delay, self.ack_range_count, self.first_ack_range)
+        data = struct.pack("!BIIII", self.type, self.largest_acknowledged, self.ack_delay, self.ack_range_count, self.first_ack_range)
         for ar in self.ack_range:
             data += ar.raw()
         return data
@@ -560,7 +560,7 @@ class LongHeader:
             Returns the header as raw bytes in network byte order.
         """
         first_byte = self.header_form | header_type_string_to_hex(self.type)
-        raw_bytes = struct.pack("!BBBLBLBLH", first_byte, self.version, self.destination_connection_id_len, self.destination_connection_id, self.source_connection_id_len, self.source_connection_id, self.packet_number_length, self.packet_number, self.length)
+        raw_bytes = struct.pack("!BBBIBIBIH", first_byte, self.version, self.destination_connection_id_len, self.destination_connection_id, self.source_connection_id_len, self.source_connection_id, self.packet_number_length, self.packet_number, self.length)
         return raw_bytes
 
 
@@ -598,7 +598,7 @@ class ShortHeader():
 
 
     def raw(self)  -> bytes:
-        return struct.pack("!BLL", self.type, self.destination_connection_id, self.packet_number)
+        return struct.pack("!BII", self.type, self.destination_connection_id, self.packet_number)
 
 
     def __repr__(self) -> str:
