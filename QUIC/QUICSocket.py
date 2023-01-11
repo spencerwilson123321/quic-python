@@ -16,15 +16,11 @@ class QUICSocket:
         
     """
 
-    def __init__(self, connection_context=ConnectionContext(), encryption_context=EncryptionContext()):
+    def __init__(self):
         self.__socket = socket(AF_INET, SOCK_DGRAM)
         self.__socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        self.__connection_manager = QUICConnectionManager()
-        self.__streams = []
-        # self.__packet_builder = QUICPacketBuilder()
-        # self.__connection_context = connection_context
-        # self.__encryption_context = encryption_context
-        # self.__datagrams_to_send = []
+        self.__connection_context = ConnectionContext()
+        self.__encryption_context = EncryptionContext()
 
 
     def connect(self, address: tuple):
