@@ -15,8 +15,9 @@ def check_first_bit_set(byte: bytes) -> bool:
  
 
 def parse_long_header(raw: bytes) -> LongHeader:
-
-    return None
+    header_bytes = raw[0:LONG_HEADER_SIZE]
+    fields = struct.unpack(f"!BBBIBIBIH", header_bytes)
+    return LongHeader(destination_connection_id=fields[3], source_connection_id=fields[5], packet_number=fields[7])
 
 
 def parse_short_header(raw: bytes) -> ShortHeader:
@@ -31,16 +32,12 @@ def parse_bytes(raw: bytes) -> Packet:
     """
     first_byte = raw[0:1]
     header_type = struct.unpack("!B", first_byte)
-    packet = Packet()
     header = None
     frames = []
 
     if check_first_bit_set(header_type[0]):
-        print("This is a long header.")
         header = parse_long_header(raw)
     else:
-        print("This is a short header.")
         header = parse_short_header(raw)
-        print(header)
 
-    return packet
+    return Packet(header=header)

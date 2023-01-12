@@ -19,10 +19,10 @@ MAX_CHAR = 255                    # 1 byte max  - Use B in struct.pack
 HF_LONG = 0x80
 HF_SHORT = 0x00
 
-HT_INITIAL = 0x00
-HT_HANDSHAKE = 0x02
-HT_RETRY = 0x03
-HT_DATA = 0x04
+HT_INITIAL = 0x80
+HT_HANDSHAKE = 0x82
+HT_RETRY = 0x83
+HT_DATA = 0x84
 
 LONG_HEADER_SIZE = 19 # num bytes
 SHORT_HEADER_SIZE = 9 # num bytes
@@ -531,7 +531,7 @@ class LongHeader:
     """
 
     def __init__(self,
-                type="initial",
+                type="INITIAL",
                 destination_connection_id=0,
                 source_connection_id=0,
                 packet_number=0
