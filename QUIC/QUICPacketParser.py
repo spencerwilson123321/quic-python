@@ -34,8 +34,21 @@ def parse_stream_frame(raw: bytes):
     return StreamFrame(stream_id=fields[1], offset=fields[2], length=fields[3], data=stream_data)
 
 
+def parse_ack_range(raw: bytes):
+    fields = struct.unpack("!II", raw)
+    return AckRange(gap=fields[0], ack_range_length=fields[1])
+
+
 def parse_ack_frame(raw: bytes):
-    return AckFrame()
+    field_data = raw[0:ACK_FRAME_SIZE]
+    ack_range_data = raw[ACK_FRAME_SIZE:]
+    fields = struct.unpack("!BIIII", field_data)
+    parsed_ack_ranges = []
+    while ack_range_data:
+        ackrange = parse_ack_range(ack_range_data[:ACK_RANGE_SIZE])
+        ack_range_data = ack_range_data[ACK_RANGE_SIZE:]
+        parsed_ack_ranges.append(ackrange)
+    return AckFrame(largest_acknowledged=fields[1], ack_delay=fields[2], ack_range_count=fields[3], first_ack_range=fields[4], ack_range=parsed_ack_ranges)
 
 
 def parse_crypto_frame(raw: bytes):
