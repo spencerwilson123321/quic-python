@@ -26,8 +26,11 @@ HT_DATA = 0x04
 
 LONG_HEADER_SIZE = 19 # num bytes
 SHORT_HEADER_SIZE = 9 # num bytes
-STREAM_FRAME_SIZE = 12 
-CRYPTO_FRAME_SIZE = 11
+
+STREAM_FRAME_SIZE = 12 # Not including stream data.
+CRYPTO_FRAME_SIZE = 11 # Not including crypto data.
+ACK_FRAME_SIZE = 17    # Not including the ack range field.
+ACK_RANGE_SIZE = 8     # Size of a single ack range.
 
 QUIC_VERSION = 0x36
 CONN_ID_LEN = 0x04
@@ -299,6 +302,20 @@ class AckFrame:
         for ar in self.ack_range:
             data += ar.raw()
         return data
+
+    def __repr__(self) -> str:
+        representation = ""
+        representation += "------ FRAME ------\n"
+        representation += f"Type: {frame_type_hex_to_string(self.type)}\n"
+        representation += f"Largest Acknowledged: {self.largest_acknowledged}\n"
+        representation += f"ACK Delay: {self.ack_delay}\n"
+        representation += f"ACK Range Count: {self.ack_range_count}\n"
+        if self.ack_range_count > 0:
+            for range in self.ack_range:
+                representation += "------ ACK RANGE ------\n"
+                representation += f"Gap: {range.gap}\n"
+                representation += f"Ack Range Length: {range.ack_range_length}\n"
+        return representation
 
 
 class CryptoFrame:
