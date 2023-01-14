@@ -16,16 +16,18 @@ MAX_CHAR = 255                    # 1 byte max  - Use B in struct.pack
 
 
 # HEADER INFO:
-HF_LONG = 0x80
-HF_SHORT = 0x00
+# HF_LONG = 0x80
+# HF_SHORT = 0x00
 
 HT_INITIAL = 0x80
 HT_HANDSHAKE = 0x82
 HT_RETRY = 0x83
-HT_DATA = 0x84
+HT_DATA = 0x04
 
 LONG_HEADER_SIZE = 19 # num bytes
 SHORT_HEADER_SIZE = 9 # num bytes
+STREAM_FRAME_SIZE = 12 
+CRYPTO_FRAME_SIZE = 11
 
 QUIC_VERSION = 0x36
 CONN_ID_LEN = 0x04
@@ -243,7 +245,7 @@ class AckRange:
 
         self.gap = gap
         self.ack_range_length = ack_range_length
-    
+
     def raw(self) -> bytes:
         return struct.pack("!II", self.gap, self.ack_range_length)
 
@@ -531,15 +533,13 @@ class LongHeader:
     """
 
     def __init__(self,
-                type="INITIAL",
+                type=0,
                 destination_connection_id=0,
                 source_connection_id=0,
                 packet_number=0
                 ):
 
-        # If type_to_hex returns None, then type argument is invalid.
-        type_check = header_type_string_to_hex(type)
-        if type_check == None:
+        if type not in [HT_INITIAL, HT_HANDSHAKE, HT_RETRY]:
             print(f"Invalid long header type received: {type}")
             exit(1)
 
@@ -547,7 +547,6 @@ class LongHeader:
         check_int_type("source_connection_id", source_connection_id)
         check_int_type("packet_number", packet_number)
 
-        self.header_form = HF_LONG
         self.type = type
         self.version = QUIC_VERSION
         self.destination_connection_id_len = CONN_ID_LEN
@@ -557,21 +556,21 @@ class LongHeader:
         self.packet_number_length = PKT_NUM_LEN
         self.packet_number = packet_number
         self.length = 0x0000 # 0x0000 to 0xFFFF
+        self.size = LONG_HEADER_SIZE
 
 
     def raw(self) -> bytes:
         """
             Returns the header as raw bytes in network byte order.
         """
-        first_byte = self.header_form | header_type_string_to_hex(self.type)
-        raw_bytes = struct.pack("!BBBIBIBIH", first_byte, self.version, self.destination_connection_id_len, self.destination_connection_id, self.source_connection_id_len, self.source_connection_id, self.packet_number_length, self.packet_number, self.length)
+        raw_bytes = struct.pack("!BBBIBIBIH", self.type, self.version, self.destination_connection_id_len, self.destination_connection_id, self.source_connection_id_len, self.source_connection_id, self.packet_number_length, self.packet_number, self.length)
         return raw_bytes
 
 
     def __repr__(self) -> str:
         representation = "------ HEADER ------\n"
         representation += "Header Form: Long Header\n"
-        representation += f"Type: {self.type} ({header_type_string_to_hex(self.type)})\n"
+        representation += f"Type: {self.type} ({header_type_hex_to_string(self.type)})\n"
         representation += f"Version: {self.version}\n"
         representation += f"Destination Connection ID Length: {self.destination_connection_id_len}\n"
         representation += f"Destination Connection ID: {self.destination_connection_id}\n"
@@ -599,6 +598,7 @@ class ShortHeader():
         self.type = HT_DATA
         self.destination_connection_id = destination_connection_id       # 4 bytes
         self.packet_number = packet_number                               # 4 bytes
+        self.size = SHORT_HEADER_SIZE
 
 
     def raw(self)  -> bytes:
