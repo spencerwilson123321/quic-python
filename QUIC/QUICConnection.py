@@ -3,6 +3,10 @@
     will contain all of the data and state for a connection.
 """
 
+def create_connection_id():
+    return 1024
+
+
 class ConnectionContext:
     """
             
@@ -15,8 +19,9 @@ class ConnectionContext:
         self.peer_connection_id = None
         self.local_connection_id = None
         self.connected = False
-        self.next_packet_number = 1
-    
+        self.next_packet_number = 1            # Used for sending.
+        self.last_packet_number_received = 0   # Used for receiving.
+        
     
     def set_peer_connection_id(self, conn_id: int):
         self.peer_connection_id = conn_id
@@ -62,12 +67,3 @@ class ConnectionContext:
         num = self.next_packet_number
         self.next_packet_number += 1
         return num
-
-
-    def generate_connection_id(self) -> int:
-        """
-            This function generates a random connection ID.
-            TODO: Implement this function.
-        """
-        return 1024
-

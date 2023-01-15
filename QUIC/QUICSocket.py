@@ -1,114 +1,161 @@
-"""
-    This will be the public facing QUIC Sockets API which
-    will have a similar API to the Python standard library
-    socket object. This API will make it simple to implement
-    QUIC servers and clients in Python.
-"""
-
-
 from socket import socket, AF_INET, SOCK_DGRAM, SO_REUSEADDR, SOL_SOCKET
-from .QUICConnection import ConnectionContext
+from .QUICConnection import ConnectionContext, create_connection_id
 from .QUICEncryption import EncryptionContext
+from .QUICPacketParser import parse_packet_bytes, PacketParserError
 from .QUICPacket import *
 
-class QUICSocket:
-    """
-        
-    """
+
+class QUICListener:
 
     def __init__(self):
-        self.__socket = socket(AF_INET, SOCK_DGRAM)
-        self.__socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        self.__connection_context = ConnectionContext()
-        self.__encryption_context = EncryptionContext()
-
-
-    def connect(self, address: tuple):
-        """
-            This function will:
-                1. Associate the given address with the underlying UDP socket using it's connect call.
-                2. Perform the QUIC handshake.
-        """
-        # TODO 1 update this function so that it updates the socket connection context and encryption context.
-        # TODO 2 update this function so that it uses real QUIC packets.
-        # TODO 3 update this function so that it actually performs the QUIC handshake.
-        self.__socket.connect(address)
-        initial_pkt = Packet(header=LongHeader(type="initial", ), frames=[CryptoFrame()])
-        print(initial_pkt.raw())
-        self.__socket.sendto(initial_pkt.raw(), address)
-        pkt_bytes, addr = self.__socket.recvfrom(1024)
-        response_pkt = self.__packet_builder.parse_bytes(pkt_bytes)
-        print(addr)
-        print(response_pkt)
+        self._listening_socket = socket(AF_INET, SOCK_DGRAM)
+        self._listening_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 
 
     def accept(self):
-        """
-            Accepts a client connection. This is done by blocking and waiting for an
-            initial packet to be received on the listening socket. Once the initial
-            packet is received, a connection context is created, and the handshake process
-            begins. Once the connection negotation / handshake is complete, a new socket
-            is created which is in a connected state (connected to client) which can then be
-            used for data transfer using QUIC Streams. This function returns the newly created
-            socket.
-        """
-        
-        # Block and wait for an initial packet to be received.
-        initial_packet_received = False
-        addr = None
-        pkt = None
-        while not initial_packet_received:
-            pkt, addr = self.__socket.recvfrom(1024) # HANGS HERE
-            if pkt: # TODO if the pkt is indeed an initial packet, then exit the loop and proceed.
-                initial_packet_received = True
-        
-        # TODO perform handshake code, initialize the connection context, use actual QUIC packets.
-        print(f"Initial packet from: {addr[0]}:{addr[1]}")
-        self.__socket.sendto(b"Handshake packet", addr)
-        connection_context = ConnectionContext() # TODO fill in this class with data.
-
-        # AFTER the handshake is complete do the following:
-        # Create new QUIC socket which will be used to communicate with the connected client.
-        # This can be done by creating a new QUIC socket object and associating it's underlying
-        # UDP socket with the address of the connected client. We also pass the created connection
-        # context to this new QUIC socket so that it can manage its own connection state.
-        client = QUICSocket(connection_context=connection_context)
-        client.bind(("", 8001)) # Bind the socket to the server address.
-        client.__socket.connect(addr)     # This 'connect' call is on the underlying UDP socket so that the kernel can track the connection properly.
-        return client
+        return accept_connection(self._listening_socket)
 
 
-    def listen(self, backlog: int):
-        """
-            TODO there isn't much of a need for this function since the kernel will
-            handle queuing received datagrams. However, it could still be used to set
-            state variables that would indicate that the current socket is a server socket
-            that is expecting to receive connections. There might be a different way to handle
-            this that removes the use for this function.
-        """
+class QUICSocket:
+
+    def __init__(self):
+        self._socket = socket(AF_INET, SOCK_DGRAM)
+        self._socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        self._connection_context = ConnectionContext()
+        self._encryption_context = EncryptionContext()
+
+
+    def connect(self, address: tuple):
         pass
 
 
-    # Maybe when a connection is created we return the stream ID.
-    # This way the programmer using this API can reference the specific stream_id
-    # to send data to.
-    def send(self, data: bytes, stream_id: int): 
-        return self.__socket.send(data)
+    def send(self, stream_id: int, data: bytes): 
+        pass
 
 
-    def recv(self, num_bytes):
-        return self.__socket.recvfrom(num_bytes)
-
-
-    def bind(self, address):
-        self.__socket.bind(address)
+    def recv(self, stream_id: int, num_bytes: int):
+        pass
 
 
     def close(self):
         print("Closing socket.")
-        self.__socket.close()
+        self._socket.close()
 
 
-    def set_connection_context(self, connection_context):
-        self.__connection_context = connection_context
+    def set_encryption_state(self, encryption_state: EncryptionContext):
+        self._encryption_context = encryption_state
+
+
+    def get_encryption_state(self):
+        return self._encryption_context
+
+
+    def set_connection_state(self, connection_state: ConnectionContext):
+        self._connection_context = connection_state
+
+
+    def get_connection_state(self):
+        return self._connection_context
+
+
+    def get_udp_socket(self):
+        return self._socket
+    
+
+    def set_udp_socket(self, new_socket: socket):
+        self._socket = new_socket
+
+
+def create_connection(address: tuple) -> QUICSocket:
+
+    # Create a new QUICSocket object.
+    new_socket = QUICSocket()
+    connection_state = ConnectionContext()
+    encryption_state = EncryptionContext()
+    udp_socket = new_socket.get_udp_socket()
+
+    # Create the INITIAL QUIC packet and generate local connection ID.
+    connection_state.set_peer_address(address)
+    peer_address = connection_state.get_peer_address()
+    conn_id = create_connection_id()
+    connection_state.set_local_connection_id(conn_id)
+
+    # TODO: Add a secret key to the crypto frame so that the connection can be encrypted.
+    frames = [CryptoFrame(offset=0, length=0, data=b"")] 
+    header = LongHeader(type=HT_INITIAL, destination_connection_id=0, source_connection_id=conn_id, packet_number=connection_state.get_next_packet_number())
+    initial_packet = Packet(header=header, frames=frames)
+
+    # Send the INITIAL QUIC packet.
+    udp_socket.sendto(initial_packet.raw(), peer_address)
+    local_address = udp_socket.getsockname()
+    connection_state.set_local_address(local_address)
+
+    # Get INITIAL and HANDSHAKE packets in response.
+    #   - Check that we received both the INITIAL and HANDSHAKE packets.
+    #   - Set our peer connection ID based on the source connection ID of the received packets
+    response1 = udp_socket.recv(4096)
+    response2 = udp_socket.recv(4096)
+    first_packet = parse_packet_bytes(response1)
+    second_packet = parse_packet_bytes(response2)
+    received_initial = False
+    received_handshake = False
+    for pkt in [first_packet, second_packet]:
+        if pkt.header.type == HT_INITIAL:
+            connection_state.set_peer_connection_id(pkt.header.source_connection_id)
+            received_initial = True
+        if pkt.header.type == HT_HANDSHAKE:
+            received_handshake = True
+    if not received_handshake or not received_initial:
+        print("Handshake error.")
+        exit(1)
+
+    # 4. Send the final HANDSHAKE packet to finish the handshake.
+    header = LongHeader(type=HT_HANDSHAKE, destination_connection_id=1024, source_connection_id=1024, packet_number=connection_state.get_next_packet_number())
+    final_handshake = Packet(header=header, frames=[])
+    udp_socket.sendto(final_handshake.raw(), peer_address)
+
+    # 5. The connection is now established.
+    connection_state.set_connected(True)
+
+    # Set the state of the newly created socket
+    # and return it to the API caller.
+    new_socket.set_connection_state(connection_state)
+    new_socket.set_encryption_state(encryption_state)
+    new_socket.set_udp_socket(udp_socket)
+    return new_socket
+
+
+def accept_connection(listening_socket: socket):
+    """
+        This function should accept a connection and return 
+        a new QUICSocket for the connection.
+    """
+
+    # Create a new connection context for this new connection.
+    new_socket = QUICSocket()
+    connection_state = ConnectionContext()
+    encryption_state = EncryptionContext()
+
+    # Read a datagram from the UDP socket.
+    packet_bytes, addr = new_socket.get_udp_socket().recvfrom(4096)
+    
+    # Try to parse the bytes, if it fails then this likely was not a QUIC packet.
+    try:
+        packet = parse_packet_bytes(packet_bytes)
+    except PacketParserError:
+        print("Not a QUIC packet.")
+
+    # Check if the packet is an initial type packet.
+    if packet.header.type != HT_INITIAL:
+        print("Not an initial packet.")
+        exit(1)
+    
+    # Set the peer connection ID in the connection context
+    # to the source connection ID of the initial packet.
+    connection_state.set_peer_connection_id(packet.header.source_connection_id)
+    connection_state.set_local_connection_id(create_connection_id())
+    print(listening_socket.getsockname())
+
+    return QUICSocket()
+
 
