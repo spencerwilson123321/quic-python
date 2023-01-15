@@ -7,9 +7,11 @@ from .QUICPacket import *
 
 class QUICListener:
 
-    def __init__(self):
+    def __init__(self, address: tuple):
         self._listening_socket = socket(AF_INET, SOCK_DGRAM)
         self._listening_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        self._server_address = address
+        self._listening_socket.bind(address)
 
 
     def accept(self):
@@ -25,10 +27,6 @@ class QUICSocket:
         self._encryption_context = EncryptionContext()
 
 
-    def connect(self, address: tuple):
-        pass
-
-
     def send(self, stream_id: int, data: bytes): 
         pass
 
@@ -37,9 +35,17 @@ class QUICSocket:
         pass
 
 
-    def close(self):
-        print("Closing socket.")
+    def shutdown(self):
+        print("Shutting down socket...")
         self._socket.close()
+
+
+    def close_stream(self, stream_id: int):
+        pass
+
+
+    def create_stream(self, stream_id: int):
+        pass
 
 
     def set_encryption_state(self, encryption_state: EncryptionContext):
@@ -64,6 +70,15 @@ class QUICSocket:
 
     def set_udp_socket(self, new_socket: socket):
         self._socket = new_socket
+    
+    
+    def __repr__(self) -> str:
+        representation = ""
+        representation += f"------ QUIC Socket ------\n"
+        representation += f"Local Address: {self._connection_context.get_local_address()}\n"
+        representation += f"Peer Address: {self._connection_context.get_local_address()}\n"
+        representation += f"Connection Status: {'Connected' if self._connection_context.is_connected() else 'Not Connected'}\n"
+        return representation
 
 
 def create_connection(address: tuple) -> QUICSocket:
