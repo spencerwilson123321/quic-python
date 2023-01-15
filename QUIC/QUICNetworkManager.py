@@ -5,7 +5,7 @@ import errno
 
 from .QUICConnection import ConnectionContext
 from .QUICEncryption import EncryptionContext
-from .QUICPacketParser import parse_packet_bytes
+from .QUICPacketParser import parse_packet_bytes, PacketParserError
 from .QUICSocket import QUICSocket
 from .QUICPacket import *
 
@@ -51,14 +51,6 @@ class QUICNetworkManager:
         self.__udp_socket.setblocking(1)
     
 
-    def __parse_packets_in_udp_buffer(self) -> list[Packet]:
-        # TODO: Implement this function.
-        packets = []
-        raw_bytes, addr = self.__udp_socket.recvfrom(1024)
-        pkt = parse_packet_bytes(raw=raw_bytes)
-        return packets
-
-
     def create_connection(self, address: tuple):
 
         # 1. Create the INITIAL QUIC packet --> Create connection ID.
@@ -66,6 +58,7 @@ class QUICNetworkManager:
         peer_address = self.__connection_context.get_peer_address()
         pkt_num = self.__connection_context.get_next_packet_number()
         conn_id = self.__connection_context.generate_connection_id()
+        self.__connection_context.set_local_connection_id(conn_id)
         # TODO: Add a secret key to the crypto frame so that the connection can be encrypted.
         frames = [CryptoFrame(offset=0, length=0, data=b"")] 
         header = LongHeader(type=HT_INITIAL, destination_connection_id=0, source_connection_id=conn_id, packet_number=pkt_num)
@@ -75,16 +68,56 @@ class QUICNetworkManager:
         self.__udp_socket.sendto(initial_packet.raw(), peer_address)
         local_address = self.__udp_socket.getsockname()
         self.__connection_context.set_local_address(local_address)
-        # TODO: Stopped development right here.
-        received_packets = self.__parse_packets_in_udp_buffer()
 
         # 3. Get the server response: HANDSHAKE packet and INITIAL packet. --> parse bytes and process.
             # 3.1. Set all connection context variables that are necessary.
-        
-
+        response1 = self.__udp_socket.recv(4096)
+        response2 = self.__udp_socket.recv(4096)
+        first_packet = parse_packet_bytes(response1)
+        second_packet = parse_packet_bytes(response2)
+        received_initial = False
+        received_handshake = False
+        for pkt in [first_packet, second_packet]:
+            if pkt.header.type == HT_INITIAL:
+                self.__connection_context.set_peer_connection_id(pkt.header.source_connection_id)
+                received_initial = True
+            if pkt.header.type == HT_HANDSHAKE:
+                received_handshake = True
+        if not received_handshake or not received_initial:
+            print("Handshake error.")
+            exit(1)
         # 4. Send the final HANDSHAKE packet to finish the handshake.
+        header = LongHeader(type=HT_HANDSHAKE, destination_connection_id=1024, source_connection_id=1024, packet_number=2)
+        final_handshake = Packet(header=header, frames=[])
+        self.__udp_socket.sendto(final_handshake.raw(), peer_address)
         # 5. The connection is now established.
+        self.__connection_context.set_connected(True)
 
-    def accept_conenction(self):
-        pass
+
+    def accept_connection(self, listening_socket: QUICSocket) -> QUICSocket:
+        """
+            This function should accept a connection and return a new QUICSocket.
+            
+        """
+        
+        # Create a new connection context for this new connection.
+        connection_context = ConnectionContext()
+
+        packet_bytes, addr = self.__udp_socket.recvfrom(4096)
+        
+        try:
+            packet = parse_packet_bytes(packet_bytes)
+        except PacketParserError:
+            print("Not a QUIC packet.")
+        
+        if packet.header.type != HT_INITIAL:
+            print("Not an initial packet.")
+            exit(1)
+        
+        # Set the destination connection ID in the connection context
+        # to the source connection ID of the initial packet that has been
+        # received.
+        connection_context.set_peer_connection_id(packet.header.source_connection_id)
+        
+        return QUICSocket()
 

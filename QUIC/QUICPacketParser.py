@@ -93,6 +93,8 @@ def parse_packet_bytes(raw: bytes) -> Packet:
     """
     first_byte = raw[0:1]
     header_type = struct.unpack("!B", first_byte)
+    if header_type[0] not in [HT_INITIAL, HT_HANDSHAKE, HT_RETRY]:
+        raise PacketParserError
     header = None
     frames = []
 
