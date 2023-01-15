@@ -52,15 +52,10 @@ class QUICNetworkManager:
     
 
     def __parse_packets_in_udp_buffer(self) -> list[Packet]:
+        # TODO: Implement this function.
         packets = []
-        self.__udp_socket.recvfrom(1024)
-        # raw_bytes = b""
-        # while True:
-        #     try:
-        #         self.__udp_socket.recvfrom(1024)
-        #     except SocketError as e:
-        #         print(e)
-        #         break
+        raw_bytes, addr = self.__udp_socket.recvfrom(1024)
+        pkt = parse_packet_bytes(raw=raw_bytes)
         return packets
 
 
@@ -69,7 +64,6 @@ class QUICNetworkManager:
         # 1. Create the INITIAL QUIC packet --> Create connection ID.
         self.__connection_context.set_peer_address(address)
         peer_address = self.__connection_context.get_peer_address()
-        # self.__udp_socket.connect(peer_address) # so the kernel 5 tuple correctly identifies the connection.
         pkt_num = self.__connection_context.get_next_packet_number()
         conn_id = self.__connection_context.generate_connection_id()
         # TODO: Add a secret key to the crypto frame so that the connection can be encrypted.
@@ -81,6 +75,7 @@ class QUICNetworkManager:
         self.__udp_socket.sendto(initial_packet.raw(), peer_address)
         local_address = self.__udp_socket.getsockname()
         self.__connection_context.set_local_address(local_address)
+        # TODO: Stopped development right here.
         received_packets = self.__parse_packets_in_udp_buffer()
 
         # 3. Get the server response: HANDSHAKE packet and INITIAL packet. --> parse bytes and process.
