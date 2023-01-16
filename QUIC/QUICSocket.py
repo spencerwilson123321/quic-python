@@ -99,7 +99,7 @@ def create_connection(address: tuple) -> QUICSocket:
 
     # TODO: Add a secret key to the crypto frame so that the connection can be encrypted.
     frames = [CryptoFrame(offset=0, length=0, data=b"")] 
-    header = LongHeader(type=HT_INITIAL, destination_connection_id=0, source_connection_id=conn_id, packet_number=connection_state.get_next_packet_number())
+    header = LongHeader(type=HT_INITIAL, destination_connection_id=0, source_connection_id=conn_id, packet_number=0)
     initial_packet = Packet(header=header, frames=frames)
 
     # Send the INITIAL QUIC packet.
@@ -127,7 +127,7 @@ def create_connection(address: tuple) -> QUICSocket:
         exit(1)
 
     # 4. Send the final HANDSHAKE packet to finish the handshake.
-    header = LongHeader(type=HT_HANDSHAKE, destination_connection_id=1024, source_connection_id=1024, packet_number=connection_state.get_next_packet_number())
+    header = LongHeader(type=HT_HANDSHAKE, destination_connection_id=1024, source_connection_id=1024, packet_number=0)
     final_handshake = Packet(header=header, frames=[])
     udp_socket.sendto(final_handshake.raw(), peer_address)
 
@@ -155,7 +155,6 @@ def accept_connection(listening_socket: socket, server_address: tuple):
 
     # Read a datagram from the UDP socket.
     packet_bytes, addr = listening_socket.recvfrom(4096)
-    print(addr)
     
     # Try to parse the bytes, if it fails then this likely was not a QUIC packet.
     try:
@@ -194,6 +193,8 @@ def accept_connection(listening_socket: socket, server_address: tuple):
     sock = new_socket.get_udp_socket()
     sock.sendto(packet1.raw(), connection_state.get_peer_address())
     sock.sendto(packet2.raw(), connection_state.get_peer_address())
+
+    # Set the connection and encryption state for the new socket.
     new_socket.set_connection_state(connection_state)
     new_socket.set_encryption_state(encryption_state)
     return new_socket
