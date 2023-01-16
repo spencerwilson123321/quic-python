@@ -10,12 +10,12 @@ class QUICListener:
     def __init__(self, address: tuple):
         self._listening_socket = socket(AF_INET, SOCK_DGRAM)
         self._listening_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        self._server_address = address
-        self._listening_socket.bind(address)
+        self._server_address = (address)
+        self._listening_socket.bind(("", address[1]))
 
 
     def accept(self):
-        return accept_connection(self._listening_socket)
+        return accept_connection(self._listening_socket, self._server_address)
 
 
 class QUICSocket:
@@ -76,7 +76,7 @@ class QUICSocket:
         representation = ""
         representation += f"------ QUIC Socket ------\n"
         representation += f"Local Address: {self._connection_context.get_local_address()}\n"
-        representation += f"Peer Address: {self._connection_context.get_local_address()}\n"
+        representation += f"Peer Address: {self._connection_context.get_peer_address()}\n"
         representation += f"Connection Status: {'Connected' if self._connection_context.is_connected() else 'Not Connected'}\n"
         return representation
 
@@ -140,7 +140,7 @@ def create_connection(address: tuple) -> QUICSocket:
     return new_socket
 
 
-def accept_connection(listening_socket: socket):
+def accept_connection(listening_socket: socket, server_address: tuple):
     """
         This function should accept a connection and return 
         a new QUICSocket for the connection.
@@ -152,7 +152,8 @@ def accept_connection(listening_socket: socket):
     encryption_state = EncryptionContext()
 
     # Read a datagram from the UDP socket.
-    packet_bytes, addr = new_socket.get_udp_socket().recvfrom(4096)
+    packet_bytes, addr = listening_socket.recvfrom(4096)
+    print(addr)
     
     # Try to parse the bytes, if it fails then this likely was not a QUIC packet.
     try:
@@ -169,8 +170,12 @@ def accept_connection(listening_socket: socket):
     # to the source connection ID of the initial packet.
     connection_state.set_peer_connection_id(packet.header.source_connection_id)
     connection_state.set_local_connection_id(create_connection_id())
-    print(listening_socket.getsockname())
+    connection_state.set_local_address(server_address)
+    connection_state.set_peer_address(addr)
+    connection_state.set_connected(True)
 
-    return QUICSocket()
+    new_socket.set_connection_state(connection_state)
+    new_socket.set_encryption_state(encryption_state)
+    return new_socket
 
 

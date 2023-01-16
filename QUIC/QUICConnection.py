@@ -51,8 +51,8 @@ class ConnectionContext:
         self.local_address = addr 
 
 
-    def get_local_address(self, addr):
-        return self.peer_address
+    def get_local_address(self):
+        return self.local_address
     
 
     def is_connected(self):
