@@ -77,9 +77,11 @@ class QUICSocket:
     def __repr__(self) -> str:
         representation = ""
         representation += f"------ QUIC Socket ------\n"
+        representation += f"Connection Status: {'Connected' if self._connection_context.is_connected() else 'Not Connected'}\n"
         representation += f"Local Address: {self._connection_context.get_local_address()}\n"
         representation += f"Peer Address: {self._connection_context.get_peer_address()}\n"
-        representation += f"Connection Status: {'Connected' if self._connection_context.is_connected() else 'Not Connected'}\n"
+        representation += f"Local Connection ID: {self._connection_context.get_local_connection_id()}\n"
+        representation += f"Peer Connection ID: {self._connection_context.get_peer_connection_id()}\n"
         return representation
 
 

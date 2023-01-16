@@ -1,16 +1,16 @@
+from random import randrange
 """
     This module will contain the ConnectionContext class which
     will contain all of the data and state for a connection.
 """
 
+MAX_CONNECTION_ID = 4294967295
+
 def create_connection_id():
-    return 1024
+    return randrange(MAX_CONNECTION_ID)
 
 
 class ConnectionContext:
-    """
-            
-    """
 
 
     def __init__(self) -> None:
