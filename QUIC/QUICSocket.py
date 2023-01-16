@@ -1,8 +1,8 @@
 from socket import socket, AF_INET, SOCK_DGRAM, SO_REUSEADDR, SOL_SOCKET
 from .QUICConnection import ConnectionContext, create_connection_id
 from .QUICEncryption import EncryptionContext
-from .QUICPacketParser import parse_packet_bytes, PacketParserError
 from .QUICPacket import *
+from .QUICNetworkController import QUICNetworkController, parse_packet_bytes, PacketParserError
 
 
 class QUICListener:
@@ -25,13 +25,15 @@ class QUICSocket:
         self._socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         self._connection_context = ConnectionContext()
         self._encryption_context = EncryptionContext()
+        self._network_controller = QUICNetworkController()
 
 
-    def send(self, stream_id: int, data: bytes): 
+    def send(self, stream_id: int, data: bytes):
+        # self._network_controller.send_stream_data(self._connection_context, self._encryption_context, stream_id, data)
         pass
 
-
     def recv(self, stream_id: int, num_bytes: int):
+        # self._network_controller.read_stream_data()
         pass
 
 

@@ -1,0 +1,37 @@
+
+If our library is single-threaded then everything must be initiated upon the
+caller initiating a send or recv call. It would look like this:
+
+Scenario A:    
+    A QUICSocket wants to send X bytes to Stream Y.
+    First, the stream data get's packetized.
+    Second, the packet get's sent to the SenderSideController
+    Third, the SenderSideController determines whether or not it can send the packet based on it's internal state (flow control).
+    Fourth, once it determines that it can send the packet, it transmits the single packet.
+    Fifth, control is passed back to the QUICSocket caller.
+
+Scenario B:
+    A QUICSocket wants to read X bytes from Stream Y.
+    First, the QUICSocket requests the data from the StreamManager.
+    Second, the StreamManager invokes the ReceiverSideController to check for new data.
+        Third, the ReceiverSideController reads all datagrams currently in the operating system udp queue.
+        Fourth, the ReceiverSideController converts the datagrams from bytes into QUICPackets.
+        Fifth, the ReceiverSideController performs loss detection / retransmissions / buffers out of order packets etc.
+        Sixth, the ReceiverSideController inspects packet frames and sends any new stream data to the StreamManager.
+    Seventh, the StreamManager reads at most the requested bytes that the caller requested and returns it to the caller. 
+    Eighth, the stream data is returned from the QUICSocket read call.
+
+
+QUIC Sockets Implementation:
+
+    - Each QUICSocket has a UDP socket associated with it.
+
+    - Each QUICSocket will only be allowed to have a single stream.
+
+    - Each QUICSocket will read and write to this stream object.
+        - A stream consists of two buffers: read buffer and write buffer.
+
+    - The stream object will communicate with a lower level object which will handle.
+
+    - Each QUICSocket has a connection state.
+
