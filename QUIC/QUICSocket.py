@@ -176,6 +176,24 @@ def accept_connection(listening_socket: socket, server_address: tuple):
     connection_state.set_peer_address(addr)
     connection_state.set_connected(True)
 
+    # Create the response packets:
+    initial_header = LongHeader(
+        type=HT_INITIAL, 
+        destination_connection_id=connection_state.peer_connection_id, 
+        source_connection_id=connection_state.local_connection_id,
+        packet_number=0)
+    handshake_header = LongHeader(
+        type=HT_HANDSHAKE,
+        destination_connection_id=connection_state.peer_connection_id,
+        source_connection_id=connection_state.local_connection_id,
+        packet_number=0)
+    packet1 = Packet(header=initial_header, frames=[])
+    packet2 = Packet(header=handshake_header, frames=[])
+
+    # Send the response packets.
+    sock = new_socket.get_udp_socket()
+    sock.sendto(packet1.raw(), connection_state.get_peer_address())
+    sock.sendto(packet2.raw(), connection_state.get_peer_address())
     new_socket.set_connection_state(connection_state)
     new_socket.set_encryption_state(encryption_state)
     return new_socket
