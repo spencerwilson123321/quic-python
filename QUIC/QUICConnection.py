@@ -19,8 +19,6 @@ class ConnectionContext:
         self.peer_connection_id = None
         self.local_connection_id = None
         self.connected = False
-        self.next_packet_number = 1            # Used for sending.
-        self.last_packet_number_received = 0   # Used for receiving.
         
     
     def set_peer_connection_id(self, conn_id: int):
@@ -62,8 +60,3 @@ class ConnectionContext:
     def set_connected(self, value: bool):
         self.connected = value
 
-
-    def get_next_packet_number(self) -> int:
-        num = self.next_packet_number
-        self.next_packet_number += 1
-        return num
