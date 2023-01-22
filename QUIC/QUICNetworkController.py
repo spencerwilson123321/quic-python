@@ -1,5 +1,5 @@
 from .QUICPacketParser import parse_packet_bytes, PacketParserError
-from .QUICPacket import Packet
+from .QUICPacket import Packet, HT_DATA, FT_STREAM, FT_ACK, StreamFrame
 from socket import socket
 UDPSocket = socket
 
@@ -71,6 +71,37 @@ MINIMUM_CONGESTION_WINDOW = MAX_DATAGRAM_SIZE*2  # Minimum window is 2 times max
 
 # Detecting Loss:
 
+class Stream:
+
+    def __init__(self, stream_id: int):
+        self.stream_id = stream_id
+        self.data = b""
+        self.offset = 0
+        self.buffered_frames: list[StreamFrame] = []
+
+    def buffer(self, frame: StreamFrame):
+        self.buffered_frames.append(frame)
+
+    def write(self, new_data: bytes):
+        self.offset += len(new_data)
+        self.data += new_data
+        self.process_buffered_frames()
+
+    def process_buffered_frames(self):
+        frames_to_remove = []
+        for frame in self.buffered_frames:
+            if self.offset == frame.offset:
+                self.data += frame.data
+                self.offset += len(frame.data)
+                frames_to_remove.append(frame)
+        for frame in frames_to_remove:
+            self.buffered_frames.remove(frame)
+
+    def read(self, num_bytes: int) -> bytes:
+        data = self.data[0:num_bytes]
+        self.data = self.data[num_bytes:]
+        return data
+
 
 class QUICNetworkController:
     """
@@ -92,28 +123,82 @@ class QUICNetworkController:
         self._sender_side_controller = QUICSenderSideController()
         self._streams = dict() # Key: Stream ID (int) | Value: Stream object
 
+
+    def create_stream(self, stream_id: int) -> None:
+        self._streams[stream_id] = Stream(stream_id=stream_id)
+
+
     def send_stream_data(self):
         pass
 
-    def read_stream_data(self, stream_id: int, num_bytes: int):
-        # First, we need to receive all new packets in queue currently,
-        # and process each one.
-        packets = self.receive_new_packets()
-        self.process_packets(packets)
-        return b""
 
-    def receive_new_packets(self, socket: UDPSocket):
+    def read_stream_data(self, stream_id: int, num_bytes: int, udp_socket: socket):
+        """
+            This function will block until at least some data has been read.
+        """
+        data_not_read = True
+        data = b""
+        while data_not_read:
+            # First, we need to receive all new packets in kernel queue,
+            # and process each one.
+            packets = self.receive_new_packets(udp_socket)
+            self.process_packets(packets)
+
+            stream = self._streams[stream_id]
+            data += stream.read(num_bytes)
+            self._streams[stream_id] = stream
+            if data:
+                data_not_read = False
+        return data
+
+
+    def receive_new_packets(self, socket: UDPSocket, block=False):
         packets: list[Packet] = []
         datagrams: list[bytes] = []
-        socket.setblocking(0)
+        socket.setblocking(block)
         while True:
-            datagram = socket.recv(4096)
-            break
+            try:
+                datagram, _ = socket.recvfrom(4096)
+                datagrams.append(datagram)
+            except BlockingIOError:
+                break
+        for datagram in datagrams:
+            packet = parse_packet_bytes(datagram)
+            packets.append(packet)
         return packets
-    
+
+
+    def is_active_stream(self, stream_id: int) -> bool:
+        return stream_id in self._streams
+
+
+    def process_data_packet(self, packet: Packet) -> None:
+        for frame in packet.frames:
+            if frame.type == FT_STREAM:
+                frame: StreamFrame = frame
+                if self.is_active_stream(frame.stream_id):
+                    stream = self._streams[frame.stream_id]
+                    if frame.offset != stream.offset:
+                        stream.buffer(frame)
+                    else:
+                        stream.write(frame.data)
+                    self._streams[frame.stream_id] = stream
+                else:
+                    # If the stream doesn't exist, then discard the frame.
+                    continue
+            if frame.type == FT_ACK:
+                pass
+
+
     def process_packets(self, packets: list[Packet]) -> None:
         # TODO: Implement processing packet logic.
-        pass
+        for packet in packets:
+            # Packets could be short header or long header.
+            # Short header packets would indicate stream data or acks.
+            # Long header packets indicate control operations.
+            if packet.header.type == HT_DATA: # If short header
+                self.process_data_packet(packet)
+
 
 class QUICSenderSideController:
     """

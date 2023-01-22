@@ -22,7 +22,7 @@ class QUICSocket:
 
     def recv(self, stream_id: int, num_bytes: int):
         # This call should block.
-        data = self._network_controller.read_stream_data(stream_id, num_bytes)
+        data = self._network_controller.read_stream_data(stream_id, num_bytes, self.get_udp_socket())
         return data
 
 
@@ -130,6 +130,7 @@ def create_connection(address: tuple) -> QUICSocket:
     new_socket.set_connection_state(connection_state)
     new_socket.set_encryption_state(encryption_state)
     new_socket.set_udp_socket(udp_socket)
+    new_socket._network_controller.create_stream(stream_id = 1)
     return new_socket
 
 
@@ -194,4 +195,5 @@ class QUICListener:
         # Set the connection and encryption state for the new socket.
         new_socket.set_connection_state(connection_state)
         new_socket.set_encryption_state(encryption_state)
+        new_socket._network_controller.create_stream(stream_id = 1)
         return new_socket
