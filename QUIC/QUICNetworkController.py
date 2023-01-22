@@ -1,5 +1,7 @@
 from .QUICPacketParser import parse_packet_bytes, PacketParserError
-
+from .QUICPacket import Packet
+from socket import socket
+UDPSocket = socket
 
 # Congestion Controller States
 SLOW_START = 1
@@ -68,7 +70,6 @@ MINIMUM_CONGESTION_WINDOW = MAX_DATAGRAM_SIZE*2  # Minimum window is 2 times max
 # Each time an rtt sample is taken, we must potentially update min_rtt.
 
 # Detecting Loss:
-# 
 
 
 class QUICNetworkController:
@@ -88,38 +89,24 @@ class QUICNetworkController:
 
 
     def __init__(self):
-        self._receiver_side_controller = QUICReceiverSideController()
         self._sender_side_controller = QUICSenderSideController()
         self._streams = dict() # Key: Stream ID (int) | Value: Stream object
-
 
     def send_stream_data(self):
         pass
 
-
     def read_stream_data(self):
         pass
-    
 
-class QUICReceiverSideController:
-    """
-        This class needs a function that reads all datagrams from the UDP socket buffer, and converts them into QUIC packets
-        and then returns the QUIC packets so that they can be processed by the NetworkController.
-    """
-
-    def __init__(self):
-        pass
-
-    def retrieve_all_quic_packets(self):
-        """
-            Read all datagrams from the given UDP socket.
-            Parse the datagrams into QUIC Packets.
-            Return the parsed QUIC Packets to the NetworkController
-        """
-        packets = []
-
+    def receive_new_packets(self, socket: UDPSocket):
+        packets: list[Packet] = []
+        datagrams: list[bytes] = []
+        socket.setblocking(0)
+        while True:
+            datagram = socket.recv(4096)
+            break
         return packets
-
+    
 
 class QUICSenderSideController:
     """
