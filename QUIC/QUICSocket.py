@@ -144,61 +144,65 @@ def create_connection(address: tuple) -> QUICSocket:
     return new_socket
 
 
-def accept_connection(listening_socket: socket, server_address: tuple):
-    """
-        This function should accept a connection and return 
-        a new QUICSocket for the connection.
-    """
+class QUICListener:
 
-    # Create a new connection context for this new connection.
-    new_socket = QUICSocket()
-    connection_state = ConnectionContext()
-    encryption_state = EncryptionContext()
+    def __init__(self, address: tuple):
+        self.address = address
+        self.udp_socket = socket(AF_INET, SOCK_DGRAM)
+        self.udp_socket.bind(address)
 
-    # Read a datagram from the UDP socket.
-    packet_bytes, addr = listening_socket.recvfrom(4096)
-    
-    # Try to parse the bytes, if it fails then this likely was not a QUIC packet.
-    try:
-        packet = parse_packet_bytes(packet_bytes)
-    except PacketParserError:
-        print("Not a QUIC packet.")
+    def accept(self) -> QUICSocket:
+        """
+            This function should accept a connection and return 
+            a new QUICSocket for the connection.
+        """
+        # Create a new connection context for this new connection.
+        new_socket = QUICSocket()
+        connection_state = ConnectionContext()
+        encryption_state = EncryptionContext()
 
-    # Check if the packet is an initial type packet.
-    if packet.header.type != HT_INITIAL:
-        print("Not an initial packet.")
-        exit(1)
-    
-    # Set the peer connection ID in the connection context
-    # to the source connection ID of the initial packet.
-    connection_state.set_peer_connection_id(packet.header.source_connection_id)
-    connection_state.set_local_connection_id(create_connection_id())
-    connection_state.set_local_address(server_address)
-    connection_state.set_peer_address(addr)
-    connection_state.set_connected(True)
+        # Read a datagram from the UDP socket.
+        packet_bytes, addr = self.udp_socket.recvfrom(4096)
+        
+        # Try to parse the bytes, if it fails then this likely was not a QUIC packet.
+        try:
+            packet = parse_packet_bytes(packet_bytes)
+        except PacketParserError:
+            print("Not a QUIC packet.")
 
-    # Create the response packets:
-    initial_header = LongHeader(
-        type=HT_INITIAL, 
-        destination_connection_id=connection_state.peer_connection_id, 
-        source_connection_id=connection_state.local_connection_id,
-        packet_number=0)
-    handshake_header = LongHeader(
-        type=HT_HANDSHAKE,
-        destination_connection_id=connection_state.peer_connection_id,
-        source_connection_id=connection_state.local_connection_id,
-        packet_number=0)
-    packet1 = Packet(header=initial_header, frames=[])
-    packet2 = Packet(header=handshake_header, frames=[])
+        # Check if the packet is an initial type packet.
+        if packet.header.type != HT_INITIAL:
+            print("Not an initial packet.")
+            exit(1)
+        
+        # Set the peer connection ID in the connection context
+        # to the source connection ID of the initial packet.
+        connection_state.set_peer_connection_id(packet.header.source_connection_id)
+        connection_state.set_local_connection_id(create_connection_id())
+        connection_state.set_local_address(self.address)
+        connection_state.set_peer_address(addr)
+        connection_state.set_connected(True)
 
-    # Send the response packets.
-    sock = new_socket.get_udp_socket()
-    sock.sendto(packet1.raw(), connection_state.get_peer_address())
-    sock.sendto(packet2.raw(), connection_state.get_peer_address())
+        # Create the response packets:
+        initial_header = LongHeader(
+            type=HT_INITIAL, 
+            destination_connection_id=connection_state.peer_connection_id, 
+            source_connection_id=connection_state.local_connection_id,
+            packet_number=0)
+        handshake_header = LongHeader(
+            type=HT_HANDSHAKE,
+            destination_connection_id=connection_state.peer_connection_id,
+            source_connection_id=connection_state.local_connection_id,
+            packet_number=0)
+        packet1 = Packet(header=initial_header, frames=[])
+        packet2 = Packet(header=handshake_header, frames=[])
 
-    # Set the connection and encryption state for the new socket.
-    new_socket.set_connection_state(connection_state)
-    new_socket.set_encryption_state(encryption_state)
-    return new_socket
+        # Send the response packets.
+        sock = new_socket.get_udp_socket()
+        sock.sendto(packet1.raw(), connection_state.get_peer_address())
+        sock.sendto(packet2.raw(), connection_state.get_peer_address())
 
-
+        # Set the connection and encryption state for the new socket.
+        new_socket.set_connection_state(connection_state)
+        new_socket.set_encryption_state(encryption_state)
+        return new_socket
