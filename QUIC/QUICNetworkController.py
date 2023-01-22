@@ -95,8 +95,12 @@ class QUICNetworkController:
     def send_stream_data(self):
         pass
 
-    def read_stream_data(self):
-        pass
+    def read_stream_data(self, stream_id: int, num_bytes: int):
+        # First, we need to receive all new packets in queue currently,
+        # and process each one.
+        packets = self.receive_new_packets()
+        self.process_packets(packets)
+        return b""
 
     def receive_new_packets(self, socket: UDPSocket):
         packets: list[Packet] = []
@@ -107,6 +111,9 @@ class QUICNetworkController:
             break
         return packets
     
+    def process_packets(self, packets: list[Packet]) -> None:
+        # TODO: Implement processing packet logic.
+        pass
 
 class QUICSenderSideController:
     """

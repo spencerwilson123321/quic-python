@@ -5,19 +5,6 @@ from .QUICPacket import *
 from .QUICNetworkController import QUICNetworkController, parse_packet_bytes, PacketParserError
 
 
-# class QUICListener:
-
-#     def __init__(self, address: tuple):
-#         self._listening_socket = socket(AF_INET, SOCK_DGRAM)
-#         self._listening_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-#         self._server_address = (address)
-#         self._listening_socket.bind(("", address[1]))
-
-
-#     def accept(self):
-#         return accept_connection(self._listening_socket, self._server_address)
-
-
 class QUICSocket:
 
     def __init__(self):
