@@ -14,11 +14,6 @@ MAX_INT = 4294967295              # 4 bytes max - Use I in struct.pack
 MAX_SHORT = 65535                 # 2 bytes max - Use H in struct.pack
 MAX_CHAR = 255                    # 1 byte max  - Use B in struct.pack
 
-
-# HEADER INFO:
-# HF_LONG = 0x80
-# HF_SHORT = 0x00
-
 HT_INITIAL = 0x80
 HT_HANDSHAKE = 0x82
 HT_RETRY = 0x83
@@ -77,10 +72,7 @@ STR_HANDSHAKEDONE = "HANDSHAKEDONE"
 
 # ------------------ EXCEPTIONS -----------------
 
-class ShortValueError(Exception): pass
-class LongValueError(Exception): pass
-class IntValueError(Exception): pass
-class CharValueError(Exception): pass
+class InvalidArgumentException(Exception): pass
 
 
 # ------------------ FUNCTIONS ------------------
@@ -88,33 +80,33 @@ class CharValueError(Exception): pass
 
 def check_long_type(var_name: str, var: int) -> None:
     if var < 0:
-        raise LongValueError(f"Variable '{var_name}' cannot be negative. '{var_name}' value: {var}")
+        raise InvalidArgumentException(f"Variable '{var_name}' cannot be negative. '{var_name}' value: {var}")
     if var > MAX_LONG:
-        raise LongValueError(f"Variable '{var_name}' cannot be greater than {MAX_LONG}. '{var_name}' value: {var}")
+        raise InvalidArgumentException(f"Variable '{var_name}' cannot be greater than {MAX_LONG}. '{var_name}' value: {var}")
     return None
 
 
 def check_int_type(var_name: str, var: int) -> None:
     if var < 0:
-        raise IntValueError(f"Variable '{var_name}' cannot be negative. '{var_name}' value: {var}")
+        raise InvalidArgumentException(f"Variable '{var_name}' cannot be negative. '{var_name}' value: {var}")
     if var > MAX_INT:
-        raise IntValueError(f"Variable '{var_name}' cannot be greater than {MAX_INT}. '{var_name}' value: {var}")
+        raise InvalidArgumentException(f"Variable '{var_name}' cannot be greater than {MAX_INT}. '{var_name}' value: {var}")
     return None
 
 
 def check_short_type(var_name: str, var: int) -> None:
     if var < 0:
-        raise ShortValueError(f"Variable '{var_name}' cannot be negative. '{var_name}' value: {var}")
+        raise InvalidArgumentException(f"Variable '{var_name}' cannot be negative. '{var_name}' value: {var}")
     if var > MAX_SHORT:
-        raise ShortValueError(f"Variable '{var_name}' cannot be greater than {MAX_SHORT}. '{var_name}' value: {var}")
+        raise InvalidArgumentException(f"Variable '{var_name}' cannot be greater than {MAX_SHORT}. '{var_name}' value: {var}")
     return None
 
 
 def check_char_type(var_name: str, var: int) -> None:
     if var < 0:
-        raise CharValueError(f"Variable '{var_name}' cannot be negative. '{var_name}' value: {var}")
+        raise InvalidArgumentException(f"Variable '{var_name}' cannot be negative. '{var_name}' value: {var}")
     if var > MAX_CHAR:
-        raise ShortValueError(f"Variable '{var_name}' cannot be greater than {MAX_CHAR}. '{var_name}' value: {var}")
+        raise InvalidArgumentException(f"Variable '{var_name}' cannot be greater than {MAX_CHAR}. '{var_name}' value: {var}")
     return None
 
 
@@ -556,9 +548,17 @@ class LongHeader:
                 packet_number=0
                 ):
 
+        if not isinstance(destination_connection_id, int):
+            raise TypeError(f"destination_connection_id expected type int but got type {type(destination_connection_id)}")
+
+        if not isinstance(source_connection_id, int):
+            raise TypeError(f"source_connection_id expected type int but got type {type(source_connection_id)}")
+
+        if not isinstance(packet_number, int):
+            raise TypeError(f"packet_number expected type int but got type {type(packet_number)}")
+
         if type not in [HT_INITIAL, HT_HANDSHAKE, HT_RETRY]:
-            print(f"Invalid long header type received: {type}")
-            exit(1)
+            raise(InvalidArgumentException(f"Invalid long header type received: {type}"))
 
         check_int_type("destination_connection_id", destination_connection_id)
         check_int_type("source_connection_id", source_connection_id)
@@ -607,7 +607,13 @@ class ShortHeader():
         the handshake is performed.
     """
 
-    def __init__(self, destination_connection_id, packet_number):
+    def __init__(self, destination_connection_id: int, packet_number: int):
+
+        if not isinstance(destination_connection_id, int):
+            raise TypeError(f"destination_connection_id expected type int but got type {type(destination_connection_id)}")
+
+        if not isinstance(packet_number, int):
+            raise TypeError(f"packet_number expected type int but got type {type(packet_number)}")
 
         check_int_type("destination_connection_id", destination_connection_id)
         check_int_type("packet_number", packet_number)
