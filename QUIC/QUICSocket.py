@@ -5,17 +5,17 @@ from .QUICPacket import *
 from .QUICNetworkController import QUICNetworkController, parse_packet_bytes, PacketParserError
 
 
-class QUICListener:
+# class QUICListener:
 
-    def __init__(self, address: tuple):
-        self._listening_socket = socket(AF_INET, SOCK_DGRAM)
-        self._listening_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        self._server_address = (address)
-        self._listening_socket.bind(("", address[1]))
+#     def __init__(self, address: tuple):
+#         self._listening_socket = socket(AF_INET, SOCK_DGRAM)
+#         self._listening_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+#         self._server_address = (address)
+#         self._listening_socket.bind(("", address[1]))
 
 
-    def accept(self):
-        return accept_connection(self._listening_socket, self._server_address)
+#     def accept(self):
+#         return accept_connection(self._listening_socket, self._server_address)
 
 
 class QUICSocket:
@@ -32,9 +32,11 @@ class QUICSocket:
         # self._network_controller.send_stream_data(self._connection_context, self._encryption_context, stream_id, data)
         pass
 
+
     def recv(self, stream_id: int, num_bytes: int):
-        # self._network_controller.read_stream_data()
-        pass
+        # This call should block.
+        data = self._network_controller.read_stream_data(stream_id, num_bytes)
+        return data
 
 
     def shutdown(self):
