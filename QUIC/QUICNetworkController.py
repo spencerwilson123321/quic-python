@@ -25,6 +25,51 @@ MINIMUM_CONGESTION_WINDOW = MAX_DATAGRAM_SIZE*2  # Minimum window is 2 times max
 # For each full congestion window amount of bytes acknowledged, increase the congestion window by 1 maximum datagram size.
 # If a packet is lost, then enter recovery.
 
+# Ack-eliciting Frames:
+# Frames other than ACK, PADDING, CONNECTION_CLOSE are ack-eliciting.
+
+# Ack-eliciting Packets:
+# Packets that contain ack-eliciting frames elicit an ACK from the receiver 
+# within the maximum acknowledgement delay.
+
+# In-flight Packets:
+# Packets are considered in-flight when they are ack-eliciting and they
+# have been sent but not acknowledged or declared lost.
+
+# Congestion Control Important Information:
+# --> All packets must be acknowledged.
+# --> Packets with frames other than CONNECTION_CLOSE and ACK count towards bytes in flight.
+# --> 
+
+# Sender Side Congestion Control:
+# Send all packets that you can while staying below the congestion control limits.
+# Must track how many bytes are in flight with each packet sent.
+# Must store packets in a buffer until they get acknowledged.
+# When a packet is considered lost, resend the packets frames in a new packet.
+
+# Loss Epoch
+# When a packet is lost, a timer is started called "loss epoch".
+# When a packet sent after the loss epoch has started is acknowledged,
+# then the loss epoch ends.
+
+# RTT Measurement:
+# Track when each packet is sent.
+# Track when each packet is acked.
+# These values are used as an RTT sample.
+# BUT we also need to follow these rules:
+# - The largest acknowledged packet number must be newly acknowledged.
+# - At least one of the newly acknowledged packets was ack-eliciting.
+
+# latest_rtt = ack_time - send_time_of_largest_acked.
+
+# Minimum RTT:
+# min_rtt is tracked and represents the minimum rtt observed.
+# Can be used by loss detection to reject implausibly small RTT samples.
+# Each time an rtt sample is taken, we must potentially update min_rtt.
+
+# Detecting Loss:
+# 
+
 
 class QUICNetworkController:
     """
@@ -45,11 +90,16 @@ class QUICNetworkController:
     def __init__(self):
         self._receiver_side_controller = QUICReceiverSideController()
         self._sender_side_controller = QUICSenderSideController()
+        self._streams = dict() # Key: Stream ID (int) | Value: Stream object
 
 
     def send_stream_data(self):
         pass
 
+
+    def read_stream_data(self):
+        pass
+    
 
 class QUICReceiverSideController:
     """
@@ -61,6 +111,11 @@ class QUICReceiverSideController:
         pass
 
     def retrieve_all_quic_packets(self):
+        """
+            Read all datagrams from the given UDP socket.
+            Parse the datagrams into QUIC Packets.
+            Return the parsed QUIC Packets to the NetworkController
+        """
         packets = []
 
         return packets
@@ -80,6 +135,12 @@ class QUICSenderSideController:
         self.min_rtt = float('inf') # Must be set to the first rtt sample and then set to the lesser of latest_rtt and min_rtt on all other samples.
         self.smoothed_rtt = 0
         self.rtt_var = 0
+    
+
+    def send_packet():
+        # Send packets based on the internal congestion control state.
+
+        pass
 
 
     def is_in_slow_start(self):
