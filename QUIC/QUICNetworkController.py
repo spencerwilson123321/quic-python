@@ -187,7 +187,9 @@ class QUICNetworkController:
                     # If the stream doesn't exist, then discard the frame.
                     continue
             if frame.type == FT_ACK:
+                # TODO: implement code for handling ack frames.
                 pass
+            # TODO: Add checks for other frame types i.e. StreamClose, ConnectionClose, etc.
 
 
     def process_packets(self, packets: list[Packet]) -> None:
