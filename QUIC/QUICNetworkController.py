@@ -12,6 +12,7 @@ CONGESTION_AVOIDANCE = 3
 # Congestion Controller Data
 INITIAL_SLOW_START_THRESHOLD = float('inf')
 MAX_DATAGRAM_SIZE = 65507
+SAFE_DATAGRAM_PAYLOAD_SIZE = 512 # bytes
 INITIAL_CONGESTION_WINDOW = MAX_DATAGRAM_SIZE*10 # Initial window is 10 times max datagram size RFC 9002
 MINIMUM_CONGESTION_WINDOW = MAX_DATAGRAM_SIZE*2  # Minimum window is 2 times max datagram size RFC 9002
 
@@ -80,13 +81,56 @@ class QUICPacketizer:
     """
 
     def __init__(self):
-        pass
+        self._next_packet_number = 0
+    
 
-    def packetize(self, bytes):
-        pass
+    def get_next_packet_number(self):
+        next = self._next_packet_number
+        self._next_packet_number +=1
+        return next
 
 
-class Stream:
+    def packetize_stream_data(self, stream_id: int, data: bytes, connection_context: ConnectionContext, send_streams: dict) -> list[Packet]:
+        packets = []
+        MAX_ALLOWED = SAFE_DATAGRAM_PAYLOAD_SIZE-LONG_HEADER_SIZE-STREAM_FRAME_SIZE
+        # If the length of this data would go over the safe datagram size - long header size - stream frame size,
+        # then we need to split this data into multiple QUIC packets.
+        if len(data) > MAX_ALLOWED:
+            bytes_written = 0
+            while bytes_written < len(data):
+                data_chunk = data[0:MAX_ALLOWED]
+                hdr = ShortHeader(
+                    destination_connection_id=connection_context.get_peer_connection_id(), 
+                    packet_number=self.get_next_packet_number())
+                frames = [StreamFrame(stream_id=stream_id, offset=send_streams[stream_id].get_offset(), length=len(data_chunk), data=data_chunk)]
+                packets.append(Packet(header=hdr, frames=frames))
+                send_streams[stream_id].update_offset(len(data_chunk))
+                data = data[MAX_ALLOWED:]
+                bytes_written += len(data_chunk)
+        else:
+            hdr = ShortHeader(
+                destination_connection_id=connection_context.get_peer_connection_id(), 
+                packet_number=self.get_next_packet_number())
+            frames = [StreamFrame(stream_id=stream_id, offset=send_streams[stream_id].get_offset(), length=len(data), data=data)]
+            packets.append(Packet(header=hdr, frames=frames))
+            send_streams[stream_id].update_offset(len(data))
+        return packets
+
+
+class SendStream:
+
+    def __init__(self, stream_id: int):
+        self.stream_id = stream_id
+        self.offset = 0
+    
+    def get_offset(self) -> int:
+        return self.offset
+    
+    def update_offset(self, data_length: int) -> None:
+        self.offset += data_length
+
+
+class ReceiveStream:
 
     def __init__(self, stream_id: int):
         self.stream_id = stream_id
@@ -138,9 +182,10 @@ class QUICNetworkController:
         self._connection_context: ConnectionContext | None = None
         self._sender_side_controller = QUICSenderSideController()
         self._packetizer = QUICPacketizer()
-        self._streams = dict() # Key: Stream ID (int) | Value: Stream object
+        self._receive_streams = dict() # Key: Stream ID (int) | Value: Stream object
+        self._send_streams = dict()
 
-    
+
     def set_connection_state(self, connection_context: ConnectionContext) -> None:
         self._connection_context = connection_context
     
@@ -150,11 +195,13 @@ class QUICNetworkController:
 
 
     def create_stream(self, stream_id: int) -> None:
-        self._streams[stream_id] = Stream(stream_id=stream_id)
+        self._receive_streams[stream_id] = ReceiveStream(stream_id=stream_id)
+        self._send_streams[stream_id] = SendStream(stream_id=stream_id)
 
 
-    def send_stream_data(self):
-        pass
+    def send_stream_data(self, stream_id: int, data: bytes, udp_socket: socket):
+        packets: list[Packet] = self._packetizer.packetize_stream_data(stream_id, data, self._connection_context, self._send_streams)
+        print(packets)
 
 
     def read_stream_data(self, stream_id: int, num_bytes: int, udp_socket: socket):
@@ -169,9 +216,9 @@ class QUICNetworkController:
             packets = self.receive_new_packets(udp_socket)
             self.process_packets(packets)
 
-            stream = self._streams[stream_id]
+            stream = self._receive_streams[stream_id]
             data += stream.read(num_bytes)
-            self._streams[stream_id] = stream
+            self._receive_streams[stream_id] = stream
             if data:
                 data_not_read = False
         return data
@@ -194,7 +241,7 @@ class QUICNetworkController:
 
 
     def is_active_stream(self, stream_id: int) -> bool:
-        return stream_id in self._streams
+        return stream_id in self._receive_streams
 
 
     def process_short_header_packet(self, packet: Packet) -> None:
@@ -202,12 +249,12 @@ class QUICNetworkController:
             if frame.type == FT_STREAM:
                 frame: StreamFrame = frame
                 if self.is_active_stream(frame.stream_id):
-                    stream = self._streams[frame.stream_id]
+                    stream = self._receive_streams[frame.stream_id]
                     if frame.offset != stream.offset:
                         stream.buffer(frame)
                     else:
                         stream.write(frame.data)
-                    self._streams[frame.stream_id] = stream
+                    self._receive_streams[frame.stream_id] = stream
                 else:
                     # If the stream doesn't exist, then discard the frame.
                     continue
