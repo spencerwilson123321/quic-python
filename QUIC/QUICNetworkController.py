@@ -1,5 +1,6 @@
 from .QUICPacketParser import parse_packet_bytes, PacketParserError
-from .QUICPacket import Packet, HT_DATA, FT_STREAM, FT_ACK, StreamFrame
+from .QUICPacket import *
+from .QUICConnection import ConnectionContext
 from socket import socket
 UDPSocket = socket
 
@@ -71,6 +72,20 @@ MINIMUM_CONGESTION_WINDOW = MAX_DATAGRAM_SIZE*2  # Minimum window is 2 times max
 
 # Detecting Loss:
 
+class QUICPacketizer:
+    """
+        Manages transmission order of packets:
+        1. Manages which packet number to use next. --> This is just an incrementing counter.
+        2. Constructs data packets containing stream frames.
+    """
+
+    def __init__(self):
+        pass
+
+    def packetize(self, bytes):
+        pass
+
+
 class Stream:
 
     def __init__(self, stream_id: int):
@@ -120,8 +135,18 @@ class QUICNetworkController:
 
 
     def __init__(self):
+        self._connection_context: ConnectionContext | None = None
         self._sender_side_controller = QUICSenderSideController()
+        self._packetizer = QUICPacketizer()
         self._streams = dict() # Key: Stream ID (int) | Value: Stream object
+
+    
+    def set_connection_state(self, connection_context: ConnectionContext) -> None:
+        self._connection_context = connection_context
+    
+
+    def get_connection_state(self) -> ConnectionContext:
+        return self._connection_context 
 
 
     def create_stream(self, stream_id: int) -> None:
@@ -172,7 +197,7 @@ class QUICNetworkController:
         return stream_id in self._streams
 
 
-    def process_data_packet(self, packet: Packet) -> None:
+    def process_short_header_packet(self, packet: Packet) -> None:
         for frame in packet.frames:
             if frame.type == FT_STREAM:
                 frame: StreamFrame = frame
@@ -190,6 +215,11 @@ class QUICNetworkController:
                 # TODO: implement code for handling ack frames.
                 pass
             # TODO: Add checks for other frame types i.e. StreamClose, ConnectionClose, etc.
+    
+
+    def process_long_header_packet(self, packet: Packet) -> None:
+        # TODO: Implement long header packet processing logic.
+        pass
 
 
     def process_packets(self, packets: list[Packet]) -> None:
@@ -199,7 +229,10 @@ class QUICNetworkController:
             # Short header packets would indicate stream data or acks.
             # Long header packets indicate control operations.
             if packet.header.type == HT_DATA: # If short header
-                self.process_data_packet(packet)
+                self.process_short_header_packet(packet)
+            elif packet.header.type in [HT_INITIAL, HT_HANDSHAKE, HT_RETRY]:
+                self.process_long_header_packet(packet)
+
 
 
 class QUICSenderSideController:
@@ -208,29 +241,31 @@ class QUICSenderSideController:
     """
 
     def __init__(self):
-        self.sender_state = SLOW_START
-        self.congestion_window = INITIAL_CONGESTION_WINDOW
-        self.slow_start_threshold = INITIAL_SLOW_START_THRESHOLD # Initially set to infinity.
-        self.loss_epoch = 0
-        self.send_time_of_largested_acked = 0
-        self.min_rtt = float('inf') # Must be set to the first rtt sample and then set to the lesser of latest_rtt and min_rtt on all other samples.
-        self.smoothed_rtt = 0
-        self.rtt_var = 0
+        self._unacknowledged_packets: list[Packet] = []
+        self.sender_state: int = SLOW_START
+        self.congestion_window: int = INITIAL_CONGESTION_WINDOW
+        self.slow_start_threshold: int = INITIAL_SLOW_START_THRESHOLD # Initially set to infinity.
+        self.loss_epoch: float = 0.0
+        self.send_time_of_largested_acked: float = 0.0
+        self.min_rtt: float = float('inf')
+        self.smoothed_rtt: float = 0.0
+        self.rtt_var: float = 0.0
     
 
-    def send_packet():
+    def send_packets(self, packets: list[Packet]) -> None:
         # Send packets based on the internal congestion control state.
+        for packet in packets:
+            # Perform congestion control stuff?
+            self.transmit(packet)
 
-        pass
 
-
-    def is_in_slow_start(self):
+    def is_in_slow_start(self) -> bool:
         if self.congestion_window < self.slow_start_threshold:
             return True
         return False
 
 
-    def calculate_rtt_sample(self, ack_time: int):
+    def calculate_rtt_sample(self, ack_time: int) -> float:
         latest_rrt = ack_time - self.send_time_of_largest_acked
         if latest_rrt < self.min_rtt: 
             self.min_rtt = latest_rrt
