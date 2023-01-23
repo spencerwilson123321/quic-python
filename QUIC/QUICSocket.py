@@ -16,8 +16,7 @@ class QUICSocket:
 
 
     def send(self, stream_id: int, data: bytes):
-        # self._network_controller.send_stream_data(self._connection_context, self._encryption_context, stream_id, data)
-        pass
+        self._network_controller.send_stream_data(stream_id, data, self.get_udp_socket())
 
 
     def recv(self, stream_id: int, num_bytes: int):
