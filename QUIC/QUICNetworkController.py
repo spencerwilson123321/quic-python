@@ -200,8 +200,11 @@ class QUICNetworkController:
 
 
     def send_stream_data(self, stream_id: int, data: bytes, udp_socket: socket):
+        # TODO: Implement code for receiving and handling new packets that have arrived in the udp socket.
+
         packets: list[Packet] = self._packetizer.packetize_stream_data(stream_id, data, self._connection_context, self._send_streams)
-        print(packets)
+
+        # TODO: Implement invoking the sendersidecontroller to send the created packets.
 
 
     def read_stream_data(self, stream_id: int, num_bytes: int, udp_socket: socket):
