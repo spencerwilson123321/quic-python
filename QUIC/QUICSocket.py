@@ -48,6 +48,7 @@ class QUICSocket:
 
 
     def set_connection_state(self, connection_state: ConnectionContext):
+        self._network_controller.set_connection_state(connection_state)
         self._connection_context = connection_state
 
 
