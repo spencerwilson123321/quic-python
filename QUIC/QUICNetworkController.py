@@ -72,6 +72,11 @@ MINIMUM_CONGESTION_WINDOW = MAX_DATAGRAM_SIZE*2  # Minimum window is 2 times max
 # Each time an rtt sample is taken, we must potentially update min_rtt.
 
 # Detecting Loss:
+# A packet is deemed lost if it if ack-eliciting, in-flight, and was sent prior to an acknowledged packet.
+# AND
+# The packet was sent K packets before an acknowledged packet.
+# If we do it this way then we don't need to worry as much about estimating rtt values since our implementation
+# is synchronous.
 
 class QUICPacketizer:
     """
@@ -88,6 +93,10 @@ class QUICPacketizer:
         next = self._next_packet_number
         self._next_packet_number +=1
         return next
+    
+
+    def packetize_acknowledgement(self, packet: Packet, connection_context: ConnectionContext) -> Packet:
+        pass
 
 
     def packetize_stream_data(self, stream_id: int, data: bytes, connection_context: ConnectionContext, send_streams: dict) -> list[Packet]:
@@ -184,6 +193,7 @@ class QUICNetworkController:
         self._packetizer = QUICPacketizer()
         self._receive_streams = dict() # Key: Stream ID (int) | Value: Stream object
         self._send_streams = dict()
+        self.buffered_packets = []
 
 
     def set_connection_state(self, connection_context: ConnectionContext) -> None:
@@ -206,8 +216,12 @@ class QUICNetworkController:
 
         # Packetize the stream data.
         packets: list[Packet] = self._packetizer.packetize_stream_data(stream_id, data, self._connection_context, self._send_streams)
+        # Add the currently buffered packets to the list of packets to send.
+        packets = packets + self.buffered_packets
+        self.buffered_packets = []
 
-        # TODO: Implement invoking the sendersidecontroller to send the created packets.
+        # TODO: Implement invoking the sendersidecontroller to send the packets.
+        self._sender_side_controller.send_packets(packets, udp_socket, self._connection_context)
 
 
     def read_stream_data(self, stream_id: int, num_bytes: int, udp_socket: socket):
@@ -221,7 +235,6 @@ class QUICNetworkController:
             # and process each one.
             packets = self.receive_new_packets(udp_socket)
             self.process_packets(packets)
-
             stream = self._receive_streams[stream_id]
             data += stream.read(num_bytes)
             self._receive_streams[stream_id] = stream
@@ -250,7 +263,22 @@ class QUICNetworkController:
         return stream_id in self._receive_streams
 
 
+    def is_ack_eliciting(self, packet: Packet) -> bool:
+        for frame in packet.frames:
+            if frame.type not in [FT_ACK, FT_PADDING, FT_CONNECTIONCLOSE]:
+                return True
+        return False
+
+
+    def send_acknowledgement(self, packet: Packet) -> None:
+        pass
+
+
     def process_short_header_packet(self, packet: Packet) -> None:
+
+        if self.is_ack_eliciting(packet):
+            self.acknowledge(packet)
+
         for frame in packet.frames:
             if frame.type == FT_STREAM:
                 frame: StreamFrame = frame
@@ -285,7 +313,36 @@ class QUICNetworkController:
                 self.process_short_header_packet(packet)
             elif packet.header.type in [HT_INITIAL, HT_HANDSHAKE, HT_RETRY]:
                 self.process_long_header_packet(packet)
+    
 
+    # ------- Congestion Control Events --------------
+
+    def on_packet_loss(self):
+        # Routine that is run in response to packet loss.
+        # If the congestion controller is in SLOW_START:
+            # CongestionController is set to RECOVERY state:
+            # 1. Slow Start Threshold is reduced to half of congestion window.
+            # 2. Recovery timer is started.
+        # If the congestion controller is in RECOVERY already:
+            # 1. The congestion window does not change in response to loss when already in recovery.
+        # If the congestion controller is in CONGESTION_AVOIDANCE:
+            # 1. Slow Start Threshold is reduced to half of congestion window.
+            # 2. Recovery timer is started.
+        pass
+
+
+    def on_acknowledgement(self):
+        # Routine that is run in response to acknowledgment.
+        # SLOW_START:
+            # 1. Increase congestion window by number of bytes acknowledged.
+            # 2. Update bytes in flight.
+        # CONGESTION_AVOIDANCE:
+            # 1. When a full congestion window of bytes is acknowledged, increase the congestion window by one maximum datagram size.
+            # 2. Update bytes in flight.
+        # RECOVERY:
+            # 1. If the packet being acknowledged was sent during the recovery period, then enter congestion avoidance.
+            # 2. If the packet being acknowledged was sent before the recovery period, update bytes in flight.
+        pass
 
 
 class QUICSenderSideController:
@@ -298,18 +355,26 @@ class QUICSenderSideController:
         self.sender_state: int = SLOW_START
         self.congestion_window: int = INITIAL_CONGESTION_WINDOW
         self.slow_start_threshold: int = INITIAL_SLOW_START_THRESHOLD # Initially set to infinity.
+        self.bytes_in_flight = 0
         self.loss_epoch: float = 0.0
         self.send_time_of_largested_acked: float = 0.0
         self.min_rtt: float = float('inf')
         self.smoothed_rtt: float = 0.0
         self.rtt_var: float = 0.0
-    
 
-    def send_packets(self, packets: list[Packet]) -> None:
+
+    def send_packets(self, packets: list[Packet], udp_socket: socket, connection_context: ConnectionContext) -> None:
         # Send packets based on the internal congestion control state.
         for packet in packets:
-            # Perform congestion control stuff?
-            self.transmit(packet)
+            if self.bytes_in_flight < self.congestion_window:
+                udp_socket.sendto(packet.raw(), connection_context.get_peer_address())
+                self.bytes_in_flight += len(packet.raw())
+            else:
+                # Need to receive new packets and alter congestion control state.
+                # 1. Acked packets will reduce bytes in flight which will allow more packets to be sent.
+                # 2. Packet loss will possibly reduce the congestion window further, etc.
+                # 3. 
+                pass
 
 
     def is_in_slow_start(self) -> bool:
@@ -323,5 +388,4 @@ class QUICSenderSideController:
         if latest_rrt < self.min_rtt: 
             self.min_rtt = latest_rrt
         return latest_rrt
-
 
