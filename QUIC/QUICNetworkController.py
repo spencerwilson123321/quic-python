@@ -221,7 +221,7 @@ class QUICNetworkController:
         self.buffered_packets = []
 
         # TODO: Implement invoking the sendersidecontroller to send the packets.
-        could_not_send: list = self.send_packets(packets, udp_socket)
+        could_not_send: list[Packet] = self.send_packets(packets, udp_socket)
         while could_not_send:
             # Reprocess packets that could not be sent.
             packets_to_process = self.receive_new_packets(udp_socket)
@@ -232,6 +232,7 @@ class QUICNetworkController:
     def send_packets(self, packets: list[Packet], udp_socket: socket) -> list[Packet]:
         could_not_send: list[Packet] = []
         for packet in packets:
+            print(packet)
             if self.is_ack_eliciting(packet):
                 # If the packet is ack eliciting,
                 # then send it with congestion control.
