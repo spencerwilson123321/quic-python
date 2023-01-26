@@ -14,11 +14,11 @@ class ConnectionContext:
 
 
     def __init__(self) -> None:
-        self.peer_address = None
-        self.local_address = None
-        self.peer_connection_id = None
-        self.local_connection_id = None
-        self.connected = False
+        self.peer_address: tuple = ()
+        self.local_address: tuple = ()
+        self.peer_connection_id: int = 0
+        self.local_connection_id: int = 0
+        self.connected: bool = False
         
     
     def set_peer_connection_id(self, conn_id: int):
