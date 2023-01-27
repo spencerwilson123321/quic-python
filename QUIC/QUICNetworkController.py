@@ -2,6 +2,8 @@ from .QUICPacketParser import parse_packet_bytes, PacketParserError
 from .QUICPacket import *
 from .QUICConnection import ConnectionContext
 from socket import socket
+import math
+import time
 UDPSocket = socket
 
 # Congestion Controller States
@@ -10,7 +12,7 @@ RECOVERY = 2
 CONGESTION_AVOIDANCE = 3
 
 # Congestion Controller Data
-INITIAL_SLOW_START_THRESHOLD = float('inf')
+INFINITY = math.inf
 MAX_DATAGRAM_SIZE = 65507
 SAFE_DATAGRAM_PAYLOAD_SIZE = 512 # bytes
 INITIAL_CONGESTION_WINDOW = MAX_DATAGRAM_SIZE*10 # Initial window is 10 times max datagram size RFC 9002
@@ -78,6 +80,15 @@ MINIMUM_CONGESTION_WINDOW = MAX_DATAGRAM_SIZE*2  # Minimum window is 2 times max
 # If we do it this way then we don't need to worry as much about estimating rtt values since our implementation
 # is synchronous.
 
+class PacketInfo:
+
+    def __init__(self, in_flight=False, sent_bytes=0, time_sent=0.0, packet_number=0):
+        self.in_flight: bool = in_flight
+        self.sent_bytes: int = sent_bytes
+        self.time_sent: float = time_sent
+        self.packet_number: int = packet_number
+
+
 class QUICPacketizer:
     """
         Manages transmission order of packets:
@@ -87,13 +98,13 @@ class QUICPacketizer:
 
     def __init__(self):
         self._next_packet_number = 0
-    
+
 
     def get_next_packet_number(self):
         next = self._next_packet_number
         self._next_packet_number +=1
         return next
-    
+
 
     def packetize_acknowledgement(self, packet: Packet, connection_context: ConnectionContext) -> Packet:
         pass
@@ -131,10 +142,10 @@ class SendStream:
     def __init__(self, stream_id: int):
         self.stream_id = stream_id
         self.offset = 0
-    
+
     def get_offset(self) -> int:
         return self.offset
-    
+
     def update_offset(self, data_length: int) -> None:
         self.offset += data_length
 
@@ -198,7 +209,7 @@ class QUICNetworkController:
 
     def set_connection_state(self, connection_context: ConnectionContext) -> None:
         self._connection_context = connection_context
-    
+
 
     def get_connection_state(self) -> ConnectionContext | None:
         return self._connection_context 
@@ -245,7 +256,7 @@ class QUICNetworkController:
                     could_not_send.append(packet)
             else:
                 # This is an Ack, Padding, or ConnectionClose packet,
-                self._sender_side_controller.send_packet(packet, udp_socket, self._connection_context)
+                self._sender_side_controller.send_non_ack_eliciting_packet(packet, udp_socket, self._connection_context)
         return could_not_send
 
 
@@ -296,7 +307,8 @@ class QUICNetworkController:
 
 
     def acknowledge_packet(self, packet: Packet) -> None:
-        pass
+        ack_pkt: Packet = self._packetizer.packetize_acknowledgement(packet, self._connection_context)
+        self.send_packets([ack_pkt])
 
 
     def process_short_header_packet(self, packet: Packet) -> None:
@@ -306,24 +318,15 @@ class QUICNetworkController:
 
         for frame in packet.frames:
             if frame.type == FT_STREAM:
-                frame: StreamFrame = frame
-                if self.is_active_stream(frame.stream_id):
-                    stream = self._receive_streams[frame.stream_id]
-                    if frame.offset != stream.offset:
-                        stream.buffer(frame)
-                    else:
-                        stream.write(frame.data)
-                    self._receive_streams[frame.stream_id] = stream
-                else:
-                    # If the stream doesn't exist, then discard the frame.
-                    continue
+                self.on_stream_frame_received(frame)
             if frame.type == FT_ACK:
+                self.on_ack_frame_received(frame)
                 # TODO: implement code for handling ack frames.
                 # TODO: update congestion controller state here.
                 # TODO: also need to detect and handle packet loss.
                 pass
             # TODO: Add checks for other frame types i.e. StreamClose, ConnectionClose, etc.
-    
+
 
     def process_long_header_packet(self, packet: Packet) -> None:
         # TODO: Implement long header packet processing logic.
@@ -342,6 +345,16 @@ class QUICNetworkController:
                 self.process_long_header_packet(packet)
 
 
+    def on_stream_frame_received(self, frame: StreamFrame):
+        if self.is_active_stream(frame.stream_id):
+            stream = self._receive_streams[frame.stream_id]
+            if frame.offset != stream.offset:
+                stream.buffer(frame)
+            else:
+                stream.write(frame.data)
+            self._receive_streams[frame.stream_id] = stream
+
+
     # ------- Congestion Control Events --------------
 
     def on_packet_loss(self):
@@ -357,8 +370,16 @@ class QUICNetworkController:
             # 2. Recovery timer is started.
         pass
 
+    
+    def on_packet_acked(self, packet: Packet):
+        pass
 
-    def on_acknowledgement(self):
+
+    def on_ack_frame_received(self, frame: AckFrame):
+        # This should update the largest acked packet in the sender side controller.
+        # It should be set to max(frame.largest_acknowledged, largest_acknowledged)
+        self._sender_side_controller.update_largest_acked(frame.largest_acknowledged)
+        self._sender_side_controller.remove_from_sent_packets(frame)
         # Routine that is run in response to acknowledgment.
         # SLOW_START:
             # 1. Increase congestion window by number of bytes acknowledged.
@@ -378,27 +399,44 @@ class QUICSenderSideController:
     """
 
     def __init__(self):
-        self._unacknowledged_packets: list[Packet] = []
         self.sender_state: int = SLOW_START
         self.congestion_window: int = INITIAL_CONGESTION_WINDOW
         self.bytes_in_flight = 0
-        self.slow_start_threshold: float = INITIAL_SLOW_START_THRESHOLD # Initially set to infinity.
-        self.loss_epoch: float = 0.0
-        self.send_time_of_largested_acked: float = 0.0
-        self.min_rtt: float = float('inf')
-        self.smoothed_rtt: float = 0.0
-        self.rtt_var: float = 0.0
-        self.packets_sent = []
+        self.slow_start_threshold: float = INFINITY
+        self.largest_acknowledged: int = INFINITY
+        # May not need these timers for this implementation.
+        # self.loss_epoch: float = 0.0
+        # self.send_time_of_largested_acked: float = 0.0
+        # self.min_rtt: float = float('inf')
+        # self.smoothed_rtt: float = 0.0
+        # self.rtt_var: float = 0.0
+        # Key: Packet Number | Value: PacketInfo
+        self.packets_sent: dict[int, PacketInfo] = dict()
+    
+
+    def update_largest_acked(self, new_largest_acknowledged: int) -> None:
+        if self.largest_acknowledged == INFINITY:
+            self.largest_acknowledged = new_largest_acknowledged
+        else:
+            self.largest_acknowledged = max(new_largest_acknowledged, self.largest_acknowledged)
+    
+
+    def remove_from_sent_packets(self, frame: AckFrame) -> None:
+        pass
 
 
     def send_packet_cc(self, packet: Packet, udp_socket: socket, connection_context: ConnectionContext) -> None:
         # Send packets based on the internal congestion control state.
         udp_socket.sendto(packet.raw(), connection_context.get_peer_address())
         self.bytes_in_flight += len(packet.raw())
+        self.packets_sent[packet.header.packet_number] = PacketInfo(time_sent=time.now(), 
+                                                                    in_flight=True, 
+                                                                    sent_bytes=len(packet.raw()), 
+                                                                    packet_number=packet.header.packet_number)
 
 
-    def send_packet(self, packet: Packet, udp_socket: socket, connection_context: ConnectionContext) -> None:
-        # Send packets based on the internal congestion control state.
+    def send_non_ack_eliciting_packet(self, packet: Packet, udp_socket: socket, connection_context: ConnectionContext) -> None:
+        # For non-ack eliciting packets we don't care about congestion control state.
         udp_socket.sendto(packet.raw(), connection_context.get_peer_address())
 
 
