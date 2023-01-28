@@ -114,15 +114,46 @@ class QUICPacketizer:
         return next
 
 
-    def packetize_acknowledgement(self, packet_to_acknowledge: Packet, connection_context: ConnectionContext, largest_packet_seen: int) -> Packet:
+    def packetize_acknowledgement(self, connection_context: ConnectionContext, packet_numbers_received: list[int]) -> Packet:
         hdr = ShortHeader(
             packet_number=self.get_next_packet_number(),
             destination_connection_id=connection_context.get_peer_connection_id())
-        # TODO: Implement code for creating the AckFrame,
-        # I believe that this will require that we track which packet numbers
-        # have been received and which ones have not.
-        # Might need to spend some time thinking of the best structure to hold this data.
-        pkt = Packet()
+
+        # If the received packets list is length 0
+        # We cannot create an ack if we haven't received any packets.
+        if not packet_numbers_received:
+            return None
+
+        # If the received packets list is length 1
+        # Create a simple ack frame.
+        if len(packet_numbers_received) == 1:
+            frames = [AckFrame(largest_acknowledged=packet_numbers_received[0], ack_delay=0, ack_range_count=0, ack_range=[])]
+            return Packet(header=hdr, frames=frames)    
+
+        # If the received packets list is greater than 1.
+        # We sort the packet number list.
+        # Then we incrementally create AckRanges.
+        # In the resulting AckRanges, an AckRange with gap 0 is the most recent AckRange,
+        # from this AckRange we can get first ack range value.
+        packet_numbers_received.sort()
+        print(packet_numbers_received)
+        ranges = []
+        count = 0
+        for i in range(0, len(packet_numbers_received)):
+            count += 1
+            if i == len(packet_numbers_received)-1:
+                ranges.append(AckRange(gap=0, ack_range_length=count))
+                break
+            if packet_numbers_received[i+1] != packet_numbers_received[i]+1:
+                ranges.append(AckRange(gap=packet_numbers_received[i+1] - packet_numbers_received[i] - 1, ack_range_length=count))
+                count = 0
+        
+        first_ack_range = ranges[-1].ack_range_length - 1
+        largest_acknowledged = packet_numbers_received[-1]
+        ranges.remove(ranges[-1])
+
+        frames = [AckFrame(largest_acknowledged=largest_acknowledged, ack_delay=0, ack_range_count=len(ranges), first_ack_range=first_ack_range, ack_range=ranges)]
+        pkt = Packet(header=hdr, frames=frames)
         return pkt
         
 
@@ -224,6 +255,9 @@ class QUICNetworkController:
         self._receive_streams = dict() # Key: Stream ID (int) | Value: Stream object
         self._send_streams = dict()
         self.buffered_packets = []
+
+        self.packet_numbers_received: list[int] = []
+        self.packets_received: list[Packet] = []
 
         # ---- Acknowledgement Data ----
         # self.largest_acknowledged: int = INFINITY
@@ -345,8 +379,11 @@ class QUICNetworkController:
         return False
 
 
-    def acknowledge_packet(self, packet: Packet) -> None:
-        # ack_pkt: Packet = self._packetizer.packetize_acknowledgement(packet, self._connection_context, self.largest_packet_number_received)
+    def create_and_send_acknowledgements(self) -> None:
+        ack_pkt: Packet = self._packetizer.packetize_acknowledgement(self._connection_context, self.packet_numbers_received)
+
+        # 1. Create a packet containing an AckFrame using the currently received/missing packets.
+        # 2. Send the packet.
         # self.send_packets([ack_pkt])
         pass
 
@@ -355,8 +392,9 @@ class QUICNetworkController:
         self.largest_packet_number_received = max(packet.header.packet_number, self.largest_packet_number_received)
 
 
-    def update_received_and_missing_packets(self, packet: Packet) -> None:
-        pass
+    def update_received_packets(self, packet: Packet) -> None:
+        self.packet_numbers_received.append(packet.header.packet_number)
+        self.packets_received.append(packet)
 
 
     def process_short_header_packet_frames(self, packet: Packet) -> None:
@@ -399,9 +437,9 @@ class QUICNetworkController:
             # 3. Store which packet numbers are missing.
             # 4. Send acknowledgement if the packet is ack-eliciting.
             self.update_largest_packet_number_received(packet)
-            self.update_received_and_missing_packets(packet) # TODO implement.
-            if self.is_ack_eliciting(packet):
-                self.acknowledge_packet(packet)              # TODO implement.
+            self.update_received_packets(packet)
+            # if self.is_ack_eliciting(packet):
+            #     self.create_and_send_acknowledgements()             # TODO implement.
 
 
     def on_stream_frame_received(self, frame: StreamFrame):

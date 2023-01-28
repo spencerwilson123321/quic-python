@@ -241,6 +241,9 @@ class AckRange:
         self.gap = gap
         self.ack_range_length = ack_range_length
 
+    def __repr__(self) -> str:
+        return f"Gap: {self.gap}\nAck Range Length: {self.ack_range_length}"
+
     def raw(self) -> bytes:
         return struct.pack("!II", self.gap, self.ack_range_length)
 
@@ -300,6 +303,7 @@ class AckFrame:
         representation += "------ FRAME ------\n"
         representation += f"Type: {frame_type_hex_to_string(self.type)}\n"
         representation += f"Largest Acknowledged: {self.largest_acknowledged}\n"
+        representation += f"First Ack Range: {self.first_ack_range}\n"
         representation += f"ACK Delay: {self.ack_delay}\n"
         representation += f"ACK Range Count: {self.ack_range_count}\n"
         if self.ack_range_count > 0:
