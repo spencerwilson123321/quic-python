@@ -409,6 +409,7 @@ class QUICNetworkController:
 
     def process_packets(self, packets: list[Packet], udp_socket: socket) -> None:
         for packet in packets:
+            print(packet)
             # ---- PROCESS FRAME INFORMATION ----
             # Short Header:
             # 1. Stream Frames
