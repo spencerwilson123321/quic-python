@@ -3,7 +3,7 @@ from .QUICPacket import *
 from .QUICConnection import ConnectionContext
 from socket import socket
 import math
-import time
+from time import time
 UDPSocket = socket
 
 # Congestion Controller States
@@ -435,7 +435,7 @@ class QUICNetworkController:
 
     def on_ack_frame_received(self, frame: AckFrame):
         # 1. Update the sender side controllers' state with the newly acked packets.
-        
+
         # SLOW_START:
             # 1. Increase congestion window by number of bytes acknowledged.
             # 2. Update bytes in flight.
@@ -465,7 +465,7 @@ class QUICSenderSideController:
         # Send packets based on the internal congestion control state.
         udp_socket.sendto(packet.raw(), connection_context.get_peer_address())
         self.bytes_in_flight += len(packet.raw())
-        self.packets_sent[packet.header.packet_number] = PacketSentInfo(time_sent=time.now(), 
+        self.packets_sent[packet.header.packet_number] = PacketSentInfo(time_sent=time(), 
                                                                     in_flight=True, 
                                                                     sent_bytes=len(packet.raw()), 
                                                                     packet_number=packet.header.packet_number)
@@ -474,7 +474,7 @@ class QUICSenderSideController:
     def send_non_ack_eliciting_packet(self, packet: Packet, udp_socket: socket, connection_context: ConnectionContext) -> None:
         # For non-ack eliciting packets we don't care about congestion control state.
         udp_socket.sendto(packet.raw(), connection_context.get_peer_address())
-        self.packets_sent[packet.header.packet_number] = PacketSentInfo(time_sent=time.now(), 
+        self.packets_sent[packet.header.packet_number] = PacketSentInfo(time_sent=time(), 
                                                                     in_flight=False, 
                                                                     sent_bytes=len(packet.raw()), 
                                                                     packet_number=packet.header.packet_number)
