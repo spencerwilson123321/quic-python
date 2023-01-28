@@ -136,7 +136,6 @@ class QUICPacketizer:
         # In the resulting AckRanges, an AckRange with gap 0 is the most recent AckRange,
         # from this AckRange we can get first ack range value.
         packet_numbers_received.sort()
-        print(packet_numbers_received)
         ranges = []
         count = 0
         for i in range(0, len(packet_numbers_received)):
@@ -295,7 +294,7 @@ class QUICNetworkController:
     def send_stream_data(self, stream_id: int, data: bytes, udp_socket: socket):
         # Check for new packets to process and process them.
         packets_to_process = self.receive_new_packets(udp_socket)
-        self.process_packets(packets_to_process)
+        self.process_packets(packets_to_process, udp_socket)
 
         # Packetize the stream data.
         packets: list[Packet] = self._packetizer.packetize_stream_data(stream_id, data, self._connection_context, self._send_streams)
@@ -308,14 +307,13 @@ class QUICNetworkController:
         while could_not_send:
             # Reprocess packets that could not be sent.
             packets_to_process = self.receive_new_packets(udp_socket)
-            self.process_packets(packets_to_process)
+            self.process_packets(packets_to_process, udp_socket)
             could_not_send = self.send_packets(could_not_send, udp_socket)            
-    
+
 
     def send_packets(self, packets: list[Packet], udp_socket: socket) -> list[Packet]:
         could_not_send: list[Packet] = []
         for packet in packets:
-            print(packet)
             if self.is_ack_eliciting(packet):
                 # If the packet is ack eliciting,
                 # then send it with congestion control.
@@ -342,7 +340,7 @@ class QUICNetworkController:
             # First, we need to receive all new packets in kernel queue,
             # and process each one.
             packets = self.receive_new_packets(udp_socket)
-            self.process_packets(packets)
+            self.process_packets(packets, udp_socket)
             stream = self._receive_streams[stream_id]
             data += stream.read(num_bytes)
             self._receive_streams[stream_id] = stream
@@ -378,9 +376,9 @@ class QUICNetworkController:
         return False
 
 
-    def create_and_send_acknowledgements(self) -> None:
+    def create_and_send_acknowledgements(self, udp_socket: socket) -> None:
         ack_pkt: Packet = self._packetizer.packetize_acknowledgement(self._connection_context, self.packet_numbers_received)
-        self.send_packets([ack_pkt])
+        self.send_packets([ack_pkt], udp_socket)
 
 
     def update_largest_packet_number_received(self, packet: Packet) -> None:
@@ -409,9 +407,8 @@ class QUICNetworkController:
         pass
 
 
-    def process_packets(self, packets: list[Packet]) -> None:
+    def process_packets(self, packets: list[Packet], udp_socket: socket) -> None:
         for packet in packets:
-            print(packet)
             # ---- PROCESS FRAME INFORMATION ----
             # Short Header:
             # 1. Stream Frames
@@ -435,7 +432,7 @@ class QUICNetworkController:
             self.update_largest_packet_number_received(packet)
             self.update_received_packets(packet)
             if self.is_ack_eliciting(packet):
-                self.create_and_send_acknowledgements()
+                self.create_and_send_acknowledgements(udp_socket)
 
 
     def on_stream_frame_received(self, frame: StreamFrame):
@@ -463,14 +460,10 @@ class QUICNetworkController:
             # 2. Recovery timer is started.
         pass
 
-    
-    def on_packet_acked(self, packet: Packet):
-        pass
-
 
     def on_ack_frame_received(self, frame: AckFrame):
+        print(f"Ack Frame Received: \n{frame}")
         # 1. Update the sender side controllers' state with the newly acked packets.
-
         # SLOW_START:
             # 1. Increase congestion window by number of bytes acknowledged.
             # 2. Update bytes in flight.
@@ -480,7 +473,6 @@ class QUICNetworkController:
         # RECOVERY:
             # 1. If the packet being acknowledged was sent during the recovery period, then enter congestion avoidance.
             # 2. If the packet being acknowledged was sent before the recovery period, update bytes in flight.
-        pass
 
 
 class QUICSenderSideController:
