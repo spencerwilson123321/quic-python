@@ -139,9 +139,9 @@ class QUICListener:
 
     def __init__(self, address: tuple):
         self.address = address
-        self.udp_socket = socket(AF_INET, SOCK_DGRAM)
-        self.udp_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        self.udp_socket.bind(("", self.address[1]))
+        self.listening_socket = socket(AF_INET, SOCK_DGRAM)
+        self.listening_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        self.listening_socket.bind(("", self.address[1]))
 
 
     def accept(self) -> QUICSocket:
@@ -155,7 +155,7 @@ class QUICListener:
         encryption_state = EncryptionContext()
 
         # Read a datagram from the UDP socket.
-        packet_bytes, addr = self.udp_socket.recvfrom(4096)
+        packet_bytes, addr = self.listening_socket.recvfrom(4096)
         
         # Try to parse the bytes, if it fails then this likely was not a QUIC packet.
         try:
@@ -192,9 +192,10 @@ class QUICListener:
 
         # Send the response packets.
         sock = new_socket.get_udp_socket()
+        sock.bind(connection_state.get_local_address())
+        sock.connect(connection_state.get_peer_address())
         sock.sendto(packet1.raw(), connection_state.get_peer_address())
         sock.sendto(packet2.raw(), connection_state.get_peer_address())
-        sock.bind(("10.0.0.131", 8001))
 
         # Set the connection and encryption state for the new socket.
         new_socket.set_connection_state(connection_state)
