@@ -74,7 +74,7 @@ class QUICSocket:
         return representation
 
 
-def create_connection(address: tuple) -> QUICSocket:
+def create_connection(address: tuple, local_ip_address: str) -> QUICSocket:
 
     # Create a new QUICSocket object.
     new_socket = QUICSocket()
@@ -95,8 +95,10 @@ def create_connection(address: tuple) -> QUICSocket:
     initial_packet = Packet(header=header, frames=frames)
 
     # Send the INITIAL QUIC packet.
+    udp_socket.bind((local_ip_address, udp_socket.getsockname()[1]))
     udp_socket.sendto(initial_packet.raw(), peer_address)
-    local_address = udp_socket.getsockname()
+    # local_address = udp_socket.getsockname()
+    local_address = (local_ip_address, udp_socket.getsockname()[1])
     connection_state.set_local_address(local_address)
 
     # Get INITIAL and HANDSHAKE packets in response.
