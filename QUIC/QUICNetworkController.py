@@ -248,7 +248,6 @@ class QUICNetworkController:
     def __init__(self):
 
 
-
         self._connection_context: ConnectionContext | None = None
         self._sender_side_controller = QUICSenderSideController()
         self._packetizer = QUICPacketizer()
@@ -381,11 +380,7 @@ class QUICNetworkController:
 
     def create_and_send_acknowledgements(self) -> None:
         ack_pkt: Packet = self._packetizer.packetize_acknowledgement(self._connection_context, self.packet_numbers_received)
-
-        # 1. Create a packet containing an AckFrame using the currently received/missing packets.
-        # 2. Send the packet.
-        # self.send_packets([ack_pkt])
-        pass
+        self.send_packets([ack_pkt])
 
 
     def update_largest_packet_number_received(self, packet: Packet) -> None:
@@ -416,6 +411,7 @@ class QUICNetworkController:
 
     def process_packets(self, packets: list[Packet]) -> None:
         for packet in packets:
+            print(packet)
             # ---- PROCESS FRAME INFORMATION ----
             # Short Header:
             # 1. Stream Frames
@@ -438,8 +434,8 @@ class QUICNetworkController:
             # 4. Send acknowledgement if the packet is ack-eliciting.
             self.update_largest_packet_number_received(packet)
             self.update_received_packets(packet)
-            # if self.is_ack_eliciting(packet):
-            #     self.create_and_send_acknowledgements()             # TODO implement.
+            if self.is_ack_eliciting(packet):
+                self.create_and_send_acknowledgements()
 
 
     def on_stream_frame_received(self, frame: StreamFrame):
