@@ -141,7 +141,8 @@ class QUICListener:
         self.address = address
         self.udp_socket = socket(AF_INET, SOCK_DGRAM)
         self.udp_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        self.udp_socket.bind(address)
+        self.udp_socket.bind(("", self.address[1]))
+
 
     def accept(self) -> QUICSocket:
         """
@@ -194,6 +195,7 @@ class QUICListener:
         sock.sendto(packet1.raw(), connection_state.get_peer_address())
         sock.sendto(packet2.raw(), connection_state.get_peer_address())
         sock.connect(connection_state.get_peer_address())
+        sock.bind(connection_state.get_local_address())
 
         # Set the connection and encryption state for the new socket.
         new_socket.set_connection_state(connection_state)

@@ -409,7 +409,6 @@ class QUICNetworkController:
 
     def process_packets(self, packets: list[Packet], udp_socket: socket) -> None:
         for packet in packets:
-            print(packet)
             # ---- PROCESS FRAME INFORMATION ----
             # Short Header:
             # 1. Stream Frames
@@ -463,7 +462,6 @@ class QUICNetworkController:
 
 
     def on_ack_frame_received(self, frame: AckFrame):
-        print(f"Ack Frame Received: \n{frame}")
         # 1. Update the sender side controllers' state with the newly acked packets.
         # SLOW_START:
             # 1. Increase congestion window by number of bytes acknowledged.
@@ -474,6 +472,7 @@ class QUICNetworkController:
         # RECOVERY:
             # 1. If the packet being acknowledged was sent during the recovery period, then enter congestion avoidance.
             # 2. If the packet being acknowledged was sent before the recovery period, update bytes in flight.
+        pass
 
 
 class QUICSenderSideController:
