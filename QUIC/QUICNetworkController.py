@@ -249,7 +249,6 @@ class QUICNetworkController:
 
     def __init__(self):
 
-
         self._connection_context: ConnectionContext | None = None
         self._sender_side_controller = QUICSenderSideController()
         self._packetizer = QUICPacketizer()
@@ -261,24 +260,10 @@ class QUICNetworkController:
         self.packets_received: list[Packet] = []
 
         # ---- Acknowledgement Data ----
-        # self.largest_acknowledged: int = INFINITY
         self.largest_packet_number_received: int = 0
         self.first_ack_range = 0
         self.ack_range_count = 0
         self.ack_ranges = []
-
-        # self.packets_received: dict[int, PacketReceivedInfo] = dict()
-
-
-    # def update_largest_acked(self, new_largest_acknowledged: int) -> None:
-    #     if self.largest_acknowledged == INFINITY:
-    #         self.largest_acknowledged = new_largest_acknowledged
-    #     else:
-    #         self.largest_acknowledged = max(new_largest_acknowledged, self.largest_acknowledged)
-
-
-    # def remove_from_sent_packets(self, frame: AckFrame) -> None:
-    #     pass
 
 
     def set_connection_state(self, connection_context: ConnectionContext) -> None:
@@ -317,6 +302,7 @@ class QUICNetworkController:
     def send_packets(self, packets: list[Packet], udp_socket: socket) -> list[Packet]:
         could_not_send: list[Packet] = []
         for packet in packets:
+            print(packet)
             if self.is_ack_eliciting(packet):
                 # If the packet is ack eliciting,
                 # then send it with congestion control.
