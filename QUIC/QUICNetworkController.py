@@ -80,13 +80,20 @@ MINIMUM_CONGESTION_WINDOW = MAX_DATAGRAM_SIZE*2  # Minimum window is 2 times max
 # If we do it this way then we don't need to worry as much about estimating rtt values since our implementation
 # is synchronous.
 
-class PacketInfo:
+class PacketSentInfo:
 
     def __init__(self, in_flight=False, sent_bytes=0, time_sent=0.0, packet_number=0):
         self.in_flight: bool = in_flight
         self.sent_bytes: int = sent_bytes
         self.time_sent: float = time_sent
         self.packet_number: int = packet_number
+
+
+class PacketReceivedInfo:
+
+    def __init__(self, packet_number=0, ack_packet=False):
+        self.packet_number: int = packet_number
+        self.ack_packet: bool = ack_packet
 
 
 class QUICPacketizer:
@@ -106,9 +113,17 @@ class QUICPacketizer:
         return next
 
 
-    def packetize_acknowledgement(self, packet: Packet, connection_context: ConnectionContext) -> Packet:
-        pass
-
+    def packetize_acknowledgement(self, packet_to_acknowledge: Packet, connection_context: ConnectionContext, largest_packet_seen: int) -> Packet:
+        hdr = ShortHeader(
+            packet_number=self.get_next_packet_number(),
+            destination_connection_id=connection_context.get_peer_connection_id())
+        # TODO: Implement code for creating the AckFrame,
+        # I believe that this will require that we track which packet numbers
+        # have been received and which ones have not.
+        # Might need to spend some time thinking of the best structure to hold this data.
+        pkt = Packet()
+        return pkt
+        
 
     def packetize_stream_data(self, stream_id: int, data: bytes, connection_context: ConnectionContext, send_streams: dict) -> list[Packet]:
         packets = []
@@ -199,12 +214,35 @@ class QUICNetworkController:
 
 
     def __init__(self):
+
+
+
         self._connection_context: ConnectionContext | None = None
         self._sender_side_controller = QUICSenderSideController()
         self._packetizer = QUICPacketizer()
         self._receive_streams = dict() # Key: Stream ID (int) | Value: Stream object
         self._send_streams = dict()
         self.buffered_packets = []
+
+        # ---- Acknowledgement Data ----
+        # self.largest_acknowledged: int = INFINITY
+        self.largest_packet_number_received: int = 0
+        self.first_ack_range = 0
+        self.ack_range_count = 0
+        self.ack_ranges = []
+
+        # self.packets_received: dict[int, PacketReceivedInfo] = dict()
+
+
+    # def update_largest_acked(self, new_largest_acknowledged: int) -> None:
+    #     if self.largest_acknowledged == INFINITY:
+    #         self.largest_acknowledged = new_largest_acknowledged
+    #     else:
+    #         self.largest_acknowledged = max(new_largest_acknowledged, self.largest_acknowledged)
+
+
+    # def remove_from_sent_packets(self, frame: AckFrame) -> None:
+    #     pass
 
 
     def set_connection_state(self, connection_context: ConnectionContext) -> None:
@@ -307,42 +345,62 @@ class QUICNetworkController:
 
 
     def acknowledge_packet(self, packet: Packet) -> None:
-        ack_pkt: Packet = self._packetizer.packetize_acknowledgement(packet, self._connection_context)
-        self.send_packets([ack_pkt])
+        # ack_pkt: Packet = self._packetizer.packetize_acknowledgement(packet, self._connection_context, self.largest_packet_number_received)
+        # self.send_packets([ack_pkt])
+        pass
 
 
-    def process_short_header_packet(self, packet: Packet) -> None:
+    def update_largest_packet_number_received(self, packet: Packet) -> None:
+        self.largest_packet_number_received = max(packet.header.packet_number, self.largest_packet_number_received)
 
-        if self.is_ack_eliciting(packet):
-            self.acknowledge_packet(packet)
 
+    def update_received_and_missing_packets(self, packet: Packet) -> None:
+        pass
+
+
+    def process_short_header_packet_frames(self, packet: Packet) -> None:
+        # Processing Short Header Packet Frames:
+        # 1. Stream Frame --> Write to stream or buffer data.
+        # 2. Ack Frame    --> Remove from packets_sent, decrement bytes_in_flight, other congestion control stuff.
         for frame in packet.frames:
             if frame.type == FT_STREAM:
                 self.on_stream_frame_received(frame)
             if frame.type == FT_ACK:
                 self.on_ack_frame_received(frame)
-                # TODO: implement code for handling ack frames.
-                # TODO: update congestion controller state here.
-                # TODO: also need to detect and handle packet loss.
-                pass
             # TODO: Add checks for other frame types i.e. StreamClose, ConnectionClose, etc.
 
 
-    def process_long_header_packet(self, packet: Packet) -> None:
+    def process_long_header_packet_frames(self, packet: Packet) -> None:
         # TODO: Implement long header packet processing logic.
         pass
 
 
     def process_packets(self, packets: list[Packet]) -> None:
-        # TODO: Implement processing packet logic.
         for packet in packets:
-            # Packets could be short header or long header.
-            # Short header packets would indicate stream data or acks.
-            # Long header packets indicate control operations.
-            if packet.header.type == HT_DATA: # If short header
-                self.process_short_header_packet(packet)
+            # ---- PROCESS FRAME INFORMATION ----
+            # Short Header:
+            # 1. Stream Frames
+            # 2. Ack Frames
+            # Long Header:
+            # 1. Crypto Frames
+            # 2. Handshake Frames
+            # 3. ConnectionClose Frames
+            # 4. NewStream Frames
+            # etc...
+            if packet.header.type == HT_DATA:
+                self.process_short_header_packet_frames(packet)
             elif packet.header.type in [HT_INITIAL, HT_HANDSHAKE, HT_RETRY]:
-                self.process_long_header_packet(packet)
+                self.process_long_header_packet_frames(packet)
+
+            # ---- PROCESS HEADER INFORMATION ----
+            # 1. Update the largest packet number seen so far.
+            # 2. Store which packet numbers have been received.
+            # 3. Store which packet numbers are missing.
+            # 4. Send acknowledgement if the packet is ack-eliciting.
+            self.update_largest_packet_number_received(packet)
+            self.update_received_and_missing_packets(packet) # TODO implement.
+            if self.is_ack_eliciting(packet):
+                self.acknowledge_packet(packet)              # TODO implement.
 
 
     def on_stream_frame_received(self, frame: StreamFrame):
@@ -376,11 +434,8 @@ class QUICNetworkController:
 
 
     def on_ack_frame_received(self, frame: AckFrame):
-        # This should update the largest acked packet in the sender side controller.
-        # It should be set to max(frame.largest_acknowledged, largest_acknowledged)
-        self._sender_side_controller.update_largest_acked(frame.largest_acknowledged)
-        self._sender_side_controller.remove_from_sent_packets(frame)
-        # Routine that is run in response to acknowledgment.
+        # 1. Update the sender side controllers' state with the newly acked packets.
+        
         # SLOW_START:
             # 1. Increase congestion window by number of bytes acknowledged.
             # 2. Update bytes in flight.
@@ -403,33 +458,14 @@ class QUICSenderSideController:
         self.congestion_window: int = INITIAL_CONGESTION_WINDOW
         self.bytes_in_flight = 0
         self.slow_start_threshold: float = INFINITY
-        self.largest_acknowledged: int = INFINITY
-        # May not need these timers for this implementation.
-        # self.loss_epoch: float = 0.0
-        # self.send_time_of_largested_acked: float = 0.0
-        # self.min_rtt: float = float('inf')
-        # self.smoothed_rtt: float = 0.0
-        # self.rtt_var: float = 0.0
-        # Key: Packet Number | Value: PacketInfo
-        self.packets_sent: dict[int, PacketInfo] = dict()
-    
-
-    def update_largest_acked(self, new_largest_acknowledged: int) -> None:
-        if self.largest_acknowledged == INFINITY:
-            self.largest_acknowledged = new_largest_acknowledged
-        else:
-            self.largest_acknowledged = max(new_largest_acknowledged, self.largest_acknowledged)
-    
-
-    def remove_from_sent_packets(self, frame: AckFrame) -> None:
-        pass
+        self.packets_sent: dict[int, PacketSentInfo] = dict()
 
 
     def send_packet_cc(self, packet: Packet, udp_socket: socket, connection_context: ConnectionContext) -> None:
         # Send packets based on the internal congestion control state.
         udp_socket.sendto(packet.raw(), connection_context.get_peer_address())
         self.bytes_in_flight += len(packet.raw())
-        self.packets_sent[packet.header.packet_number] = PacketInfo(time_sent=time.now(), 
+        self.packets_sent[packet.header.packet_number] = PacketSentInfo(time_sent=time.now(), 
                                                                     in_flight=True, 
                                                                     sent_bytes=len(packet.raw()), 
                                                                     packet_number=packet.header.packet_number)
@@ -438,6 +474,10 @@ class QUICSenderSideController:
     def send_non_ack_eliciting_packet(self, packet: Packet, udp_socket: socket, connection_context: ConnectionContext) -> None:
         # For non-ack eliciting packets we don't care about congestion control state.
         udp_socket.sendto(packet.raw(), connection_context.get_peer_address())
+        self.packets_sent[packet.header.packet_number] = PacketSentInfo(time_sent=time.now(), 
+                                                                    in_flight=False, 
+                                                                    sent_bytes=len(packet.raw()), 
+                                                                    packet_number=packet.header.packet_number)
 
 
     def can_send(self):
