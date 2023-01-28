@@ -88,6 +88,7 @@ def create_connection(address: tuple) -> QUICSocket:
     conn_id = create_connection_id()
     connection_state.set_local_connection_id(conn_id)
 
+
     # TODO: Add a secret key to the crypto frame so that the connection can be encrypted.
     frames = [CryptoFrame(offset=0, length=0, data=b"")] 
     header = LongHeader(type=HT_INITIAL, destination_connection_id=0, source_connection_id=conn_id, packet_number=0)
@@ -191,6 +192,8 @@ class QUICListener:
         sock = new_socket.get_udp_socket()
         sock.sendto(packet1.raw(), connection_state.get_peer_address())
         sock.sendto(packet2.raw(), connection_state.get_peer_address())
+        sock.bind(connection_state.get_local_address())
+        sock.connect(connection_state.get_peer_address())
 
         # Set the connection and encryption state for the new socket.
         new_socket.set_connection_state(connection_state)
