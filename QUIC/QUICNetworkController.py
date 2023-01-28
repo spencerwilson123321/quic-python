@@ -119,6 +119,9 @@ class QUICPacketizer:
             packet_number=self.get_next_packet_number(),
             destination_connection_id=connection_context.get_peer_connection_id())
 
+        print("Inside packetize_acknowledgement:")
+        print(packet_numbers_received)
+
         # If the received packets list is length 0
         # We cannot create an ack if we haven't received any packets.
         if not packet_numbers_received:
