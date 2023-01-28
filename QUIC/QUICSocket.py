@@ -194,7 +194,6 @@ class QUICListener:
         sock = new_socket.get_udp_socket()
         sock.sendto(packet1.raw(), connection_state.get_peer_address())
         sock.sendto(packet2.raw(), connection_state.get_peer_address())
-        sock.connect(connection_state.get_peer_address())
         sock.bind(("10.0.0.131", 8001))
 
         # Set the connection and encryption state for the new socket.
