@@ -138,8 +138,16 @@ class QUICPacketizer:
         return Packet(header=hdr, frames=frames)
 
 
+
+
     def packetize_handshake_packet(self, connection_context: ConnectionContext) -> Packet:
-        pass
+        hdr = LongHeader(
+            type=HT_HANDSHAKE,
+            destination_connection_id=connection_context.get_peer_connection_id(),
+            source_connection_id=connection_context.get_local_connection_id(),
+            packet_number=self.get_next_packet_number())
+        frames = []
+        return Packet(header=hdr, frames=frames)
 
 
 
