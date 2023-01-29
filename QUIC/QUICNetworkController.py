@@ -252,7 +252,10 @@ DISCONNECTED = 1
 CONNECTED = 2
 # This means we have sent an INITIAL packet and are waiting
 # for a response. 
-INITIALIZING = 3  
+INITIALIZING = 3
+
+# This means that we are listening for connections.
+LISTENING = 4
 
 
 class QUICNetworkController:
@@ -284,16 +287,22 @@ class QUICNetworkController:
         # ---- Handshake Data ----
         self.handshake_complete = False
         self.state = DISCONNECTED
-
-        self.packet_numbers_received: list[int] = []
-        self.packets_received: list[Packet] = []
+        self.last_peer_address_received = None
 
         # ---- Acknowledgement Data ----
         self.largest_packet_number_received: int = 0
         self.first_ack_range = 0
         self.ack_range_count = 0
         self.ack_ranges = []
+        self.packet_numbers_received: list[int] = []
+        self.packets_received: list[Packet] = []
 
+
+    def set_state(self, state: int) -> None:
+        self.state = state
+    
+    def get_state(self) -> int:
+        return self.state
 
     def set_connection_state(self, connection_context: ConnectionContext) -> None:
         self._connection_context = connection_context
@@ -302,20 +311,26 @@ class QUICNetworkController:
     def get_connection_state(self) -> ConnectionContext | None:
         return self._connection_context 
 
-
     def create_stream(self, stream_id: int) -> None:
         self._receive_streams[stream_id] = ReceiveStream(stream_id=stream_id)
         self._send_streams[stream_id] = SendStream(stream_id=stream_id)
 
+    def listen(self, udp_socket: socket):
+        # When a socket is listening, we need to bind it to the wildcard
+        # address so that it doesn't associate itself with incoming connections.
+        udp_socket.bind(("", self._connection_context.get_local_port()))
 
-    def create_connection(self, udp_socket: socket, local_ip: str, server_address: tuple[str, int]):
+
+    def create_connection(self, udp_socket: socket, server_address: tuple[str, int]):
         
         if self.state != DISCONNECTED:
             print("Socket must be DISCONNECTED to create a connection.")
             exit(1)
 
+        # ---- UPDATE 5-TUPLE ----
+        udp_socket.connect(server_address)
+
         # ---- INITIALIZE CONNECTION CONTEXT ----
-        self._connection_context.set_local_ip(local_ip)
         self._connection_context.set_peer_address(server_address)
         self._connection_context.set_local_connection_id(create_connection_id())
         
@@ -330,9 +345,20 @@ class QUICNetworkController:
             self.process_packets(packets, udp_socket)
         
         # ---- Connection Complete ----
+        self.state = CONNECTED
 
-    def accept_connection(self, udp_socket: socket, local_ip: str, local_port: int):
-        pass
+    def accept_connection(self, udp_socket: socket) -> ConnectionContext:
+        if self.state != LISTENING:
+            print("Must be in LISTENING state to accept()")
+            exit(1)
+        while self.state == LISTENING:
+            # We are listening for INITIAL packets.
+            packets = self.receive_new_packets(udp_socket)
+            self.process_packets(packets, udp_socket)
+        while self.state == INITIALIZING:
+            # We are listening for HANDSHAKE packets.
+            packets = self.receive_new_packets(udp_socket)
+            self.process_packets(packets)
 
 
     def send_stream_data(self, stream_id: int, data: bytes, udp_socket: socket):
