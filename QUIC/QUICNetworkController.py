@@ -588,7 +588,7 @@ class QUICNetworkController:
                 self.server_handshake_received = True
                 if self.server_initial_received:
                     packet = self._packetizer.packetize_handshake_packet(self._connection_context)
-                    self.send_packets([packet])
+                    self.send_packets([packet], udp_socket)
                     self.state = CONNECTED
                 else:
                     self.buffered_packets.append(packet)
