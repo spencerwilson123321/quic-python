@@ -176,9 +176,6 @@ class QUICPacketizer:
             packet_number=self.get_next_packet_number(),
             destination_connection_id=connection_context.get_peer_connection_id())
 
-        print("Inside packetize_acknowledgement:")
-        print(packet_numbers_received)
-
         # If the received packets list is length 0
         # We cannot create an ack if we haven't received any packets.
         if not packet_numbers_received:
@@ -451,7 +448,7 @@ class QUICNetworkController:
     def send_packets(self, packets: list[Packet], udp_socket: socket) -> list[Packet]:
         could_not_send: list[Packet] = []
         for packet in packets:
-            print("Sent:\n")
+            print("Sent:")
             print(packet)
             if self.is_ack_eliciting(packet):
                 # If the packet is ack eliciting,
