@@ -405,6 +405,7 @@ class QUICNetworkController:
         
         # ---- Connection Complete ----
         self.state = CONNECTED
+        self.create_stream(1)
 
 
 
@@ -421,6 +422,7 @@ class QUICNetworkController:
             packets = self.receive_new_packets(udp_socket)
             self.process_packets(packets, udp_socket)
         self.state = LISTENING_INITIAL
+        self.create_stream(1)
         # After this point the handshake is complete.
 
 
