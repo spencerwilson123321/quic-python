@@ -1,6 +1,6 @@
 from .QUICPacketParser import parse_packet_bytes, PacketParserError
 from .QUICPacket import *
-from .QUICConnection import ConnectionContext
+from .QUICConnection import ConnectionContext, create_connection_id
 from .QUICEncryption import EncryptionContext
 from socket import socket
 import math
@@ -113,6 +113,20 @@ class QUICPacketizer:
         next = self._next_packet_number
         self._next_packet_number +=1
         return next
+
+
+    def packetize_initial_packet(self, connection_context: ConnectionContext) -> Packet:
+        hdr = LongHeader(
+            type=HT_INITIAL, 
+            destination_connection_id=0, 
+            source_connection_id=connection_context.get_local_connection_id(), 
+            packet_number=self.get_next_packet_number())
+        frames = [] # TODO Add crypto frames.
+        return Packet(header=hdr, frames=frames)
+
+
+    def packetize_handshake_packet(self, connection_context: ConnectionContext) -> Packet:
+        pass
 
 
     def packetize_acknowledgement(self, connection_context: ConnectionContext, packet_numbers_received: list[int]) -> Packet:
@@ -232,6 +246,15 @@ class ReceiveStream:
         return data
 
 
+# This means we have ended the connection.
+DISCONNECTED = 1
+# This means we have completed the handshake and are currently connected.
+CONNECTED = 2
+# This means we have sent an INITIAL packet and are waiting
+# for a response. 
+INITIALIZING = 3  
+
+
 class QUICNetworkController:
     """
         When a send_stream_data or read_stream_data function is called:
@@ -258,6 +281,10 @@ class QUICNetworkController:
         self._send_streams = dict()
         self.buffered_packets = []
 
+        # ---- Handshake Data ----
+        self.handshake_complete = False
+        self.state = DISCONNECTED
+
         self.packet_numbers_received: list[int] = []
         self.packets_received: list[Packet] = []
 
@@ -281,11 +308,30 @@ class QUICNetworkController:
         self._send_streams[stream_id] = SendStream(stream_id=stream_id)
 
 
-    def create_connection(self, udp_socket: socket):
-        pass
+    def create_connection(self, udp_socket: socket, local_ip: str, server_address: tuple[str, int]):
+        
+        if self.state != DISCONNECTED:
+            print("Socket must be DISCONNECTED to create a connection.")
+            exit(1)
 
+        # ---- INITIALIZE CONNECTION CONTEXT ----
+        self._connection_context.set_local_ip(local_ip)
+        self._connection_context.set_peer_address(server_address)
+        self._connection_context.set_local_connection_id(create_connection_id())
+        
+        # ---- PACKETIZE INITIAL PACKET ----
+        initial = self._packetizer.packetize_initial_packet(self._connection_context)
+        self.send_packets([initial], udp_socket)
+        self.state = INITIALIZING
 
-    def accept_connection(self, udp_socket: socket, local_ip: str, local_port: int, connection_context: ConnectionContext):
+        # ---- PROCESSING RESPONSE ----
+        while self.state == INITIALIZING:
+            packets = self.receive_new_packets(udp_socket)
+            self.process_packets(packets, udp_socket)
+        
+        # ---- Connection Complete ----
+
+    def accept_connection(self, udp_socket: socket, local_ip: str, local_port: int):
         pass
 
 
@@ -402,8 +448,26 @@ class QUICNetworkController:
 
 
     def process_long_header_packet_frames(self, packet: Packet) -> None:
-        # TODO: Implement long header packet processing logic.
-        pass
+        # 1. The packet is INITIAL packet, meaning that someone wants to initialize a connection.
+        # 2. The packet is HANDSHAKE packet, meaning that this is part of the handshake.
+        # 3. The packet is a RETRY packet, meaning that we need to restart the connection process.
+        if packet.header.type == HT_INITIAL:
+            if self.state == INITIALIZING:
+                print(packet)
+            if self.state == CONNECTED:
+                # We can't accept connections while in a connected state.
+                return None
+            if self.state == DISCONNECTED:
+                # Someone is initializing a connection with us.
+                # 1. Set state to initializing.
+                # 2. send response packets.
+                pass
+            pass
+        if packet.header.type == HT_HANDSHAKE:
+            pass
+        if packet.header.type == HT_RETRY:
+            pass
+        return None
 
 
     def process_packets(self, packets: list[Packet], udp_socket: socket) -> None:

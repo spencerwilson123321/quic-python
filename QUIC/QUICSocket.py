@@ -1,8 +1,5 @@
 from socket import socket, AF_INET, SOCK_DGRAM, SO_REUSEADDR, SOL_SOCKET
-from .QUICConnection import ConnectionContext, create_connection_id
-from .QUICEncryption import EncryptionContext
-from .QUICPacket import *
-from .QUICNetworkController import QUICNetworkController, parse_packet_bytes, PacketParserError
+from .QUICNetworkController import QUICNetworkController
 
 
 CONNECTED = 1
@@ -22,7 +19,7 @@ class QUICSocket:
         self._network_controller = QUICNetworkController()
 
 
-    def connect(self):
+    def connect(self, address: tuple[str, int]):
         if self.state == CONNECTED:
             print("Cannot call connect() while in a CONNECTED state.")
             exit(1)
@@ -30,7 +27,7 @@ class QUICSocket:
             print("Cannot call connect() while in a CLOSED state.")
             exit(1)
         self.state = CONNECTED
-        self._network_controller.create_connection()
+        self._network_controller.create_connection(self._socket, self.local_ip, address)
 
 
     def listen(self, port=8000):

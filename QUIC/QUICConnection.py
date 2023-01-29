@@ -16,47 +16,52 @@ class ConnectionContext:
     def __init__(self) -> None:
         self.peer_address: tuple = ()
         self.local_address: tuple = ()
+        self.local_ip: str = ""
         self.peer_connection_id: int = 0
         self.local_connection_id: int = 0
         self.connected: bool = False
-        
-    
-    def set_peer_connection_id(self, conn_id: int):
-        self.peer_connection_id = conn_id
-    
 
-    def get_peer_connection_id(self):
+    def set_local_ip(self, ip: str) -> None:
+        self.local_ip = ip
+
+    def get_local_ip(self) -> str:
+        return self.local_ip    
+
+    def set_peer_connection_id(self, conn_id: int) -> None:
+        self.peer_connection_id = conn_id
+
+    def get_peer_connection_id(self) -> int:
         return self.peer_connection_id
 
     
-    def set_local_connection_id(self, conn_id: int):
+    def set_local_connection_id(self, conn_id: int) -> None:
         self.local_connection_id = conn_id
 
     
-    def get_local_connection_id(self):
+    def get_local_connection_id(self) -> int:
         return self.local_connection_id
 
 
-    def set_peer_address(self, addr):
+    def set_peer_address(self, addr) -> None:
         self.peer_address = addr
     
 
-    def get_peer_address(self):
-        return self.peer_address    
+    def get_peer_address(self) -> tuple[str, int]:
+        return self.peer_address
 
 
-    def set_local_address(self, addr):
+    def set_local_address(self, addr) -> None:
         self.local_address = addr 
 
 
-    def get_local_address(self):
+    def get_local_address(self) -> tuple[str, int]:
         return self.local_address
     
 
-    def is_connected(self):
+    def is_connected(self) -> bool:
         return self.connected
 
 
-    def set_connected(self, value: bool):
+    def set_connected(self, value: bool) -> None:
         self.connected = value
 
