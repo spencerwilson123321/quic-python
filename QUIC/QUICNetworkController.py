@@ -1,6 +1,7 @@
 from .QUICPacketParser import parse_packet_bytes, PacketParserError
 from .QUICPacket import *
 from .QUICConnection import ConnectionContext
+from .QUICEncryption import EncryptionContext
 from socket import socket
 import math
 from time import time
@@ -246,10 +247,11 @@ class QUICNetworkController:
                 We just return the requested number of bytes from the stream buffer.
     """
 
-
     def __init__(self):
 
-        self._connection_context: ConnectionContext | None = None
+        self._connection_context: ConnectionContext = ConnectionContext()
+        self._encryption_context: EncryptionContext = EncryptionContext()
+
         self._sender_side_controller = QUICSenderSideController()
         self._packetizer = QUICPacketizer()
         self._receive_streams = dict() # Key: Stream ID (int) | Value: Stream object
@@ -277,6 +279,14 @@ class QUICNetworkController:
     def create_stream(self, stream_id: int) -> None:
         self._receive_streams[stream_id] = ReceiveStream(stream_id=stream_id)
         self._send_streams[stream_id] = SendStream(stream_id=stream_id)
+
+
+    def create_connection(self, udp_socket: socket):
+        pass
+
+
+    def accept_connection(self, udp_socket: socket, local_ip: str, local_port: int, connection_context: ConnectionContext):
+        pass
 
 
     def send_stream_data(self, stream_id: int, data: bytes, udp_socket: socket):

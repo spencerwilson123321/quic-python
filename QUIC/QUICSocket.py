@@ -5,14 +5,50 @@ from .QUICPacket import *
 from .QUICNetworkController import QUICNetworkController, parse_packet_bytes, PacketParserError
 
 
+CONNECTED = 1
+DISCONNECTED = 2
+CLOSED = 3
+LISTENING = 4
+
+
 class QUICSocket:
 
-    def __init__(self):
+    def __init__(self, local_ip: str):
         self._socket = socket(AF_INET, SOCK_DGRAM)
         self._socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        self._connection_context = ConnectionContext()
-        self._encryption_context = EncryptionContext()
+        self.local_ip = local_ip
+        self.local_port = None
+        self.state = DISCONNECTED
         self._network_controller = QUICNetworkController()
+
+
+    def connect(self):
+        if self.state == CONNECTED:
+            print("Cannot call connect() while in a CONNECTED state.")
+            exit(1)
+        if self.state == CLOSED:
+            print("Cannot call connect() while in a CLOSED state.")
+            exit(1)
+        self.state = CONNECTED
+        self._network_controller.create_connection()
+
+
+    def listen(self, port=8000):
+        if self.state == CONNECTED:
+            print("Cannot call listen() while in a CONNECTED state.")
+            exit(1)
+        if self.state == CLOSED:
+            print("Cannot call listen() while in a CLOSED state.")
+            exit(1)
+        self.local_port = port
+        self.state = LISTENING
+
+
+    def accept(self):
+        if self.state != LISTENING:
+            print("Cannot call accept() when not in a LISTENING state.")
+            exit(1)
+        self._network_controller.accept_connection(self._socket, self.local_ip, self.local_port)
 
 
     def send(self, stream_id: int, data: bytes):
@@ -20,14 +56,14 @@ class QUICSocket:
 
 
     def recv(self, stream_id: int, num_bytes: int):
-        # This call should block.
         data = self._network_controller.read_stream_data(stream_id, num_bytes, self.get_udp_socket())
         return data
 
 
-    def shutdown(self):
-        print("Shutting down socket...")
+    def close(self):
+        print("Closing socket...")
         self._socket.close()
+        self.state =
 
 
     def close_stream(self, stream_id: int):
@@ -38,21 +74,8 @@ class QUICSocket:
         pass
 
 
-    def set_encryption_state(self, encryption_state: EncryptionContext):
-        self._encryption_context = encryption_state
-
-
-    def get_encryption_state(self):
-        return self._encryption_context
-
-
-    def set_connection_state(self, connection_state: ConnectionContext):
-        self._network_controller.set_connection_state(connection_state)
-        self._connection_context = connection_state
-
-
     def get_connection_state(self):
-        return self._connection_context
+        return self._network_controller.get_connection_state()
 
 
     def get_udp_socket(self):
@@ -61,16 +84,17 @@ class QUICSocket:
 
     def set_udp_socket(self, new_socket: socket):
         self._socket = new_socket
-    
-    
+
+
     def __repr__(self) -> str:
+        connection_context = self._network_controller.get_connection_state()
         representation = ""
         representation += f"------ QUIC Socket ------\n"
-        representation += f"Connection Status: {'Connected' if self._connection_context.is_connected() else 'Not Connected'}\n"
-        representation += f"Local Address: {self._connection_context.get_local_address()}\n"
-        representation += f"Peer Address: {self._connection_context.get_peer_address()}\n"
-        representation += f"Local Connection ID: {self._connection_context.get_local_connection_id()}\n"
-        representation += f"Peer Connection ID: {self._connection_context.get_peer_connection_id()}\n"
+        representation += f"Connection Status: {'Connected' if connection_context.is_connected() else 'Not Connected'}\n"
+        representation += f"Local Address: {connection_context.get_local_address()}\n"
+        representation += f"Peer Address: {connection_context.get_peer_address()}\n"
+        representation += f"Local Connection ID: {connection_context.get_local_connection_id()}\n"
+        representation += f"Peer Connection ID: {connection_context.get_peer_connection_id()}\n"
         return representation
 
 
