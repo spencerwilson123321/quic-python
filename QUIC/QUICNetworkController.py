@@ -5,7 +5,6 @@ from .QUICEncryption import EncryptionContext
 from socket import socket
 import math
 from time import time
-UDPSocket = socket
 
 # Congestion Controller States
 SLOW_START = 1
@@ -18,6 +17,20 @@ MAX_DATAGRAM_SIZE = 65507
 SAFE_DATAGRAM_PAYLOAD_SIZE = 512 # bytes
 INITIAL_CONGESTION_WINDOW = MAX_DATAGRAM_SIZE*10 # Initial window is 10 times max datagram size RFC 9002
 MINIMUM_CONGESTION_WINDOW = MAX_DATAGRAM_SIZE*2  # Minimum window is 2 times max datagram size RFC 9002
+
+# This means we have ended the connection.
+DISCONNECTED = 1
+# This means we have completed the handshake and are currently connected.
+CONNECTED = 2
+
+# This means we have sent an INITIAL packet and are waiting
+# for a response. 
+INITIALIZING = 3
+
+# This means that we are listening for connections.
+LISTENING_INITIAL = 4
+LISTENING_HANDSHAKE = 5
+
 
 # Slow Start:
 # congestion window is increased by the number of acknowledged bytes every time an ACK is processed.
@@ -127,6 +140,23 @@ class QUICPacketizer:
 
     def packetize_handshake_packet(self, connection_context: ConnectionContext) -> Packet:
         pass
+
+
+    def packetize_connection_response_packets(self, connection_context: ConnectionContext) -> list[Packet]:
+        hdr1 = LongHeader(
+            type=HT_INITIAL,
+            destination_connection_id=connection_context.get_peer_connection_id(),
+            source_connection_id=connection_context.get_local_connection_id(),
+            packet_number=self.get_next_packet_number())
+        hdr2 = LongHeader(
+            type=HT_HANDSHAKE,
+            destination_connection_id=connection_context.get_peer_connection_id(),
+            source_connection_id=connection_context.get_local_connection_id(),
+            packet_number=self.get_next_packet_number())
+        frames1 = []
+        frames2 = []
+        initial, handshake = Packet(header=hdr1, frames=frames1), Packet(header=hdr2, frames=frames2)
+        return [initial, handshake]
 
 
     def packetize_acknowledgement(self, connection_context: ConnectionContext, packet_numbers_received: list[int]) -> Packet:
@@ -246,16 +276,8 @@ class ReceiveStream:
         return data
 
 
-# This means we have ended the connection.
-DISCONNECTED = 1
-# This means we have completed the handshake and are currently connected.
-CONNECTED = 2
-# This means we have sent an INITIAL packet and are waiting
-# for a response. 
-INITIALIZING = 3
 
-# This means that we are listening for connections.
-LISTENING = 4
+
 
 
 class QUICNetworkController:
@@ -286,6 +308,8 @@ class QUICNetworkController:
 
         # ---- Handshake Data ----
         self.handshake_complete = False
+        self.server_initial_received = False
+        self.server_handshake_received = False
         self.state = DISCONNECTED
         self.last_peer_address_received = None
 
@@ -298,27 +322,49 @@ class QUICNetworkController:
         self.packets_received: list[Packet] = []
 
 
+
+
+    def is_handshake_complete(self) -> bool:
+        return self.server_handshake_received and self.server_initial_received
+
+ 
+
+
     def set_state(self, state: int) -> None:
         self.state = state
-    
+
+
+
+
     def get_state(self) -> int:
         return self.state
+
+
+
 
     def set_connection_state(self, connection_context: ConnectionContext) -> None:
         self._connection_context = connection_context
 
 
+
+
     def get_connection_state(self) -> ConnectionContext | None:
         return self._connection_context 
+
+
+
 
     def create_stream(self, stream_id: int) -> None:
         self._receive_streams[stream_id] = ReceiveStream(stream_id=stream_id)
         self._send_streams[stream_id] = SendStream(stream_id=stream_id)
 
+
+
     def listen(self, udp_socket: socket):
         # When a socket is listening, we need to bind it to the wildcard
         # address so that it doesn't associate itself with incoming connections.
         udp_socket.bind(("", self._connection_context.get_local_port()))
+
 
 
     def create_connection(self, udp_socket: socket, server_address: tuple[str, int]):
@@ -340,25 +386,30 @@ class QUICNetworkController:
         self.state = INITIALIZING
 
         # ---- PROCESSING RESPONSE ----
-        while self.state == INITIALIZING:
+        while not self.is_handshake_complete():
             packets = self.receive_new_packets(udp_socket)
             self.process_packets(packets, udp_socket)
         
         # ---- Connection Complete ----
         self.state = CONNECTED
 
+
+
+
     def accept_connection(self, udp_socket: socket) -> ConnectionContext:
-        if self.state != LISTENING:
+        if self.state != LISTENING_INITIAL:
             print("Must be in LISTENING state to accept()")
             exit(1)
-        while self.state == LISTENING:
+        while self.state == LISTENING_INITIAL:
             # We are listening for INITIAL packets.
             packets = self.receive_new_packets(udp_socket)
             self.process_packets(packets, udp_socket)
-        while self.state == INITIALIZING:
-            # We are listening for HANDSHAKE packets.
+        while self.state == LISTENING_HANDSHAKE:
             packets = self.receive_new_packets(udp_socket)
-            self.process_packets(packets)
+            self.process_packets(packets, udp_socket)
+        # After this point the handshake is complete.
+
+
 
 
     def send_stream_data(self, stream_id: int, data: bytes, udp_socket: socket):
@@ -369,8 +420,6 @@ class QUICNetworkController:
         # Packetize the stream data.
         packets: list[Packet] = self._packetizer.packetize_stream_data(stream_id, data, self._connection_context, self._send_streams)
         # Add the currently buffered packets to the list of packets to send.
-        packets = packets + self.buffered_packets
-        self.buffered_packets = []
 
         # TODO: Implement invoking the sendersidecontroller to send the packets.
         could_not_send: list[Packet] = self.send_packets(packets, udp_socket)
@@ -379,6 +428,8 @@ class QUICNetworkController:
             packets_to_process = self.receive_new_packets(udp_socket)
             self.process_packets(packets_to_process, udp_socket)
             could_not_send = self.send_packets(could_not_send, udp_socket)            
+
+
 
 
     def send_packets(self, packets: list[Packet], udp_socket: socket) -> list[Packet]:
@@ -402,6 +453,8 @@ class QUICNetworkController:
         return could_not_send
 
 
+
+
     def read_stream_data(self, stream_id: int, num_bytes: int, udp_socket: socket):
         """
             This function will block until at least some data has been read.
@@ -421,24 +474,32 @@ class QUICNetworkController:
         return data
 
 
-    def receive_new_packets(self, socket: UDPSocket, block=False):
+
+
+    def receive_new_packets(self, udp_socket: socket, block=False):
         packets: list[Packet] = []
         datagrams: list[bytes] = []
-        socket.setblocking(block)
+        udp_socket.setblocking(block)
         while True:
             try:
-                datagram, _ = socket.recvfrom(4096)
+                datagram, address = udp_socket.recvfrom(4096)
                 datagrams.append(datagram)
             except BlockingIOError:
                 break
         for datagram in datagrams:
             packet = parse_packet_bytes(datagram)
+            if packet.header.type == HT_INITIAL:
+                self.last_peer_address_received = address
             packets.append(packet)
         return packets
 
 
+
+
     def is_active_stream(self, stream_id: int) -> bool:
         return stream_id in self._receive_streams
+
+
 
 
     def is_ack_eliciting(self, packet: Packet) -> bool:
@@ -448,13 +509,19 @@ class QUICNetworkController:
         return False
 
 
+
+
     def create_and_send_acknowledgements(self, udp_socket: socket) -> None:
         ack_pkt: Packet = self._packetizer.packetize_acknowledgement(self._connection_context, self.packet_numbers_received)
         self.send_packets([ack_pkt], udp_socket)
 
 
+
+
     def update_largest_packet_number_received(self, packet: Packet) -> None:
         self.largest_packet_number_received = max(packet.header.packet_number, self.largest_packet_number_received)
+
+
 
 
     def update_received_packets(self, packet: Packet) -> None:
@@ -462,7 +529,9 @@ class QUICNetworkController:
         self.packets_received.append(packet)
 
 
-    def process_short_header_packet_frames(self, packet: Packet) -> None:
+
+
+    def process_short_header_packet(self, packet: Packet) -> None:
         # Processing Short Header Packet Frames:
         # 1. Stream Frame --> Write to stream or buffer data.
         # 2. Ack Frame    --> Remove from packets_sent, decrement bytes_in_flight, other congestion control stuff.
@@ -474,30 +543,61 @@ class QUICNetworkController:
             # TODO: Add checks for other frame types i.e. StreamClose, ConnectionClose, etc.
 
 
-    def process_long_header_packet_frames(self, packet: Packet) -> None:
-        # 1. The packet is INITIAL packet, meaning that someone wants to initialize a connection.
-        # 2. The packet is HANDSHAKE packet, meaning that this is part of the handshake.
-        # 3. The packet is a RETRY packet, meaning that we need to restart the connection process.
+
+
+    def process_long_header_packet(self, packet: Packet, udp_socket: socket) -> None:
         if packet.header.type == HT_INITIAL:
             if self.state == INITIALIZING:
-                print(packet)
+                self._connection_context.set_peer_address(self.last_peer_address_received)
+                self._connection_context.set_local_connection_id(packet.header.destination_connection_id)
+                self.server_initial_received = True
+                self.state = INITIALIZING
+            if self.state == LISTENING_HANDSHAKE:
+                pass
+            if self.state == LISTENING_INITIAL:
+                pass
             if self.state == CONNECTED:
                 # We can't accept connections while in a connected state.
                 return None
             if self.state == DISCONNECTED:
-                # Someone is initializing a connection with us.
-                # 1. Set state to initializing.
-                # 2. send response packets.
+                # Cannot accept connections when not in listening state.
                 pass
-            pass
+            if self.state == LISTENING_INITIAL:
+                # Incoming connection request.
+                # 1. Update connection context with peer address. ip / port
+                # 2. Update connection context with peer connection id.
+                # 3. Send response packets.
+                # 4. Set the state to LISTENING_HANDSHAKE.
+                self._connection_context.set_peer_address(self.last_peer_address_received)
+                self._connection_context.set_local_connection_id(packet.header.destination_connection_id)
+                packets = self._packetizer.packetize_connection_response_packets(self._connection_context)
+                self.send_packets(packets, udp_socket)
+                self.state = LISTENING_HANDSHAKE
         if packet.header.type == HT_HANDSHAKE:
-            pass
+            if self.state == LISTENING_HANDSHAKE:
+                # Client is completing the handshake.
+                # Only thing left to do is change the state
+                # so that we exit the accept_connection loop.
+                self.state == LISTENING_INITIAL
+            if self.state == INITIALIZING:
+                self.server_handshake_received = True
+                if self.server_initial_received:
+                    packet = self._packetizer.packetize_handshake_packet(self._connection_context)
+                    self.send_packets([packet])
+                    self.state = CONNECTED
+                else:
+                    self.buffered_packets.append(packet)
+                    self.state = INITIALIZING
         if packet.header.type == HT_RETRY:
             pass
         return None
 
 
+
+
     def process_packets(self, packets: list[Packet], udp_socket: socket) -> None:
+        packets = packets + self.buffered_packets
+        self.buffered_packets = []
         for packet in packets:
             print("Received:")
             print(packet)
@@ -512,9 +612,9 @@ class QUICNetworkController:
             # 4. NewStream Frames
             # etc...
             if packet.header.type == HT_DATA:
-                self.process_short_header_packet_frames(packet)
+                self.process_short_header_packet(packet)
             elif packet.header.type in [HT_INITIAL, HT_HANDSHAKE, HT_RETRY]:
-                self.process_long_header_packet_frames(packet)
+                self.process_long_header_packet(packet, udp_socket)
 
             # ---- PROCESS HEADER INFORMATION ----
             # 1. Update the largest packet number seen so far.
@@ -527,6 +627,8 @@ class QUICNetworkController:
                 self.create_and_send_acknowledgements(udp_socket)
 
 
+
+
     def on_stream_frame_received(self, frame: StreamFrame):
         if self.is_active_stream(frame.stream_id):
             stream = self._receive_streams[frame.stream_id]
@@ -537,7 +639,7 @@ class QUICNetworkController:
             self._receive_streams[frame.stream_id] = stream
 
 
-    # ------- Congestion Control Events --------------
+
 
     def on_packet_loss(self):
         # Routine that is run in response to packet loss.
@@ -553,6 +655,8 @@ class QUICNetworkController:
         pass
 
 
+
+
     def on_ack_frame_received(self, frame: AckFrame):
         # 1. Update the sender side controllers' state with the newly acked packets.
         # SLOW_START:
@@ -565,6 +669,8 @@ class QUICNetworkController:
             # 1. If the packet being acknowledged was sent during the recovery period, then enter congestion avoidance.
             # 2. If the packet being acknowledged was sent before the recovery period, update bytes in flight.
         pass
+
+
 
 
 class QUICSenderSideController:
