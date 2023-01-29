@@ -131,7 +131,7 @@ class QUICPacketizer:
     def packetize_initial_packet(self, connection_context: ConnectionContext) -> Packet:
         hdr = LongHeader(
             type=HT_INITIAL, 
-            destination_connection_id=0, 
+            destination_connection_id=connection_context.get_peer_connection_id(), 
             source_connection_id=connection_context.get_local_connection_id(), 
             packet_number=self.get_next_packet_number())
         frames = [] # TODO Add crypto frames.
@@ -140,6 +140,8 @@ class QUICPacketizer:
 
     def packetize_handshake_packet(self, connection_context: ConnectionContext) -> Packet:
         pass
+
+
 
 
     def packetize_connection_response_packets(self, connection_context: ConnectionContext) -> list[Packet]:
@@ -157,6 +159,8 @@ class QUICPacketizer:
         frames2 = []
         initial, handshake = Packet(header=hdr1, frames=frames1), Packet(header=hdr2, frames=frames2)
         return [initial, handshake]
+
+
 
 
     def packetize_acknowledgement(self, connection_context: ConnectionContext, packet_numbers_received: list[int]) -> Packet:
