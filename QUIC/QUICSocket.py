@@ -1,5 +1,5 @@
 from socket import socket, AF_INET, SOCK_DGRAM, SO_REUSEADDR, SOL_SOCKET
-from .QUICNetworkController import QUICNetworkController
+from .QUICNetworkController import QUICNetworkController, CONNECTED
 
 
 class QUICSocket:
@@ -27,11 +27,11 @@ class QUICSocket:
 
         # When the above call is complete, the network controller's connection context will be filled out.
         # We just need  to copy it's QUICPacketizer and ConnectionContext into a new socket and then return it.
-        # connection = QUICSocket("")
-        # connection._network_controller._packetizer = self._network_controller._packetizer
-        # connection._network_controller._connection_context = self._network_controller._connection_context
-        # connection._network_controller.set_state(CONNECTED)
-        return None
+        connection = QUICSocket("")
+        connection._network_controller._packetizer = self._network_controller._packetizer
+        connection._network_controller._connection_context = self._network_controller._connection_context
+        connection._network_controller.set_state(CONNECTED)
+        return connection
 
 
     def send(self, stream_id: int, data: bytes):
