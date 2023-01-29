@@ -1,5 +1,5 @@
 from socket import socket, AF_INET, SOCK_DGRAM, SO_REUSEADDR, SOL_SOCKET
-from .QUICNetworkController import QUICNetworkController, CONNECTED
+from .QUICNetworkController import QUICNetworkController, CONNECTED, QUICPacketizer
 
 
 class QUICSocket:
@@ -30,6 +30,11 @@ class QUICSocket:
         connection = QUICSocket("")
         connection._network_controller._packetizer = self._network_controller._packetizer
         connection._network_controller._connection_context = self._network_controller._connection_context
+        connection._network_controller._send_streams = self._network_controller._send_streams
+
+        self._network_controller._packetizer = QUICPacketizer()
+        self._network_controller._send_streams = dict()
+
         connection._network_controller.set_state(CONNECTED)
         return connection
 
