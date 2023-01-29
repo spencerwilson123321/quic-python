@@ -17,9 +17,19 @@ class ConnectionContext:
         self.peer_address: tuple = ()
         self.local_address: tuple = ()
         self.local_ip: str = ""
+        self.local_port: int = 0
         self.peer_connection_id: int = 0
         self.local_connection_id: int = 0
         self.connected: bool = False
+    
+    def update_local_address(self) -> None:
+        self.local_address = (self.local_ip, self.local_port)
+
+    def set_local_port(self, port: int) -> None:
+        self.local_port = port
+
+    def get_local_port(self) -> int:
+        return self.local_port
 
     def set_local_ip(self, ip: str) -> None:
         self.local_ip = ip
