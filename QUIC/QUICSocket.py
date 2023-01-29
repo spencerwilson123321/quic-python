@@ -63,7 +63,7 @@ class QUICSocket:
     def close(self):
         print("Closing socket...")
         self._socket.close()
-        self.state =
+        self.state = CLOSED
 
 
     def close_stream(self, stream_id: int):
