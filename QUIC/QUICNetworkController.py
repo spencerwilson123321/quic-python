@@ -555,11 +555,10 @@ class QUICNetworkController:
             if self.state == INITIALIZING:
                 self._connection_context.set_peer_address(self.last_peer_address_received)
                 self._connection_context.set_local_connection_id(packet.header.destination_connection_id)
+                self._connection_context.set_peer_connection_id(create_connection_id())
                 self.server_initial_received = True
                 self.state = INITIALIZING
             if self.state == LISTENING_HANDSHAKE:
-                pass
-            if self.state == LISTENING_INITIAL:
                 pass
             if self.state == CONNECTED:
                 # We can't accept connections while in a connected state.
@@ -575,6 +574,7 @@ class QUICNetworkController:
                 # 4. Set the state to LISTENING_HANDSHAKE.
                 self._connection_context.set_peer_address(self.last_peer_address_received)
                 self._connection_context.set_local_connection_id(packet.header.destination_connection_id)
+                self._connection_context.set_peer_connection_id(create_connection_id())
                 packets = self._packetizer.packetize_connection_response_packets(self._connection_context)
                 self.send_packets(packets, udp_socket)
                 self.state = LISTENING_HANDSHAKE
