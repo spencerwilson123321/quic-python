@@ -592,7 +592,7 @@ class QUICNetworkController:
                 # Client is completing the handshake.
                 # Only thing left to do is change the state
                 # so that we exit the accept_connection loop.
-                self.state == CONNECTED
+                self.state = CONNECTED
             if self.state == INITIALIZING:
                 self.server_handshake_received = True
                 if self.server_initial_received:
