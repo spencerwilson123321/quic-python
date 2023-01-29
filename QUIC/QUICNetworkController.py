@@ -379,8 +379,8 @@ class QUICNetworkController:
 
         # ---- INITIALIZE CONNECTION CONTEXT ----
         self._connection_context.set_peer_address(server_address)
-        self._connection_context.set_local_connection_id(create_connection_id())
-        
+        self._connection_context.set_peer_connection_id(create_connection_id())
+
         # ---- PACKETIZE INITIAL PACKET ----
         initial = self._packetizer.packetize_initial_packet(self._connection_context)
         self.send_packets([initial], udp_socket)
