@@ -384,6 +384,7 @@ class QUICNetworkController:
     def send_packets(self, packets: list[Packet], udp_socket: socket) -> list[Packet]:
         could_not_send: list[Packet] = []
         for packet in packets:
+            print("Sent:\n")
             print(packet)
             if self.is_ack_eliciting(packet):
                 # If the packet is ack eliciting,
@@ -498,6 +499,7 @@ class QUICNetworkController:
 
     def process_packets(self, packets: list[Packet], udp_socket: socket) -> None:
         for packet in packets:
+            print("Received:")
             print(packet)
             # ---- PROCESS FRAME INFORMATION ----
             # Short Header:
