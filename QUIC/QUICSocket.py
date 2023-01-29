@@ -1,11 +1,5 @@
 from socket import socket, AF_INET, SOCK_DGRAM, SO_REUSEADDR, SOL_SOCKET
-from .QUICNetworkController import QUICNetworkController
-
-
-CONNECTED = 1
-DISCONNECTED = 2
-CLOSED = 3
-LISTENING = 4
+from .QUICNetworkController import QUICNetworkController, LISTENING, DISCONNECTED, CONNECTED, INITIALIZING
 
 
 class QUICSocket:
@@ -13,39 +7,32 @@ class QUICSocket:
     def __init__(self, local_ip: str):
         self._socket = socket(AF_INET, SOCK_DGRAM)
         self._socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        self.local_ip = local_ip
-        self.local_port = None
-        self.state = DISCONNECTED
         self._network_controller = QUICNetworkController()
+        self._network_controller._connection_context.set_local_ip(local_ip)
 
 
     def connect(self, address: tuple[str, int]):
-        if self.state == CONNECTED:
-            print("Cannot call connect() while in a CONNECTED state.")
-            exit(1)
-        if self.state == CLOSED:
-            print("Cannot call connect() while in a CLOSED state.")
-            exit(1)
-        self.state = CONNECTED
-        self._network_controller.create_connection(self._socket, self.local_ip, address)
+        self._network_controller.create_connection(self._socket, address)
 
 
     def listen(self, port=8000):
-        if self.state == CONNECTED:
-            print("Cannot call listen() while in a CONNECTED state.")
-            exit(1)
-        if self.state == CLOSED:
-            print("Cannot call listen() while in a CLOSED state.")
-            exit(1)
-        self.local_port = port
-        self.state = LISTENING
+        self._network_controller._connection_context.set_local_port(port)
+        self._network_controller._connection_context.update_local_address()
+        self._network_controller.state = LISTENING
+        self._network_controller.listen(self._socket)
 
 
     def accept(self):
-        if self.state != LISTENING:
-            print("Cannot call accept() when not in a LISTENING state.")
-            exit(1)
-        self._network_controller.accept_connection(self._socket, self.local_ip, self.local_port)
+        # We give the network controller our wildcard socket.
+        self._network_controller.accept_connection(self._socket)
+
+        # When the above call is complete, the network controller's connection context will be filled out.
+        # We just need  to copy it's QUICPacketizer and ConnectionContext into a new socket and then return it.
+        # connection = QUICSocket("")
+        # connection._network_controller._packetizer = self._network_controller._packetizer
+        # connection._network_controller._connection_context = self._network_controller._connection_context
+        # connection._network_controller.set_state(CONNECTED)
+        return None
 
 
     def send(self, stream_id: int, data: bytes):
@@ -58,26 +45,19 @@ class QUICSocket:
 
 
     def close(self):
-        print("Closing socket...")
-        self._socket.close()
-        self.state = CLOSED
-
+        pass
 
     def close_stream(self, stream_id: int):
         pass
 
-
     def create_stream(self, stream_id: int):
         pass
-
 
     def get_connection_state(self):
         return self._network_controller.get_connection_state()
 
-
     def get_udp_socket(self):
         return self._socket
-    
 
     def set_udp_socket(self, new_socket: socket):
         self._socket = new_socket
