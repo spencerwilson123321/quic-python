@@ -363,6 +363,7 @@ class QUICNetworkController:
     def listen(self, udp_socket: socket):
         # When a socket is listening, we need to bind it to the wildcard
         # address so that it doesn't associate itself with incoming connections.
+        self.state = LISTENING_INITIAL
         udp_socket.bind(("", self._connection_context.get_local_port()))
 
 

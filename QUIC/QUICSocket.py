@@ -1,5 +1,5 @@
 from socket import socket, AF_INET, SOCK_DGRAM, SO_REUSEADDR, SOL_SOCKET
-from .QUICNetworkController import QUICNetworkController, LISTENING, DISCONNECTED, CONNECTED, INITIALIZING
+from .QUICNetworkController import QUICNetworkController
 
 
 class QUICSocket:
@@ -18,7 +18,6 @@ class QUICSocket:
     def listen(self, port=8000):
         self._network_controller._connection_context.set_local_port(port)
         self._network_controller._connection_context.update_local_address()
-        self._network_controller.state = LISTENING
         self._network_controller.listen(self._socket)
 
 
