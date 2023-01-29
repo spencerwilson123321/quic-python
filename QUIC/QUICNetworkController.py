@@ -414,15 +414,13 @@ class QUICNetworkController:
             print("Must be in LISTENING state to accept()")
             exit(1)
         while self.state == LISTENING_INITIAL:
-            print("Entered listening initial")
             # We are listening for INITIAL packets.
             packets = self.receive_new_packets(udp_socket)
             self.process_packets(packets, udp_socket)
         while self.state == LISTENING_HANDSHAKE:
-            print("Entered listening initial")
             packets = self.receive_new_packets(udp_socket)
             self.process_packets(packets, udp_socket)
-        print("Complete")
+        self.state = LISTENING_INITIAL
         # After this point the handshake is complete.
 
 
@@ -594,7 +592,7 @@ class QUICNetworkController:
                 # Client is completing the handshake.
                 # Only thing left to do is change the state
                 # so that we exit the accept_connection loop.
-                self.state == LISTENING_INITIAL
+                self.state == CONNECTED
             if self.state == INITIALIZING:
                 self.server_handshake_received = True
                 if self.server_initial_received:
