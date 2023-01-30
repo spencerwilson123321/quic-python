@@ -31,11 +31,13 @@ class QUICSocket:
         connection._network_controller._packetizer = self._network_controller._packetizer
         connection._network_controller._connection_context = self._network_controller._connection_context
         connection._network_controller._send_streams = self._network_controller._send_streams.copy()
+        connection._network_controller._receive_streams = self._network_controller._receive_streams.copy()
         connection._socket.bind(connection._network_controller._connection_context.get_local_address())
         connection._socket.connect(connection._network_controller._connection_context.get_peer_address())
 
         self._network_controller._packetizer = QUICPacketizer()
         self._network_controller._send_streams = dict()
+        self._network_controller._receive_streams = dict()
 
         connection._network_controller.set_state(CONNECTED)
         return connection
