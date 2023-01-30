@@ -1,5 +1,5 @@
 from socket import socket, AF_INET, SOCK_DGRAM, SO_REUSEADDR, SOL_SOCKET
-from .QUICNetworkController import QUICNetworkController, CONNECTED, QUICPacketizer
+from .QUICNetworkController import QUICNetworkController, CONNECTED, QUICPacketizer, LISTENING_INITIAL
 
 
 class QUICSocket:
@@ -41,7 +41,7 @@ class QUICSocket:
         self._network_controller._connection_context.update_local_address()
 
         # Set network controller back to listening state.
-        self._network_controller.listen(self._socket)
+        self._network_controller.state = LISTENING_INITIAL
 
         return connection
 
