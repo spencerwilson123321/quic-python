@@ -627,8 +627,7 @@ class QUICNetworkController:
             # ---- PROCESS HEADER INFORMATION ----
             # 1. Update the largest packet number seen so far.
             # 2. Store which packet numbers have been received.
-            # 3. Store which packet numbers are missing.
-            # 4. Send acknowledgement if the packet is ack-eliciting.
+            # 3. Send acknowledgement if the packet is ack-eliciting.
             self.update_largest_packet_number_received(packet)
             self.update_received_packets(packet)
             if self.is_ack_eliciting(packet):
