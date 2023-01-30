@@ -36,7 +36,7 @@ class QUICSocket:
         connection._network_controller.create_stream(1)
         connection._socket.bind(connection._network_controller._connection_context.get_local_address())
         connection._socket.connect(connection._network_controller._connection_context.get_peer_address())
-        # connection._network_controller._sender_side_controller = self._network_controller._sender_side_controller
+        connection._network_controller._sender_side_controller = self._network_controller._sender_side_controller
 
         self._network_controller._packetizer = QUICPacketizer()
 
