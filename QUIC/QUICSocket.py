@@ -29,6 +29,7 @@ class QUICSocket:
         # We just need  to copy it's QUICPacketizer and ConnectionContext into a new socket and then return it.
         connection = QUICSocket("")
         connection._network_controller = self._network_controller
+        self._network_controller = QUICNetworkController()
         connection._network_controller.create_stream(1)
         connection._socket.bind(connection._network_controller._connection_context.get_local_address())
         connection._socket.connect(connection._network_controller._connection_context.get_peer_address())
