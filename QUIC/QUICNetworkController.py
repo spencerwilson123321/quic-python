@@ -13,7 +13,7 @@ CONGESTION_AVOIDANCE = 3
 
 # Congestion Controller Data
 INFINITY = math.inf
-MAX_DATAGRAM_SIZE = 65507
+MAX_DATAGRAM_SIZE = 1200
 SAFE_DATAGRAM_PAYLOAD_SIZE = 512 # bytes
 INITIAL_CONGESTION_WINDOW = MAX_DATAGRAM_SIZE*10 # Initial window is 10 times max datagram size RFC 9002
 MINIMUM_CONGESTION_WINDOW = MAX_DATAGRAM_SIZE*2  # Minimum window is 2 times max datagram size RFC 9002
@@ -96,12 +96,13 @@ LISTENING_HANDSHAKE = 5
 
 class PacketSentInfo:
 
-    def __init__(self, in_flight=False, sent_bytes=0, time_sent=0.0, packet_number=0, ack_eliciting=False):
+    def __init__(self, in_flight=False, sent_bytes=0, time_sent=0.0, packet_number=0, ack_eliciting=False, packet=None):
         self.in_flight: bool = in_flight
         self.sent_bytes: int = sent_bytes
         self.time_sent: float = time_sent
         self.ack_eliciting: bool = ack_eliciting
         self.packet_number: int = packet_number
+        self.packet: Packet = packet
 
 
 class PacketReceivedInfo:
@@ -324,11 +325,7 @@ class QUICNetworkController:
 
         # ---- Acknowledgement Data ----
         self.largest_packet_number_received: int = 0
-        self.first_ack_range = 0
-        self.ack_range_count = 0
-        self.ack_ranges = []
         self.packet_numbers_received: list[int] = []
-        self.packets_received: list[Packet] = []
 
 
 
@@ -539,7 +536,6 @@ class QUICNetworkController:
 
     def update_received_packets(self, packet: Packet) -> None:
         self.packet_numbers_received.append(packet.header.packet_number)
-        self.packets_received.append(packet)
 
 
 
@@ -655,6 +651,7 @@ class QUICNetworkController:
 
 
     def on_packet_loss(self):
+
         # Routine that is run in response to packet loss.
         # If the congestion controller is in SLOW_START:
             # CongestionController is set to RECOVERY state:
@@ -670,18 +667,53 @@ class QUICNetworkController:
 
 
 
+    def extract_ack_frame(self, pkt_number: int) -> bool:
+        for frame in self._sender_side_controller.packets_sent[pkt_number].packet.frames:
+            if frame.type == FT_ACK:
+                return frame
+        return None
+
+
+    
+
+    def remove_from_packets_received(self, packet_nums_acknowledged: list[int]) -> None:
+        # This function iterates through the packet nums acknoweledged,
+        # and checks whether any of the packets that were acknowledged are
+        # ack packets, if they are ack packets, then we remove from our list of received packets,
+        # so that we don't double acknowledge packets.
+        for pkt_num in packet_nums_acknowledged:
+            frame: AckFrame = self.extract_ack_frame(pkt_num)
+            if frame is not None:
+                pkts_acknowledged = [i for i in range(frame.largest_acknowledged, frame.largest_acknowledged - frame.first_ack_range - 1, -1)]
+                for num in pkts_acknowledged:
+                    self.packet_numbers_received.remove(num)
+
+
+
+
     def on_ack_frame_received(self, frame: AckFrame):
-        # 1. Update the sender side controllers' state with the newly acked packets.
-        # SLOW_START:
-            # 1. Increase congestion window by number of bytes acknowledged.
-            # 2. Update bytes in flight.
-        # CONGESTION_AVOIDANCE:
-            # 1. When a full congestion window of bytes is acknowledged, increase the congestion window by one maximum datagram size.
-            # 2. Update bytes in flight.
-        # RECOVERY:
-            # 1. If the packet being acknowledged was sent during the recovery period, then enter congestion avoidance.
-            # 2. If the packet being acknowledged was sent before the recovery period, update bytes in flight.
-        pass
+
+        # Calculate packet numbers being acked.
+        pkt_nums_acknowledged = [i for i in range(frame.largest_acknowledged, frame.largest_acknowledged-frame.first_ack_range-1, -1)]
+        if frame.ack_range_count > 0:
+            pn = frame.largest_acknowledged - frame.first_ack_range - 1
+            for ackrange in frame.ack_range:
+                pn -= ackrange.gap
+                pkt_nums_acknowledged += [i for i in range(pn, pn-ackrange.ack_range_length-1, -1)]
+        
+        self.remove_from_packets_received(pkt_nums_acknowledged)
+
+        # This updates the congestion controllers bytes_in_flights and packets_sent state.
+        self._sender_side_controller.on_packet_numbers_acked(pkt_nums_acknowledged)
+
+        # Detect packet loss.
+        # This goes through the packets_sent and determines whether any are considered lost,
+        # If they are determined to be lost, remove them from packets_sent and returns the lost packets.
+        # lost_packets = self._sender_side_controller.detect_and_remove_lost_packets(pkt_nums_acknowledged)
+        # if lost_packets:
+        #     self.on_packet_loss(lost_packets)
+        # retransmissions = self._packetizer.packetize_retransmissions(lost_packets)
+        # self.send_packets(retransmissions)
 
 
 
@@ -692,11 +724,43 @@ class QUICSenderSideController:
     """
 
     def __init__(self):
-        self.sender_state: int = SLOW_START
         self.congestion_window: int = INITIAL_CONGESTION_WINDOW
         self.bytes_in_flight = 0
         self.slow_start_threshold: float = INFINITY
         self.packets_sent: dict[int, PacketSentInfo] = dict()
+        self.congestion_recovery_start_time = 0
+
+
+
+
+    def on_packet_numbers_acked(self, packet_numbers: list[int]) -> None:
+        for x in packet_numbers:
+            if not self.packets_sent[x].in_flight:
+                # packets that aren't in flight don't count toward cwnd or bytes_in_flight.
+                self.packets_sent.pop(x)
+                continue
+            self.bytes_in_flight -= self.packets_sent[x].sent_bytes
+            if self.in_recovery(self.packets_sent[x].time_sent):
+                # recovery state, don't increase congestion window.
+                self.packets_sent.pop(x)
+                continue
+            if self.in_slow_start():
+                # slow start
+                # increase congestion window by bytes acked.
+                self.congestion_window += self.packets_sent[x].sent_bytes
+            else:
+                # congestion avoidance
+                # Additive increase, multiplicitive decrease
+                self.congestion_window += MAX_DATAGRAM_SIZE * self.packets_sent[x].sent_bytes / self.congestion_window
+            self.packets_sent.pop(x)
+
+
+
+
+    def in_recovery(self, time_sent: float) -> bool:
+        return time_sent <= self.congestion_recovery_start_time
+
+
 
 
     def send_packet_cc(self, packet: Packet, udp_socket: socket, connection_context: ConnectionContext) -> None:
@@ -707,7 +771,10 @@ class QUICSenderSideController:
                                                                     in_flight=True,
                                                                     ack_eliciting=True,
                                                                     sent_bytes=len(packet.raw()), 
-                                                                    packet_number=packet.header.packet_number)
+                                                                    packet_number=packet.header.packet_number,
+                                                                    packet=packet)
+
+
 
 
     def send_non_ack_eliciting_packet(self, packet: Packet, udp_socket: socket, connection_context: ConnectionContext) -> None:
@@ -717,13 +784,18 @@ class QUICSenderSideController:
                                                                     in_flight=False,
                                                                     ack_eliciting=False,
                                                                     sent_bytes=len(packet.raw()), 
-                                                                    packet_number=packet.header.packet_number)
+                                                                    packet_number=packet.header.packet_number,
+                                                                    packet=packet)
+
+
 
 
     def can_send(self):
         return self.bytes_in_flight < self.congestion_window
 
 
-    def is_in_slow_start(self) -> bool:
+
+
+    def in_slow_start(self) -> bool:
         return self.congestion_window < self.slow_start_threshold
 
