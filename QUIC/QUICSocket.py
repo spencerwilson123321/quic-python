@@ -29,7 +29,7 @@ class QUICSocket:
         # We just need  to copy it's QUICPacketizer and ConnectionContext into a new socket and then return it.
         connection = QUICSocket("")
         connection._network_controller = self._network_controller
-        connection._network_controller._packetizer._next_packet_number = 2
+        print(connection._network_controller._packetizer._next_packet_number)
         # connection._network_controller._packetizer = self._network_controller._packetizer
         # connection._network_controller._connection_context = self._network_controller._connection_context
         # connection._network_controller._send_streams = self._network_controller._send_streams.copy()
