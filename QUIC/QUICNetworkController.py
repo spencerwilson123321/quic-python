@@ -431,7 +431,6 @@ class QUICNetworkController:
         packets: list[Packet] = self._packetizer.packetize_stream_data(stream_id, data, self._connection_context, self._send_streams)
         # Add the currently buffered packets to the list of packets to send.
 
-        # TODO: Implement invoking the sendersidecontroller to send the packets.
         could_not_send: list[Packet] = self.send_packets(packets, udp_socket)
         while could_not_send:
             # Reprocess packets that could not be sent.
