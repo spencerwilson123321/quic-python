@@ -30,7 +30,7 @@ class QUICSocket:
         connection = QUICSocket("")
         connection._network_controller = self._network_controller
         connection._network_controller._packetizer = self._network_controller._packetizer
-        # connection._network_controller._connection_context = self._network_controller._connection_context
+        connection._network_controller._connection_context = self._network_controller._connection_context
         # connection._network_controller._send_streams = self._network_controller._send_streams.copy()
         # connection._network_controller._receive_streams = self._network_controller._receive_streams.copy()
         connection._network_controller.create_stream(1)
