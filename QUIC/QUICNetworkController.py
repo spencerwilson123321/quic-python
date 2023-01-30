@@ -667,7 +667,7 @@ class QUICNetworkController:
 
 
     def extract_ack_frame(self, pkt_number: int) -> bool:
-        print(self._sender_side_controller.packets_sent)
+        # print(self._sender_side_controller.packets_sent)
         for frame in self._sender_side_controller.packets_sent[pkt_number].packet.frames:
             if frame.type == FT_ACK:
                 return frame
@@ -767,7 +767,7 @@ class QUICSenderSideController:
         # Send packets based on the internal congestion control state.
         udp_socket.sendto(packet.raw(), connection_context.get_peer_address())
         self.bytes_in_flight += len(packet.raw())
-        print(f"inside send_packet_cc: {packet.header.packet_number}")
+        # print(f"inside send_packet_cc: {packet.header.packet_number}")
         self.packets_sent[packet.header.packet_number] = PacketSentInfo(time_sent=time(), 
                                                                     in_flight=True,
                                                                     ack_eliciting=True,
@@ -781,7 +781,7 @@ class QUICSenderSideController:
     def send_non_ack_eliciting_packet(self, packet: Packet, udp_socket: socket, connection_context: ConnectionContext) -> None:
         # For non-ack eliciting packets we don't care about congestion control state.
         udp_socket.sendto(packet.raw(), connection_context.get_peer_address())
-        print(f"inside send_non_ack_eliciting_packet: {packet.header.packet_number}")
+        # print(f"inside send_non_ack_eliciting_packet: {packet.header.packet_number}")
         self.packets_sent[packet.header.packet_number] = PacketSentInfo(time_sent=time(), 
                                                                     in_flight=False,
                                                                     ack_eliciting=False,
