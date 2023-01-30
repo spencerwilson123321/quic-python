@@ -668,6 +668,7 @@ class QUICNetworkController:
 
 
     def extract_ack_frame(self, pkt_number: int) -> bool:
+        print(self._sender_side_controller.packets_sent)
         for frame in self._sender_side_controller.packets_sent[pkt_number].packet.frames:
             if frame.type == FT_ACK:
                 return frame
