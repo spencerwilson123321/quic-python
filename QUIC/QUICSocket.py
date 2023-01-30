@@ -37,8 +37,8 @@ class QUICSocket:
         connection._socket.connect(connection._network_controller._connection_context.get_peer_address())
 
         self._network_controller._packetizer = QUICPacketizer()
-        self._network_controller._send_streams = dict()
-        self._network_controller._receive_streams = dict()
+        # self._network_controller._send_streams = dict()
+        # self._network_controller._receive_streams = dict()
 
         connection._network_controller.set_state(CONNECTED)
         return connection
