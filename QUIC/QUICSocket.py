@@ -40,6 +40,8 @@ class QUICSocket:
         self._network_controller._connection_context.set_local_port(old_connection_state.get_local_port())
         self._network_controller._connection_context.update_local_address()
 
+        print(self._network_controller._connection_context.get_local_address())
+
         return connection
 
 
