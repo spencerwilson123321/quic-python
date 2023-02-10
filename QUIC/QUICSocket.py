@@ -56,6 +56,17 @@ class QUICSocket:
 
 
     def close(self):
+        """
+            Issues a ConnectionClose frame to the peer and closes the connection.
+            Used to inform the peer that you want to close the connection.
+        """
+        pass
+
+    def release(self):
+        """
+            Closes the connection without sending a ConnectionClose frame to the peer.
+            Used to close a connection when a peer has issued a ConnectionClose frame.
+        """
         pass
 
     def close_stream(self, stream_id: int):
