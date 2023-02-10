@@ -87,12 +87,7 @@ LISTENING_HANDSHAKE = 5
 # Can be used by loss detection to reject implausibly small RTT samples.
 # Each time an rtt sample is taken, we must potentially update min_rtt.
 
-# Detecting Loss:
-# A packet is deemed lost if it if ack-eliciting, in-flight, and was sent prior to an acknowledged packet.
-# AND
-# The packet was sent K packets before an acknowledged packet.
-# If we do it this way then we don't need to worry as much about estimating rtt values since our implementation
-# is synchronous.
+
 
 class PacketSentInfo:
 
@@ -289,7 +284,6 @@ class ReceiveStream:
 
 
 
-
 class QUICNetworkController:
     """
         When a send_stream_data or read_stream_data function is called:
@@ -324,6 +318,7 @@ class QUICNetworkController:
         self.last_peer_address_received = None
 
         # ---- Acknowledgement Data ----
+        self.largest_acknowledged = -1
         self.largest_packet_number_received: int = 0
         self.packet_numbers_received: list[int] = []
 
@@ -649,7 +644,7 @@ class QUICNetworkController:
 
 
     def on_packet_loss(self):
-
+        # TODO implemenent packet loss.
         # Routine that is run in response to packet loss.
         # If the congestion controller is in SLOW_START:
             # CongestionController is set to RECOVERY state:
@@ -701,18 +696,17 @@ class QUICNetworkController:
                 pkt_nums_acknowledged += [i for i in range(pn, pn-ackrange.ack_range_length-1, -1)]
         
         self.remove_from_packets_received(pkt_nums_acknowledged)
+        self.largest_acknowledged = max(self.largest_acknowledged, max(pkt_nums_acknowledged))
 
         # This updates the congestion controllers bytes_in_flights and packets_sent state.
         self._sender_side_controller.on_packet_numbers_acked(pkt_nums_acknowledged)
 
-        # Detect packet loss.
-        # This goes through the packets_sent and determines whether any are considered lost,
-        # If they are determined to be lost, remove them from packets_sent and returns the lost packets.
-        # lost_packets = self._sender_side_controller.detect_and_remove_lost_packets(pkt_nums_acknowledged)
-        # if lost_packets:
-        #     self.on_packet_loss(lost_packets)
-        # retransmissions = self._packetizer.packetize_retransmissions(lost_packets)
-        # self.send_packets(retransmissions)
+        # Detect and handle packet loss.
+        lost_packets = self._sender_side_controller.detect_and_remove_lost_packets(self.largest_acknowledged)
+        if lost_packets: # If there are packets detected to be lost, then retransmit them.
+            self.on_packet_loss(lost_packets)
+        retransmissions = self._packetizer.packetize_retransmissions(lost_packets)
+        self.send_packets(retransmissions)
 
 
 
@@ -728,6 +722,22 @@ class QUICSenderSideController:
         self.slow_start_threshold: float = INFINITY
         self.packets_sent: dict[int, PacketSentInfo] = dict()
         self.congestion_recovery_start_time = 0
+    
+
+
+
+    def detect_and_remove_lost_packets(self, largest_acknowledged: int):
+        # Detecting Loss:
+        # A packet is deemed lost if it if ack-eliciting, in-flight, and was sent prior to an acknowledged packet.
+        # AND
+        # The packet was sent K packets before an acknowledged packet.
+        lost_packets = []
+        for pkt_num in self.packets_sent:
+            packet_is_lost = pkt_num < largest_acknowledged and self.packets_sent[pkt_num].ack_eliciting and self.packets_sent[pkt_num].in_flight and (largest_acknowledged - pkt_num) >= 3
+            if packet_is_lost:                               # If the packet is deemed lost.
+                packet_info = self.packets_sent.pop(pkt_num) # Remove it from sent_packets.
+                lost_packets.append(packet_info.packet)      # Add to lost packets list.
+        return lost_packets
 
 
 
