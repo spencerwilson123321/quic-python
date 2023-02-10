@@ -565,7 +565,6 @@ class QUICNetworkController:
             if self.state == INITIALIZING:
                 self._connection_context.set_peer_address(self.last_peer_address_received)
                 self._connection_context.set_local_connection_id(packet.header.destination_connection_id)
-                self._connection_context.set_peer_connection_id(create_connection_id())
                 self.server_initial_received = True
                 self.state = INITIALIZING
             if self.state == LISTENING_HANDSHAKE:
