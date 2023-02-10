@@ -1,4 +1,4 @@
-from ..QUIC import QUICSocket
+from QUIC import QUICSocket
 
 """
     Test Case #1:
