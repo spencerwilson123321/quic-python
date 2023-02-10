@@ -5,6 +5,19 @@ from .QUICEncryption import EncryptionContext
 from socket import socket
 import math
 from time import time
+import logging
+
+# Initialize logging facility.
+def setup_logger(name: str, filepath: str, level=logging.DEBUG):
+    file_handler = logging.FileHandler(filepath)
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    logger.addHandler(file_handler)
+    return logger
+
+sent_log = setup_logger("sent_log", "sent.log")
+received_log = setup_logger("received_log", "received.log")
+
 
 # Congestion Controller States
 SLOW_START = 1
@@ -439,8 +452,7 @@ class QUICNetworkController:
     def send_packets(self, packets: list[Packet], udp_socket: socket) -> list[Packet]:
         could_not_send: list[Packet] = []
         for packet in packets:
-            print("Sent:")
-            print(packet)
+            sent_log.debug(f"Sent: \n{packet}")
             if self.is_ack_eliciting(packet):
                 # If the packet is ack eliciting,
                 # then send it with congestion control.
@@ -602,8 +614,7 @@ class QUICNetworkController:
         packets = packets + self.buffered_packets
         self.buffered_packets = []
         for packet in packets:
-            print("Received:")
-            print(packet)
+            received_log.debug(f"Received: \n{packet}")
             # ---- PROCESS FRAME INFORMATION ----
             # Short Header:
             # 1. Stream Frames
