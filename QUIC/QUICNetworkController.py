@@ -643,21 +643,6 @@ class QUICNetworkController:
 
 
 
-    def on_packet_loss(self):
-        # TODO implemenent packet loss.
-        # Routine that is run in response to packet loss.
-        # If the congestion controller is in SLOW_START:
-            # CongestionController is set to RECOVERY state:
-            # 1. Slow Start Threshold is reduced to half of congestion window.
-            # 2. Recovery timer is started.
-        # If the congestion controller is in RECOVERY already:
-            # 1. The congestion window does not change in response to loss when already in recovery.
-        # If the congestion controller is in CONGESTION_AVOIDANCE:
-            # 1. Slow Start Threshold is reduced to half of congestion window.
-            # 2. Recovery timer is started.
-        pass
-
-
 
 
     def extract_ack_frame(self, pkt_number: int) -> bool:
@@ -703,8 +688,8 @@ class QUICNetworkController:
 
         # Detect and handle packet loss.
         lost_packets = self._sender_side_controller.detect_and_remove_lost_packets(self.largest_acknowledged)
-        # if lost_packets: # Packet loss detected.
-            # self.on_packet_loss(lost_packets) # This changes congestion control if necessary.
+        if lost_packets: # Packet loss detected.
+            self._sender_side_controller.on_packet_loss(lost_packets) # Update congestion control state.
             # retransmissions = self._packetizer.packetize_retransmissions(lost_packets) # Creates new packets
             # self.send_packets(retransmissions) # Retransmits packets.
         # If there is no loss, then continue as normal.
@@ -723,21 +708,41 @@ class QUICSenderSideController:
         self.slow_start_threshold: float = INFINITY
         self.packets_sent: dict[int, PacketSentInfo] = dict()
         self.congestion_recovery_start_time = 0
+        self.sent_time_of_last_loss = 0
     
 
 
 
-    def detect_and_remove_lost_packets(self, largest_acknowledged: int):
+    def on_packet_loss(self):
+        if self.in_recovery(self.sent_time_of_last_loss):
+            return
+        self.slow_start_threshold = self.congestion_window / 2
+        self.congestion_window = max(self.slow_start_threshold, MINIMUM_CONGESTION_WINDOW)
+        self.congestion_recovery_start_time = time()
+            
+
+
+
+
+    def detect_and_remove_lost_packets(self, largest_acknowledged: int) -> list[PacketSentInfo]:
         # Detecting Loss:
         # A packet is deemed lost if it if ack-eliciting, in-flight, and was sent prior to an acknowledged packet.
         # AND
         # The packet was sent K packets before an acknowledged packet.
-        lost_packets = []
+        lost_packets: list[PacketSentInfo] = []
         for pkt_num in self.packets_sent:
             packet_is_lost = pkt_num < largest_acknowledged and self.packets_sent[pkt_num].ack_eliciting and self.packets_sent[pkt_num].in_flight and (largest_acknowledged - pkt_num) >= 3
             if packet_is_lost:                               # If the packet is deemed lost.
                 packet_info = self.packets_sent.pop(pkt_num) # Remove it from sent_packets.
-                lost_packets.append(packet_info.packet)      # Add to lost packets list.
+                lost_packets.append(packet_info)      # Add to lost packets list.
+        if lost_packets:
+            self.sent_time_of_last_loss = 0
+            for lost_packet in lost_packets:
+                if lost_packet.in_flight:
+                    self.bytes_in_flight -= lost_packet.sent_bytes
+                    self.sent_time_of_last_loss = max(self.sent_time_of_last_loss, lost_packet.time_sent)
+            if self.sent_time_of_last_loss != 0:
+                self.on_packet_loss()
         return lost_packets
 
 
