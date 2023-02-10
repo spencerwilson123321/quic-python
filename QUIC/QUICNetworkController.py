@@ -703,10 +703,11 @@ class QUICNetworkController:
 
         # Detect and handle packet loss.
         lost_packets = self._sender_side_controller.detect_and_remove_lost_packets(self.largest_acknowledged)
-        if lost_packets: # If there are packets detected to be lost, then retransmit them.
-            self.on_packet_loss(lost_packets)
-        retransmissions = self._packetizer.packetize_retransmissions(lost_packets)
-        self.send_packets(retransmissions)
+        # if lost_packets: # Packet loss detected.
+            # self.on_packet_loss(lost_packets) # This changes congestion control if necessary.
+            # retransmissions = self._packetizer.packetize_retransmissions(lost_packets) # Creates new packets
+            # self.send_packets(retransmissions) # Retransmits packets.
+        # If there is no loss, then continue as normal.
 
 
 
