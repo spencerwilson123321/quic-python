@@ -464,14 +464,14 @@ class QUICNetworkController:
 
 
 
-    def send_stream_data(self, stream_id: int, data: bytes, udp_socket: socket):
+    def send_stream_data(self, stream_id: int, data: bytes, udp_socket: socket) -> bool:
         # Check for new packets to process and process them.
         packets_to_process = self.receive_new_packets(udp_socket)
         self.process_packets(packets_to_process, udp_socket)
 
         # If the connection has been closed, we return -1.
         if self.peer_issued_connection_closed:
-            return -1
+            return False
 
         # Packetize the stream data.
         packets: list[Packet] = self._packetizer.packetize_stream_data(stream_id, data, self._connection_context, self._send_streams)
@@ -482,7 +482,8 @@ class QUICNetworkController:
             # Reprocess packets that could not be sent.
             packets_to_process = self.receive_new_packets(udp_socket)
             self.process_packets(packets_to_process, udp_socket)
-            could_not_send = self.send_packets(could_not_send, udp_socket)            
+            could_not_send = self.send_packets(could_not_send, udp_socket)        
+        return True
 
 
 
@@ -698,7 +699,8 @@ class QUICNetworkController:
 
 
     def extract_ack_frame(self, pkt_number: int) -> bool:
-        # print(self._sender_side_controller.packets_sent)
+        if pkt_number not in self._sender_side_controller.packets_sent:
+            return None
         for frame in self._sender_side_controller.packets_sent[pkt_number].packet.frames:
             if frame.type == FT_ACK:
                 return frame
@@ -801,6 +803,10 @@ class QUICSenderSideController:
 
 
     def on_packet_numbers_acked(self, packet_numbers: list[int]) -> None:
+
+        # We only want to process packet numbers that still need to be processed.
+        packet_numbers = [x for x in packet_numbers if x in self.packets_sent]
+
         for x in packet_numbers:
             if not self.packets_sent[x].in_flight:
                 # packets that aren't in flight don't count toward cwnd or bytes_in_flight.

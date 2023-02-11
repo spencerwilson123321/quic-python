@@ -11,7 +11,9 @@ from QUIC import QUICSocket
 if __name__ == "__main__":
     client = QUICSocket(local_ip="10.0.0.159")
     client.connect(address=("10.0.0.131", 8000))
-    bytes_sent = client.send(1, b"Hello world!")
-    if bytes_sent == -1:
-        print("Yup, it returned -1")
-        client.release()
+    connection_open = True
+    while connection_open:
+        connection_open = client.send(1, b"Hello world!")
+    print("server closed the connection")
+    client.release()
+
