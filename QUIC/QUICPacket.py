@@ -26,7 +26,7 @@ STREAM_FRAME_SIZE = 12 # Not including stream data.
 CRYPTO_FRAME_SIZE = 11 # Not including crypto data.
 ACK_FRAME_SIZE = 17    # Not including the ack range field.
 ACK_RANGE_SIZE = 8     # Size of a single ack range.
-CONNECTION_CLOSE_FRAME_SIZE = 2
+CONNECTION_CLOSE_FRAME_SIZE = 3
 
 QUIC_VERSION = 0x36
 CONN_ID_LEN = 0x04
