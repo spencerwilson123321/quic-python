@@ -1,4 +1,5 @@
 from QUIC import QUICSocket
+import time
 
 """
     Test Case #1:
@@ -14,4 +15,4 @@ if __name__ == "__main__":
     msg = b"Hello"
     client.send(1, msg)
     print(f"Sent: {msg}")
-
+    time.sleep(1)
