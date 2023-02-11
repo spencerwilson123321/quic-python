@@ -652,6 +652,9 @@ class QUICNetworkController:
         self.buffered_packets = []
         for packet in packets:
             if packet.header.type == HT_DATA:
+                if self.state in [LISTENING_INITIAL, LISTENING_HANDSHAKE]:
+                    self.buffered_packets.append(packet)
+                    continue
                 self.process_short_header_packet(packet)
             elif packet.header.type in [HT_INITIAL, HT_HANDSHAKE, HT_RETRY]:
                 self.process_long_header_packet(packet, udp_socket)
