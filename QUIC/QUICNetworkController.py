@@ -540,7 +540,7 @@ class QUICNetworkController:
             except ConnectionRefusedError:
                 # This means that the peer has closed
                 # the connection.
-                return []
+                break
         for datagram in datagrams:
             packet = parse_packet_bytes(datagram)
             if packet.header.type == HT_INITIAL:
