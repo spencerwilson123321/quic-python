@@ -440,7 +440,7 @@ class ConnectionCloseFrame:
         return representation
 
     def raw(self):
-        return struct.pack("!BB") + self.reason_phrase
+        return struct.pack("!BBB", self.type, self.error_code, self.reason_phrase_len) + self.reason_phrase
 
 
 # class ResetStreamFrame:
