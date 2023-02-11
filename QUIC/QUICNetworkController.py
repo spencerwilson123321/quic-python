@@ -358,7 +358,7 @@ class QUICNetworkController:
                 4. Update the connection context information.
         """
         connection_close_packet = self._packetizer.packetize_connection_close_packet(self._connection_context)
-        self.send_packets([connection_close_packet])
+        self.send_packets(udp_socket=udp_socket, packets=[connection_close_packet])
         udp_socket.close()
         self._connection_context.connected = False
         self.state = CLOSED
