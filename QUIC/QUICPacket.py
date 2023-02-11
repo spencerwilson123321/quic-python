@@ -419,8 +419,8 @@ class ConnectionCloseFrame:
     def __init__(self, error_code=0, reason_phrase_len=0, reason_phrase=b""):
         self.type = FT_CONNECTIONCLOSE
 
-        check_char_type(error_code)
-        check_char_type(reason_phrase_len)
+        check_char_type("error code", error_code)
+        check_char_type("reason_phrase_len", reason_phrase_len)
 
         if len(reason_phrase) != reason_phrase_len:
             raise InvalidArgumentException("Reason phrase length does not match the given reason phrase.")
