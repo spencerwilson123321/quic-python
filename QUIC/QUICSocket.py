@@ -67,7 +67,7 @@ class QUICSocket:
             Closes the connection without sending a ConnectionClose frame to the peer.
             Used to close a connection when a peer has issued a ConnectionClose frame.
         """
-        self._network_controller.respond_to_connection_termination()
+        self._network_controller.respond_to_connection_termination(self.get_udp_socket())
 
     def close_stream(self, stream_id: int):
         pass
