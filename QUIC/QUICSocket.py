@@ -46,12 +46,12 @@ class QUICSocket:
         return connection
 
 
-    def send(self, stream_id: int, data: bytes):
-        self._network_controller.send_stream_data(stream_id, data, self.get_udp_socket())
+    def send(self, stream_id: int, data: bytes) -> int:
+        return self._network_controller.send_stream_data(stream_id, data, self.get_udp_socket())
 
 
-    def recv(self, stream_id: int, num_bytes: int):
-        data = self._network_controller.read_stream_data(stream_id, num_bytes, self.get_udp_socket())
+    def recv(self, stream_id: int, num_bytes: int) -> bytes:
+        data: bytes = self._network_controller.read_stream_data(stream_id, num_bytes, self.get_udp_socket())
         return data
 
 
@@ -60,14 +60,14 @@ class QUICSocket:
             Issues a ConnectionClose frame to the peer and closes the connection.
             Used to inform the peer that you want to close the connection.
         """
-        pass
+        self._network_controller.initiate_connection_termination(self.get_udp_socket())
 
     def release(self):
         """
             Closes the connection without sending a ConnectionClose frame to the peer.
             Used to close a connection when a peer has issued a ConnectionClose frame.
         """
-        pass
+        self._network_controller.respond_to_connection_termination()
 
     def close_stream(self, stream_id: int):
         pass
