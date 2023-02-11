@@ -432,10 +432,10 @@ class ConnectionCloseFrame:
 
     def __repr__(self) -> str:
         representation = ""
-        representation += "------ FRAME ------"
-        representation += f"Type: {frame_type_hex_to_string(self.type)}"
-        representation += f"Error Code: {self.error_code}"
-        representation += f"Reason Phrase Length: {self.reason_phrase_len}"
+        representation += "------ FRAME ------\n"
+        representation += f"Type: {frame_type_hex_to_string(self.type)}\n"
+        representation += f"Error Code: {self.error_code}\n"
+        representation += f"Reason Phrase Length: {self.reason_phrase_len}\n"
         representation += f"Reason Phrase: {self.reason_phrase}"
         return representation
 
