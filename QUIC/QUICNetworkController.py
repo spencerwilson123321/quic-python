@@ -663,6 +663,9 @@ class QUICNetworkController:
             # 4. NewStream Frames
             # etc...
             if packet.header.type == HT_DATA:
+                if self.state in [INITIALIZING, LISTENING_INITIAL, LISTENING_HANDSHAKE]:
+                    self.buffered_packets.append(packet)
+                    continue
                 self.process_short_header_packet(packet)
             elif packet.header.type in [HT_INITIAL, HT_HANDSHAKE, HT_RETRY]:
                 self.process_long_header_packet(packet, udp_socket)
