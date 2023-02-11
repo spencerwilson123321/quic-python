@@ -155,7 +155,7 @@ class QUICPacketizer:
         hdr = ShortHeader(destination_connection_id=connection_context.get_peer_connection_id(), packet_number=self.get_next_packet_number())
         reason = b"Normal Connection Termination"
         frames = [ConnectionCloseFrame(error_code=1, reason_phrase_len=len(reason), reason_phrase=reason)]
-        return Packet(hdr=hdr, frames=frames)
+        return Packet(header=hdr, frames=frames)
 
 
 
