@@ -150,7 +150,6 @@ class QUICPacketizer:
                 )
         if header_type in [HT_DATA]:
             return ShortHeader(
-                type=header_type,
                 destination_connection_id=connection_context.get_peer_connection_id(),
                 packet_number=self.get_next_packet_number()
             )
