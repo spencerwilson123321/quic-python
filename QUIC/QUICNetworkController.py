@@ -469,6 +469,10 @@ class QUICNetworkController:
         packets_to_process = self.receive_new_packets(udp_socket)
         self.process_packets(packets_to_process, udp_socket)
 
+        # If the connection has been closed, we return -1.
+        if self.peer_issued_connection_closed:
+            return -1
+
         # Packetize the stream data.
         packets: list[Packet] = self._packetizer.packetize_stream_data(stream_id, data, self._connection_context, self._send_streams)
         # Add the currently buffered packets to the list of packets to send.

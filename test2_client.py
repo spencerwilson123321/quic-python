@@ -13,4 +13,5 @@ if __name__ == "__main__":
     client.connect(address=("10.0.0.131", 8000))
     bytes_sent = client.send(1, b"Hello world!")
     if bytes_sent == -1:
+        print("Yup, it returned -1")
         client.release()
