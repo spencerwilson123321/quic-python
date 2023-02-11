@@ -514,7 +514,6 @@ class QUICNetworkController:
             # First, we need to receive all new packets in kernel queue,
             # and process each one.
             packets = self.receive_new_packets(udp_socket)
-            if packets: print(packets)
             self.process_packets(packets, udp_socket)
             if self.peer_issued_connection_closed:
                 return b""
@@ -653,9 +652,6 @@ class QUICNetworkController:
         self.buffered_packets = []
         for packet in packets:
             if packet.header.type == HT_DATA:
-                if self.state in [INITIALIZING, LISTENING_INITIAL, LISTENING_HANDSHAKE]:
-                    self.buffered_packets.append(packet)
-                    continue
                 self.process_short_header_packet(packet)
             elif packet.header.type in [HT_INITIAL, HT_HANDSHAKE, HT_RETRY]:
                 self.process_long_header_packet(packet, udp_socket)
