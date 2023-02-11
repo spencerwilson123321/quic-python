@@ -542,6 +542,7 @@ class QUICNetworkController:
             packet = parse_packet_bytes(datagram)
             if packet.header.type == HT_INITIAL:
                 self.last_peer_address_received = address
+            received_log.debug(f"Received: \n{packet}")
             packets.append(packet)
         return packets
 
@@ -651,17 +652,6 @@ class QUICNetworkController:
         packets = packets + self.buffered_packets
         self.buffered_packets = []
         for packet in packets:
-            received_log.debug(f"Received: \n{packet}")
-            # ---- PROCESS FRAME INFORMATION ----
-            # Short Header:
-            # 1. Stream Frames
-            # 2. Ack Frames
-            # Long Header:
-            # 1. Crypto Frames
-            # 2. Handshake Frames
-            # 3. ConnectionClose Frames
-            # 4. NewStream Frames
-            # etc...
             if packet.header.type == HT_DATA:
                 if self.state in [INITIALIZING, LISTENING_INITIAL, LISTENING_HANDSHAKE]:
                     self.buffered_packets.append(packet)
