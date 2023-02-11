@@ -659,6 +659,7 @@ class QUICNetworkController:
                 if self.state != CONNECTED:
                     self.buffered_packets.append(packet)
                 else:
+                    print(self.state)
                     self.process_short_header_packet(packet)
             elif packet.header.type in [HT_INITIAL, HT_HANDSHAKE, HT_RETRY]:
                 self.process_long_header_packet(packet, udp_socket)
@@ -683,8 +684,6 @@ class QUICNetworkController:
             else:
                 stream.write(frame.data)
             self._receive_streams[frame.stream_id] = stream
-        else:
-            print("Uh ok stinky")
 
 
 
