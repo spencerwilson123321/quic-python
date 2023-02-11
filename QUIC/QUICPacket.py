@@ -26,6 +26,7 @@ STREAM_FRAME_SIZE = 12 # Not including stream data.
 CRYPTO_FRAME_SIZE = 11 # Not including crypto data.
 ACK_FRAME_SIZE = 17    # Not including the ack range field.
 ACK_RANGE_SIZE = 8     # Size of a single ack range.
+CONNECTION_CLOSE_FRAME_SIZE = 2
 
 QUIC_VERSION = 0x36
 CONN_ID_LEN = 0x04
@@ -406,6 +407,41 @@ class PaddingFrame:
     def raw(self):
         return struct.pack("!B", self.type)
 
+class ConnectionCloseFrame:
+
+    """
+        Type - First Byte.
+        Error Code - Second Byte.
+        Reason Phrase Len - Third Byte.
+        Reason Phrase - bytes of defined length.
+    """
+
+    def __init__(self, error_code=0, reason_phrase_len=0, reason_phrase=b""):
+        self.type = FT_CONNECTIONCLOSE
+
+        check_char_type(error_code)
+        check_char_type(reason_phrase_len)
+
+        if len(reason_phrase) != reason_phrase_len:
+            raise InvalidArgumentException("Reason phrase length does not match the given reason phrase.")
+
+        self.error_code = error_code
+        self.reason_phrase_len = reason_phrase_len
+        self.reason_phrase = reason_phrase
+    
+
+    def __repr__(self) -> str:
+        representation = ""
+        representation += "------ FRAME ------"
+        representation += f"Type: {frame_type_hex_to_string(self.type)}"
+        representation += f"Error Code: {self.error_code}"
+        representation += f"Reason Phrase Length: {self.reason_phrase_len}"
+        representation += f"Reason Phrase: {self.reason_phrase}"
+        return representation
+
+    def raw(self):
+        return struct.pack("!BB") + self.reason_phrase
+
 
 # class ResetStreamFrame:
 
@@ -486,16 +522,6 @@ class PaddingFrame:
 #     def raw(self):
 #         return self.type + self.max_streams
 
-# class ConnectionCloseFrame:
-
-#     def __init__(self, error_code=b"", reason_phrase_len=b"", reason_phrase=b""):
-#         self.type = FT_CONNECTIONCLOSE
-#         self.error_code = error_code
-#         self.reason_phrase_len = reason_phrase_len
-#         self.reason_phrase = reason_phrase
-
-#     def raw(self):
-#         return self.type + self.error_code + self.reason_phrase_len + self.reason_phrase
 
 # class HandshakeDoneFrame:
 
