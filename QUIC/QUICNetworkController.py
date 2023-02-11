@@ -138,63 +138,56 @@ class QUICPacketizer:
         next = self._next_packet_number
         self._next_packet_number +=1
         return next
+    
 
+    def create_header(self, header_type: int, connection_context: ConnectionContext) -> LongHeader or ShortHeader:
+        if header_type in [HT_INITIAL, HT_HANDSHAKE, HT_RETRY]:
+            return LongHeader(
+                    type=header_type,
+                    destination_connection_id=connection_context.get_peer_connection_id(),
+                    source_connection_id=connection_context.get_local_connection_id(),
+                    packet_number=self.get_next_packet_number()
+                )
+        if header_type in [HT_DATA]:
+            return ShortHeader(
+                type=header_type,
+                destination_connection_id=connection_context.get_peer_connection_id(),
+                packet_number=self.get_next_packet_number()
+            )
+        return None
+        
 
     def packetize_initial_packet(self, connection_context: ConnectionContext) -> Packet:
-        hdr = LongHeader(
-            type=HT_INITIAL, 
-            destination_connection_id=connection_context.get_peer_connection_id(), 
-            source_connection_id=connection_context.get_local_connection_id(), 
-            packet_number=self.get_next_packet_number())
+        hdr = self.create_header(HT_INITIAL, connection_context)
         frames = [] # TODO Add crypto frames.
         return Packet(header=hdr, frames=frames)
     
 
-
     def packetize_connection_close_packet(self, connection_context: ConnectionContext) -> Packet:
-        hdr = ShortHeader(destination_connection_id=connection_context.get_peer_connection_id(), packet_number=self.get_next_packet_number())
+        hdr = self.create_header(HT_DATA, connection_context)
         reason = b"Normal Connection Termination"
         frames = [ConnectionCloseFrame(error_code=1, reason_phrase_len=len(reason), reason_phrase=reason)]
         return Packet(header=hdr, frames=frames)
 
 
-
-
     def packetize_handshake_packet(self, connection_context: ConnectionContext) -> Packet:
-        hdr = LongHeader(
-            type=HT_HANDSHAKE,
-            destination_connection_id=connection_context.get_peer_connection_id(),
-            source_connection_id=connection_context.get_local_connection_id(),
-            packet_number=self.get_next_packet_number())
+        hdr = self.create_header(HT_HANDSHAKE, connection_context)
         frames = []
         return Packet(header=hdr, frames=frames)
 
 
-
-
     def packetize_connection_response_packets(self, connection_context: ConnectionContext) -> list[Packet]:
-        hdr1 = LongHeader(
-            type=HT_INITIAL,
-            destination_connection_id=connection_context.get_peer_connection_id(),
-            source_connection_id=connection_context.get_local_connection_id(),
-            packet_number=self.get_next_packet_number())
-        hdr2 = LongHeader(
-            type=HT_HANDSHAKE,
-            destination_connection_id=connection_context.get_peer_connection_id(),
-            source_connection_id=connection_context.get_local_connection_id(),
-            packet_number=self.get_next_packet_number())
+        hdr1 = self.create_header(HT_INITIAL, connection_context)
+        hdr2 = self.create_header(HT_HANDSHAKE, connection_context)
         frames1 = []
         frames2 = []
         initial, handshake = Packet(header=hdr1, frames=frames1), Packet(header=hdr2, frames=frames2)
         return [initial, handshake]
 
 
-
-
     def packetize_acknowledgement(self, connection_context: ConnectionContext, packet_numbers_received: list[int]) -> Packet:
-        hdr = ShortHeader(
-            packet_number=self.get_next_packet_number(),
-            destination_connection_id=connection_context.get_peer_connection_id())
+
+        hdr = self.create_header(HT_DATA, connection_context)
 
         # If the received packets list is length 0
         # We cannot create an ack if we haven't received any packets.
@@ -231,7 +224,7 @@ class QUICPacketizer:
         frames = [AckFrame(largest_acknowledged=largest_acknowledged, ack_delay=0, ack_range_count=len(ranges), first_ack_range=first_ack_range, ack_range=ranges)]
         pkt = Packet(header=hdr, frames=frames)
         return pkt
-        
+
 
     def packetize_stream_data(self, stream_id: int, data: bytes, connection_context: ConnectionContext, send_streams: dict) -> list[Packet]:
         packets = []
@@ -245,19 +238,20 @@ class QUICPacketizer:
                 hdr = ShortHeader(
                     destination_connection_id=connection_context.get_peer_connection_id(), 
                     packet_number=self.get_next_packet_number())
+                hdr = self.create_header(HT_DATA, connection_context)
                 frames = [StreamFrame(stream_id=stream_id, offset=send_streams[stream_id].get_offset(), length=len(data_chunk), data=data_chunk)]
                 packets.append(Packet(header=hdr, frames=frames))
                 send_streams[stream_id].update_offset(len(data_chunk))
                 data = data[MAX_ALLOWED:]
                 bytes_written += len(data_chunk)
         else:
-            hdr = ShortHeader(
-                destination_connection_id=connection_context.get_peer_connection_id(), 
-                packet_number=self.get_next_packet_number())
+            hdr = self.create_header(HT_DATA, connection_context)
             frames = [StreamFrame(stream_id=stream_id, offset=send_streams[stream_id].get_offset(), length=len(data), data=data)]
             packets.append(Packet(header=hdr, frames=frames))
             send_streams[stream_id].update_offset(len(data))
         return packets
+
+
 
 
 class SendStream:
@@ -271,6 +265,8 @@ class SendStream:
 
     def update_offset(self, data_length: int) -> None:
         self.offset += data_length
+
+
 
 
 class ReceiveStream:
