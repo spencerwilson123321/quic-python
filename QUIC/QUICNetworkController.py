@@ -513,6 +513,7 @@ class QUICNetworkController:
         while data_not_read:
             # First, we need to receive all new packets in kernel queue,
             # and process each one.
+            print(data)
             packets = self.receive_new_packets(udp_socket)
             self.process_packets(packets, udp_socket)
             if self.peer_issued_connection_closed:
