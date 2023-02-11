@@ -59,6 +59,13 @@ def parse_crypto_frame(raw: bytes):
     return CryptoFrame(offset=fields[1], length=fields[2], data=crypto_data)
 
 
+def parse_connection_close_frame(raw: bytes):
+    field_data = raw[0:CONNECTION_CLOSE_FRAME_SIZE]
+    fields = struct.unpack("!BB", field_data)
+    reason_phrase_data = raw[CONNECTION_CLOSE_FRAME_SIZE:CONNECTION_CLOSE_FRAME_SIZE+fields[1]]
+    return ConnectionCloseFrame(error_code=fields[0], reason_phrase_len=fields[1], reason_phrase=reason_phrase_data)
+
+
 def parse_frames(raw: bytes):
 
     # If we receive 0 bytes then return an empty list of frames.
@@ -81,6 +88,11 @@ def parse_frames(raw: bytes):
             continue
         if frame_type == FT_CRYPTO:
             f = parse_crypto_frame(bytes_to_process)
+            bytes_to_process = bytes_to_process[len(f.raw()):]
+            frames.append(f)
+            continue
+        if frame_type == FT_CONNECTIONCLOSE:
+            f = parse_connection_close_frame(bytes_to_process)
             bytes_to_process = bytes_to_process[len(f.raw()):]
             frames.append(f)
             continue
