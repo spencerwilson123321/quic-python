@@ -517,7 +517,7 @@ class QUICNetworkController:
             self.process_packets(packets, udp_socket)
             if self.peer_issued_connection_closed:
                 return b""
-            stream = self._receive_streams[stream_id]
+            stream: ReceiveStream = self._receive_streams[stream_id]
             data += stream.read(num_bytes)
             self._receive_streams[stream_id] = stream
             if data:
@@ -652,9 +652,6 @@ class QUICNetworkController:
         self.buffered_packets = []
         for packet in packets:
             if packet.header.type == HT_DATA:
-                if self.state in [LISTENING_INITIAL, LISTENING_HANDSHAKE]:
-                    self.buffered_packets.append(packet)
-                    continue
                 self.process_short_header_packet(packet)
             elif packet.header.type in [HT_INITIAL, HT_HANDSHAKE, HT_RETRY]:
                 self.process_long_header_packet(packet, udp_socket)
@@ -679,6 +676,8 @@ class QUICNetworkController:
             else:
                 stream.write(frame.data)
             self._receive_streams[frame.stream_id] = stream
+        else:
+            print("Uh ok stinky")
 
 
 
