@@ -185,12 +185,10 @@ class QUICPacketizer:
     
 
     def create_ack_frame(self, packet_numbers_received: list[int]) -> AckFrame:
-
         # If the received packets list is length 1
         # Create a simple ack frame.
         if len(packet_numbers_received) == 1:
             return AckFrame(largest_acknowledged=packet_numbers_received[0], ack_delay=0, ack_range_count=0, ack_range=[])
-
         # If the received packets list is greater than 1.
         # We sort the packet number list.
         # Then we incrementally create AckRanges.
@@ -221,37 +219,7 @@ class QUICPacketizer:
             return None
 
         hdr = self.create_header(HT_DATA, connection_context)
-        ackframe = self.create_ack_frame(packet_numbers_received)
-
-        # # If the received packets list is length 1
-        # # Create a simple ack frame.
-        # if len(packet_numbers_received) == 1:
-        #     frames = [AckFrame(largest_acknowledged=packet_numbers_received[0], ack_delay=0, ack_range_count=0, ack_range=[])]
-        #     return Packet(header=hdr, frames=frames)    
-
-        # # If the received packets list is greater than 1.
-        # # We sort the packet number list.
-        # # Then we incrementally create AckRanges.
-        # # In the resulting AckRanges, an AckRange with gap 0 is the most recent AckRange,
-        # # from this AckRange we can get first ack range value.
-        # packet_numbers_received.sort()
-        # ranges = []
-        # count = 0
-        # for i in range(0, len(packet_numbers_received)):
-        #     count += 1
-        #     if i == len(packet_numbers_received)-1:
-        #         ranges.append(AckRange(gap=0, ack_range_length=count))
-        #         break
-        #     if packet_numbers_received[i+1] != packet_numbers_received[i]+1:
-        #         ranges.append(AckRange(gap=packet_numbers_received[i+1] - packet_numbers_received[i] - 1, ack_range_length=count))
-        #         count = 0
-        
-        # first_ack_range = ranges[-1].ack_range_length - 1
-        # largest_acknowledged = packet_numbers_received[-1]
-        # ranges.remove(ranges[-1])
-
-        # frames = [AckFrame(largest_acknowledged=largest_acknowledged, ack_delay=0, ack_range_count=len(ranges), first_ack_range=first_ack_range, ack_range=ranges)]
-        frames = [ackframe]
+        frames = [self.create_ack_frame(packet_numbers_received)]
         pkt = Packet(header=hdr, frames=frames)
         return pkt
 
