@@ -44,6 +44,9 @@ INITIALIZING = 3
 LISTENING_INITIAL = 4
 LISTENING_HANDSHAKE = 5
 
+# This means that we have closed the connection.
+CLOSED = 6
+
 
 # Slow Start:
 # congestion window is increased by the number of acknowledged bytes every time an ACK is processed.
@@ -145,6 +148,14 @@ class QUICPacketizer:
             packet_number=self.get_next_packet_number())
         frames = [] # TODO Add crypto frames.
         return Packet(header=hdr, frames=frames)
+    
+
+
+    def packetize_connection_close_packet(self, connection_context: ConnectionContext) -> Packet:
+        hdr = ShortHeader(destination_connection_id=connection_context.get_peer_connection_id(), packet_number=self.get_next_packet_number())
+        reason = b"Normal Connection Termination"
+        frames = [ConnectionCloseFrame(error_code=1, reason_phrase_len=len(reason), reason_phrase=reason)]
+        return Packet(hdr=hdr, frames=frames)
 
 
 
@@ -334,7 +345,29 @@ class QUICNetworkController:
         self.largest_acknowledged = -1
         self.largest_packet_number_received: int = 0
         self.packet_numbers_received: list[int] = []
+    
 
+
+    def initiate_connection_termination(self, udp_socket: socket) -> None:
+        """
+            1. Send short header packet with ConnectionClose Frame.
+                1. Use the packetizer to create a ConnectionClose packet.
+                2. transmit the packet using the regular functions.
+                3. Close the underlying UDP socket.
+                4. Update the connection context information.
+        """
+        connection_close_packet = self._packetizer.packetize_connection_close_packet(self._connection_context)
+        self.send_packets([connection_close_packet])
+        udp_socket.close()
+        self._connection_context.connected = False
+        self.state = CLOSED
+
+
+    
+    def respond_to_connection_termination(self, udp_socket: socket):
+        udp_socket.close()
+        self._connection_context.connected = False
+        self.state = CLOSED
 
 
 
@@ -482,6 +515,8 @@ class QUICNetworkController:
             # and process each one.
             packets = self.receive_new_packets(udp_socket)
             self.process_packets(packets, udp_socket)
+            if self.peer_issued_connection_closed:
+                return b""
             stream = self._receive_streams[stream_id]
             data += stream.read(num_bytes)
             self._receive_streams[stream_id] = stream
@@ -555,6 +590,8 @@ class QUICNetworkController:
                 self.on_stream_frame_received(frame)
             if frame.type == FT_ACK:
                 self.on_ack_frame_received(frame)
+            if frame.type == FT_CONNECTIONCLOSE:
+                self.peer_issued_connection_closed = True
             # TODO: Add checks for other frame types i.e. StreamClose, ConnectionClose, etc.
 
 
