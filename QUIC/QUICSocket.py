@@ -51,9 +51,8 @@ class QUICSocket:
         return self._network_controller.send_stream_data(stream_id, data, self.get_udp_socket())
 
 
-    def recv(self, stream_id: int, num_bytes: int) -> bytes:
-        data: bytes = self._network_controller.read_stream_data(stream_id, num_bytes, self.get_udp_socket())
-        return data
+    def recv(self, stream_id: int, num_bytes: int) -> tuple[bytes, bool]:
+        return self._network_controller.read_stream_data(stream_id, num_bytes, self.get_udp_socket())
 
 
     def close(self):

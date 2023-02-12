@@ -531,27 +531,33 @@ class QUICNetworkController:
 
 
 
-    def read_stream_data(self, stream_id: int, num_bytes: int, udp_socket: socket):
+    def read_stream_data(self, stream_id: int, num_bytes: int, udp_socket: socket) -> tuple[bytes, bool]:
         """
             This function will block until at least some data has been read.
         """
-        if self.peer_issued_connection_closed:
-                return b""
-        data_not_read = True
-        data = b""
-        while data_not_read:
-            # First, we need to receive all new packets in kernel queue,
-            # and process each one.
-            packets = self.receive_new_packets(udp_socket)
-            # if not packets:
-            #     continue
-            self.process_packets(packets, udp_socket)
-            # if self.peer_issued_connection_closed:
-            #     return b""
-            data += self._receive_streams[stream_id].read(num_bytes)
-            if data:
-                data_not_read = False
-        return data
+        # Receive and process new packets.
+        packets: list[Packet] = self.receive_new_packets(udp_socket)
+        self.process_packets(packets, udp_socket)
+        # Now we can read from the receive_stream.
+        data: bytes = self._receive_streams[stream_id].read(num_bytes)
+        return data, self.peer_issued_connection_closed
+        # if self.peer_issued_connection_closed:
+        #         return b""
+        # data_not_read = True
+        # data = b""
+        # while data_not_read:
+        #     # First, we need to receive all new packets in kernel queue,
+        #     # and process each one.
+        #     packets = self.receive_new_packets(udp_socket)
+        #     # if not packets:
+        #     #     continue
+        #     self.process_packets(packets, udp_socket)
+        #     # if self.peer_issued_connection_closed:
+        #     #     return b""
+        #     data += self._receive_streams[stream_id].read(num_bytes)
+        #     if data:
+        #         data_not_read = False
+        # return data
 
 
 
@@ -657,6 +663,8 @@ class QUICNetworkController:
             return
 
 
+
+
     def process_packets(self, packets: list[Packet], udp_socket: socket) -> None:
 
         if not packets:
@@ -673,14 +681,14 @@ class QUICNetworkController:
         else:
             for packet in sh_packets:
                 self.process_short_header_packet(packet)
-            # ---- PROCESS HEADER INFORMATION ----
-            # 1. Update the largest packet number seen so far.
-            # 2. Store which packet numbers have been received.
-            # 3. Send acknowledgement if the packet is ack-eliciting.
-            # self.update_largest_packet_number_received(packet)
-            # self.update_received_packets(packet)
-            # if self.is_ack_eliciting(packet):
-            #     self.create_and_send_acknowledgements(udp_socket)
+        # ---- PROCESS HEADER INFORMATION ----
+        # 1. Update the largest packet number seen so far.
+        # 2. Store which packet numbers have been received.
+        # 3. Send acknowledgement if the packet is ack-eliciting.
+        # self.update_largest_packet_number_received(packet)
+        # self.update_received_packets(packet)
+        # if self.is_ack_eliciting(packet):
+        #     self.create_and_send_acknowledgements(udp_socket)
 
 
     def receive_new_packets(self, udp_socket: socket, block=False):
@@ -718,6 +726,8 @@ class QUICNetworkController:
         else:
             print(f"Stream ID {frame.stream_id} does not exist.")
             exit(1)
+
+
 
 
     def extract_ack_frame(self, pkt_number: int) -> bool:
@@ -795,7 +805,6 @@ class QUICSenderSideController:
         self.slow_start_threshold = self.congestion_window / 2
         self.congestion_window = max(self.slow_start_threshold, MINIMUM_CONGESTION_WINDOW)
         self.congestion_recovery_start_time = time()
-            
 
 
 

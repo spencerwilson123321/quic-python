@@ -14,8 +14,4 @@ import time
 if __name__ == "__main__":
     client = QUICSocket(local_ip="10.0.0.159")
     client.connect(address=("10.0.0.131", 8000))
-    client.send(1, b"Very cool.")
-    response = client.recv(1, 1024)
-    if not response:
-        print("Server closed the connection.")
-        client.release()
+    status = client.send(1, b"Very cool.")
