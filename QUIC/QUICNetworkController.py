@@ -517,17 +517,20 @@ class QUICNetworkController:
         """
             This function will block until at least some data has been read.
         """
+        print("Inside read_stream_data")
         data_not_read = True
         data = b""
         while data_not_read:
             # First, we need to receive all new packets in kernel queue,
             # and process each one.
             packets = self.receive_new_packets(udp_socket)
+            print(f"read_stream_data - packets: {packets}")
             self.process_packets(packets, udp_socket)
             if self.peer_issued_connection_closed:
                 return b""
             stream: ReceiveStream = self._receive_streams[stream_id]
             data += stream.read(num_bytes)
+            print(f"read_stream_data - data: {data}")
             self._receive_streams[stream_id] = stream
             if data:
                 data_not_read = False
