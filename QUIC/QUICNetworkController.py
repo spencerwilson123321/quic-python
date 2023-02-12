@@ -373,6 +373,11 @@ class QUICNetworkController:
     def is_server_handshake_complete(self) -> bool:
         return self.client_handshake_received and self.client_initial_received
 
+    def set_buffered_packets(self, buffered_packets: list):
+        self.buffered_packets = buffered_packets
+    
+    def get_buffered_packets(self) -> list:
+        return self.buffered_packets
 
     def set_state(self, state: int) -> None:
         self.state = state
@@ -385,7 +390,7 @@ class QUICNetworkController:
     def set_receive_streams(self, recv_streams: dict):
         self._receive_streams = recv_streams
 
-    
+
     def get_receive_streams(self) -> dict:
         return self._receive_streams
 
