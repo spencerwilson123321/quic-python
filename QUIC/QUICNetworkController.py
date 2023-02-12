@@ -544,6 +544,7 @@ class QUICNetworkController:
             try:
                 datagram, address = udp_socket.recvfrom(4096)
                 datagrams.append(datagram)
+                print(datagram)
             except BlockingIOError:
                 break
             except ConnectionRefusedError:
