@@ -16,4 +16,3 @@ if __name__ == "__main__":
     client.send(1, msg)
     print(f"Sent: {msg}")
     time.sleep(5)
-    client.close()
