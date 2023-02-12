@@ -508,7 +508,6 @@ class QUICNetworkController:
         """
             This function will block until at least some data has been read.
         """
-        print(self.buffered_packets)
         data_not_read = True
         data = b""
         while data_not_read:
@@ -540,10 +539,10 @@ class QUICNetworkController:
                 datagrams.append(datagram)
             except BlockingIOError:
                 break
-            except ConnectionRefusedError:
-                # This means that the peer has closed
-                # the connection.
-                break
+            # except ConnectionRefusedError:
+            #     # This means that the peer has closed
+            #     # the connection.
+            #     break
         for datagram in datagrams:
             packet = parse_packet_bytes(datagram)
             if packet.header.type == HT_INITIAL:
@@ -640,8 +639,7 @@ class QUICNetworkController:
                 self.send_packets(packets, udp_socket)
                 self.client_initial_received = True
                 self.state = LISTENING_HANDSHAKE
-            else:
-                self.buffered_packets.append(packet)
+            self.buffered_packets.append(packet)
             return
 
         # Server has received the INITIAL packet from the client and has sent a response.
@@ -651,11 +649,9 @@ class QUICNetworkController:
             if packet.header.type == HT_HANDSHAKE:
                 self.client_handshake_received = True
                 self.state = CONNECTED
-            else:
-                self.buffered_packets.append(packet)
+                return
+            self.buffered_packets.append(packet)
             return
-
-
 
 
     def process_packets(self, packets: list[Packet], udp_socket: socket) -> None:
@@ -687,8 +683,8 @@ class QUICNetworkController:
             else:
                 stream.write(frame.data)
             self._receive_streams[frame.stream_id] = stream
-
-
+        else:
+            print("Zoinks")
 
 
 
