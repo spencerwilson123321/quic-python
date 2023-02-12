@@ -690,6 +690,8 @@ class QUICNetworkController:
 
 
     def receive_new_packets(self, udp_socket: socket, block=False):
+        if self.buffered_packets:
+            print(self.buffered_packets)
         packets: list[Packet] = [] + self.buffered_packets
         self.buffered_packets = []
         datagrams: list[bytes] = []
