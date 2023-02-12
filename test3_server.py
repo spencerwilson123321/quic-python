@@ -13,7 +13,7 @@ if __name__ == "__main__":
     client = server.accept() # Accept a connection.
     disconnected = False
     data = b""
-    while data < 1024:
+    while len(data) < 1024:
         received, disconnected = client.recv(1, 80)
         data += received
     print(f"Received data: {data}")
