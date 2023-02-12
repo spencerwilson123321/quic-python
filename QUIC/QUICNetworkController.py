@@ -668,9 +668,6 @@ class QUICNetworkController:
         lh_packets = [packet for packet in packets if packet.header.type in [HT_INITIAL, HT_HANDSHAKE, HT_RETRY]]
         sh_packets = [packet for packet in packets if packet.header.type in [HT_DATA]]
 
-        print(lh_packets)
-        print(sh_packets)
-
         for packet in lh_packets:
             self.process_long_header_packet(packet, udp_socket)
         if self.state != CONNECTED:
