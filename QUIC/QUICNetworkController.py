@@ -435,7 +435,6 @@ class QUICNetworkController:
 
 
     def accept_connection(self, udp_socket: socket) -> ConnectionContext:
-        self.create_stream(1)
         if self.state != LISTENING_INITIAL:
             print("Must be in LISTENING state to accept()")
             exit(1)
@@ -444,6 +443,8 @@ class QUICNetworkController:
             self.process_packets(packets, udp_socket)
         self.client_initial_received = False
         self.client_handshake_received = False
+        self.create_stream(1)
+        return self._connection_context, self._encryption_context, self.buffered_packets, self._receive_streams, self._send_streams
         # self.create_stream(1)
         # while self.state == LISTENING_INITIAL:
         #     # We are listening for INITIAL packets.
@@ -658,14 +659,9 @@ class QUICNetworkController:
         while True:
             try:
                 datagram, address = udp_socket.recvfrom(4096)
-                print(f"receive_new_packets - datagram: {datagram}")
                 datagrams.append(datagram)
             except BlockingIOError:
                 break
-            # except ConnectionRefusedError:
-            #     # This means that the peer has closed
-            #     # the connection.
-            #     break
         for datagram in datagrams:
             packet = parse_packet_bytes(datagram)
             if packet.header.type == HT_INITIAL:

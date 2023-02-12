@@ -27,26 +27,31 @@ class QUICSocket:
         # TODO this probably needs to be refactored, it is a hacky solution.
 
         # We give the network controller our wildcard socket.
-        self._network_controller.accept_connection(self._socket)
+        connection_context, encryption_context, buffered_packets, recv_streams, send_streams = self._network_controller.accept_connection(self._socket)
+        connection = QUICSocket("")
+        connection._network_controller.set_connection_context(connection_context)
+        connection._network_controller.set_encryption_context(encryption_context)
+        connection._network_controller.set_buffered_packets(buffered_packets)
+        connection._network_controller.set_receive_streams(recv_streams)
+        connection._network_controller.set_send_streams(send_streams)
+        connection._socket.bind(connection_context.get_local_address())
+        connection._socket.connect(connection_context.get_peer_address())
 
         # When the above call is complete, the network controller's connection context will be filled out.
         # We just need  to copy it's QUICPacketizer and ConnectionContext into a new socket and then return it.
-        connection = QUICSocket("")
-        connection._network_controller = self._network_controller
-        connection._network_controller._connection_context = self._network_controller._connection_context
+        # connection._network_controller = self._network_controller
+        # connection._network_controller._connection_context = self._network_controller._connection_context
         connection._socket.bind(connection._network_controller._connection_context.get_local_address())
         connection._socket.connect(connection._network_controller._connection_context.get_peer_address())
-        connection._network_controller.set_state(CONNECTED)
-        connection._network_controller.buffered_packets = self._network_controller.buffered_packets
-        connection._network_controller._receive_streams = self._network_controller._receive_streams
-        connection._network_controller._send_streams = self._network_controller._send_streams
+        # connection._network_controller.set_state(CONNECTED)
+        # connection._network_controller.buffered_packets = self._network_controller.buffered_packets
+        # connection._network_controller._receive_streams = self._network_controller._receive_streams
+        # connection._network_controller._send_streams = self._network_controller._send_streams
         self._network_controller = QUICNetworkController()
-
         old_connection_state = connection.get_connection_state()
         self._network_controller._connection_context.set_local_ip(old_connection_state.get_local_ip())
         self._network_controller._connection_context.set_local_port(old_connection_state.get_local_port())
         self._network_controller._connection_context.update_local_address()
-
         # Set network controller back to listening state.
         self._network_controller.state = LISTENING_INITIAL
 
