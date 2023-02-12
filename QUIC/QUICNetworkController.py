@@ -540,8 +540,8 @@ class QUICNetworkController:
 
 
     def receive_new_packets(self, udp_socket: socket, block=False):
-        packets: list[Packet] = [] + self.buffered_packets.copy()
-        self.buffered_packets.clear()
+        packets: list[Packet] = [] + self.buffered_packets
+        self.buffered_packets = []
         datagrams: list[bytes] = []
         udp_socket.setblocking(block)
         while True:
