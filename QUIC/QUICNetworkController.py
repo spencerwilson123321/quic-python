@@ -664,10 +664,10 @@ class QUICNetworkController:
         sh_packets = [packet for packet in packets if packet.header.type in [HT_DATA]]
         for packet in lh_packets:
             self.process_long_header_packet(packet, udp_socket)
-        for packet in sh_packets:
-            if self.state != CONNECTED:
-                self.buffered_packets.append(packet)
-            else:
+        if self.state != CONNECTED:
+            self.buffered_packets += sh_packets
+        else:
+            for packet in sh_packets:
                 self.process_short_header_packet(packet)
             # ---- PROCESS HEADER INFORMATION ----
             # 1. Update the largest packet number seen so far.
