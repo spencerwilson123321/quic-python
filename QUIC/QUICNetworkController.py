@@ -603,39 +603,18 @@ class QUICNetworkController:
 
 
     def process_long_header_packet(self, packet: Packet, udp_socket: socket) -> None:
-        if packet.header.type == HT_INITIAL:
-            if self.state == INITIALIZING:
+
+        if self.get_state() == CONNECTED:
+            pass
+
+        # Client has sent the HT_INITIAL packet to the server.
+        # Client is waiting for the HT_INITIAL and HT_HANDSHAKE response.
+        if self.get_state() == INITIALIZING:
+            if packet.header.type == HT_INITIAL:
                 self._connection_context.set_peer_address(self.last_peer_address_received)
                 self._connection_context.set_local_connection_id(packet.header.destination_connection_id)
                 self.server_initial_received = True
-                self.state = INITIALIZING
-            if self.state == LISTENING_HANDSHAKE:
-                pass
-            if self.state == CONNECTED:
-                # We can't accept connections while in a connected state.
-                return None
-            if self.state == DISCONNECTED:
-                # Cannot accept connections when not in listening state.
-                pass
-            if self.state == LISTENING_INITIAL:
-                # Incoming connection request.
-                # 1. Update connection context with peer address. ip / port
-                # 2. Update connection context with peer connection id.
-                # 3. Send response packets.
-                # 4. Set the state to LISTENING_HANDSHAKE.
-                self._connection_context.set_peer_address(self.last_peer_address_received)
-                self._connection_context.set_local_connection_id(packet.header.destination_connection_id)
-                self._connection_context.set_peer_connection_id(create_connection_id())
-                packets = self._packetizer.packetize_connection_response_packets(self._connection_context)
-                self.send_packets(packets, udp_socket)
-                self.state = LISTENING_HANDSHAKE
-        if packet.header.type == HT_HANDSHAKE:
-            if self.state == LISTENING_HANDSHAKE:
-                # Client is completing the handshake.
-                # Only thing left to do is change the state
-                # so that we exit the accept_connection loop.
-                self.state = CONNECTED
-            if self.state == INITIALIZING:
+            if packet.header.type == HT_HANDSHAKE:
                 self.server_handshake_received = True
                 if self.server_initial_received:
                     packet = self._packetizer.packetize_handshake_packet(self._connection_context)
@@ -644,9 +623,75 @@ class QUICNetworkController:
                 else:
                     self.buffered_packets.append(packet)
                     self.state = INITIALIZING
-        if packet.header.type == HT_RETRY:
-            pass
-        return None
+            return
+        
+        # Server is listening for INITIAL packets from clients.
+        if self.get_state() == LISTENING_INITIAL:
+            # When we are listening for INITIAL packets,
+            # we only care about INITIAL packets so buffer all other types.
+            if packet.header.type == HT_INITIAL:
+                self._connection_context.set_peer_address(self.last_peer_address_received)
+                self._connection_context.set_local_connection_id(packet.header.destination_connection_id)
+                self._connection_context.set_peer_connection_id(create_connection_id())
+                packets = self._packetizer.packetize_connection_response_packets(self._connection_context)
+                self.send_packets(packets, udp_socket)
+                self.state = LISTENING_HANDSHAKE
+            else:
+                self.buffered_packets.append(packet)
+            return
+
+        # Server has received the INITIAL packet from the client and has sent a response.
+        # When we receive a client handshake, it finalizes the handshake procedure.
+        # We must buffer all other packets at this point.
+        if self.get_state() == LISTENING_HANDSHAKE:
+            if packet.header.type == HT_HANDSHAKE:
+                self.state = CONNECTED
+            else:
+                self.buffered_packets.append(packet)
+            return
+
+        # if packet.header.type == HT_INITIAL:
+        #     if self.state == INITIALIZING:
+        #         self._connection_context.set_peer_address(self.last_peer_address_received)
+        #         self._connection_context.set_local_connection_id(packet.header.destination_connection_id)
+        #         self.server_initial_received = True
+        #         self.state = INITIALIZING
+        #     if self.state == CONNECTED:
+        #         # We can't accept connections while in a connected state.
+        #         return None
+        #     if self.state == DISCONNECTED:
+        #         # Cannot accept connections when not in listening state.
+        #         pass
+        #     if self.state == LISTENING_INITIAL:
+        #         # Incoming connection request.
+        #         # 1. Update connection context with peer address. ip / port
+        #         # 2. Update connection context with peer connection id.
+        #         # 3. Send response packets.
+        #         # 4. Set the state to LISTENING_HANDSHAKE.
+        #         self._connection_context.set_peer_address(self.last_peer_address_received)
+        #         self._connection_context.set_local_connection_id(packet.header.destination_connection_id)
+        #         self._connection_context.set_peer_connection_id(create_connection_id())
+        #         packets = self._packetizer.packetize_connection_response_packets(self._connection_context)
+        #         self.send_packets(packets, udp_socket)
+        #         self.state = LISTENING_HANDSHAKE
+        # if packet.header.type == HT_HANDSHAKE:
+        #     if self.state == LISTENING_HANDSHAKE:
+        #         # Client is completing the handshake.
+        #         # Only thing left to do is change the state
+        #         # so that we exit the accept_connection loop.
+        #         self.state = CONNECTED
+        #     if self.state == INITIALIZING:
+        #         self.server_handshake_received = True
+        #         if self.server_initial_received:
+        #             packet = self._packetizer.packetize_handshake_packet(self._connection_context)
+        #             self.send_packets([packet], udp_socket)
+        #             self.state = CONNECTED
+        #         else:
+        #             self.buffered_packets.append(packet)
+        #             self.state = INITIALIZING
+        # if packet.header.type == HT_RETRY:
+        #     pass
+        # return None
 
 
 
