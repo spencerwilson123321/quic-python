@@ -429,7 +429,6 @@ class QUICNetworkController:
         
         # ---- Connection Complete ----
         self.state = CONNECTED
-        self.create_stream(1)
 
 
 
@@ -649,6 +648,7 @@ class QUICNetworkController:
         if self.get_state() == LISTENING_HANDSHAKE:
             if packet.header.type == HT_HANDSHAKE:
                 self.client_handshake_received = True
+                self.create_stream(1)
                 self.state = CONNECTED
             else:
                 self.buffered_packets.append(packet)
