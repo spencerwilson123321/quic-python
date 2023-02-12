@@ -507,6 +507,7 @@ class QUICNetworkController:
         """
             This function will block until at least some data has been read.
         """
+        print(self.buffered_packets)
         data_not_read = True
         data = b""
         while data_not_read:
@@ -661,7 +662,6 @@ class QUICNetworkController:
         # We should process long header packets first.
         lh_packets = [packet for packet in packets if packet.header.type in [HT_INITIAL, HT_HANDSHAKE, HT_RETRY]]
         sh_packets = [packet for packet in packets if packet.header.type in [HT_DATA]]
-        print(f"Process Packets: \n{packets}")
         for packet in lh_packets:
             self.process_long_header_packet(packet, udp_socket)
         for packet in sh_packets:
