@@ -12,4 +12,3 @@ if __name__ == "__main__":
     client = server.accept() # Accept a connection.
     msg = client.recv(1, 1024)
     print(f"Received: {msg}")
-    client.close()
