@@ -527,11 +527,6 @@ class QUICNetworkController:
 
 
 
-
-
-
-
-
     def is_active_stream(self, stream_id: int) -> bool:
         return stream_id in self._receive_streams
 
@@ -641,7 +636,10 @@ class QUICNetworkController:
         for packet in lh_packets:
             self.process_long_header_packet(packet, udp_socket)
         for packet in sh_packets:
-            self.process_short_header_packet(packet)
+            if self.state != CONNECTED:
+                self.buffered_packets.append(packet)
+            else:
+                self.process_short_header_packet(packet)
             # ---- PROCESS HEADER INFORMATION ----
             # 1. Update the largest packet number seen so far.
             # 2. Store which packet numbers have been received.
