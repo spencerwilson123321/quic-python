@@ -517,20 +517,17 @@ class QUICNetworkController:
         """
             This function will block until at least some data has been read.
         """
-        print("Inside read_stream_data")
         data_not_read = True
         data = b""
         while data_not_read:
             # First, we need to receive all new packets in kernel queue,
             # and process each one.
             packets = self.receive_new_packets(udp_socket)
-            print(f"read_stream_data - packets: {packets}")
             self.process_packets(packets, udp_socket)
             if self.peer_issued_connection_closed:
                 return b""
             stream: ReceiveStream = self._receive_streams[stream_id]
             data += stream.read(num_bytes)
-            print(f"read_stream_data - data: {data}")
             self._receive_streams[stream_id] = stream
             if data:
                 data_not_read = False
@@ -548,7 +545,6 @@ class QUICNetworkController:
             try:
                 datagram, address = udp_socket.recvfrom(4096)
                 datagrams.append(datagram)
-                print(datagram)
             except BlockingIOError:
                 break
             except ConnectionRefusedError:
@@ -845,7 +841,6 @@ class QUICSenderSideController:
         # Send packets based on the internal congestion control state.
         udp_socket.sendto(packet.raw(), connection_context.get_peer_address())
         self.bytes_in_flight += len(packet.raw())
-        # print(f"inside send_packet_cc: {packet.header.packet_number}")
         self.packets_sent[packet.header.packet_number] = PacketSentInfo(time_sent=time(), 
                                                                     in_flight=True,
                                                                     ack_eliciting=True,
@@ -859,7 +854,6 @@ class QUICSenderSideController:
     def send_non_ack_eliciting_packet(self, packet: Packet, udp_socket: socket, connection_context: ConnectionContext) -> None:
         # For non-ack eliciting packets we don't care about congestion control state.
         udp_socket.sendto(packet.raw(), connection_context.get_peer_address())
-        # print(f"inside send_non_ack_eliciting_packet: {packet.header.packet_number}")
         self.packets_sent[packet.header.packet_number] = PacketSentInfo(time_sent=time(), 
                                                                     in_flight=False,
                                                                     ack_eliciting=False,
