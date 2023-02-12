@@ -2,7 +2,7 @@ from .QUICPacketParser import parse_packet_bytes, PacketParserError
 from .QUICPacket import *
 from .QUICConnection import ConnectionContext, create_connection_id
 from .QUICEncryption import EncryptionContext
-from socket import socket
+from socket import socket, AF_INET, SOCK_DGRAM
 import math
 from time import time
 import logging
@@ -473,7 +473,10 @@ class QUICNetworkController:
         self.client_initial_received = False
         self.client_handshake_received = False
         self.state = CONNECTED
-        return self._connection_context, self._encryption_context, self.buffered_packets, self._receive_streams, self._send_streams, self.state
+        new_socket = socket(AF_INET, SOCK_DGRAM)
+        new_socket.bind(self._connection_context.get_local_address())
+        new_socket.bind(self._connection_context.get_peer_address())
+        return new_socket, self._connection_context, self._encryption_context, self.buffered_packets, self._receive_streams, self._send_streams, self.state
         # self.create_stream(1)
         # while self.state == LISTENING_INITIAL:
         #     # We are listening for INITIAL packets.
