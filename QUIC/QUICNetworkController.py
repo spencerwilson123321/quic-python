@@ -611,10 +611,6 @@ class QUICNetworkController:
         # Client is waiting for the HT_INITIAL and HT_HANDSHAKE response.
         if self.get_state() == INITIALIZING:
             if packet.header.type == HT_INITIAL:
-                self.new_socket = socket(AF_INET, SOCK_DGRAM)
-                self.new_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-                self.new_socket.bind(self._connection_context.get_local_address())
-                self.new_socket.connect(self._connection_context.get_peer_address())
                 self._connection_context.set_peer_address(self.last_peer_address_received)
                 self._connection_context.set_local_connection_id(packet.header.destination_connection_id)
                 self.server_initial_received = True
@@ -635,12 +631,15 @@ class QUICNetworkController:
             # When we are listening for INITIAL packets,
             # we only care about INITIAL packets so buffer all other types.
             if packet.header.type == HT_INITIAL:
-                
+                self.new_socket = socket(AF_INET, SOCK_DGRAM)
+                self.new_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+                self.new_socket.bind(self._connection_context.get_local_address())
+                self.new_socket.connect(self._connection_context.get_peer_address())
                 self._connection_context.set_peer_address(self.last_peer_address_received)
                 self._connection_context.set_local_connection_id(packet.header.destination_connection_id)
                 self._connection_context.set_peer_connection_id(create_connection_id())
                 packets = self._packetizer.packetize_connection_response_packets(self._connection_context)
-                self.send_packets(packets, udp_socket)
+                self.send_packets(packets, self.new_socket)
                 self.client_initial_received = True
                 self.state = LISTENING_HANDSHAKE
                 return
