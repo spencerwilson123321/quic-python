@@ -11,13 +11,11 @@ if __name__ == "__main__":
     server = QUICSocket(local_ip="10.0.0.131")
     server.listen(8000)
     client = server.accept() # Accept a connection.
-    bytes_read = 0
+    disconnected = False
     data = b""
-    while bytes_read < 1024:
-        received = client.recv(1, 80)
-        print(received)
+    while not disconnected:
+        received, disconnected = client.recv(1, 80)
         data += received
-        bytes_read += len(received)
-        print("bytes_read = " + str(bytes_read))
-    print(f"Received data: {received}")
+    print(f"Received data: {data}")
+    print("Client closed the connection.")
     client.release()           # Close the connection i.e. send ConnectionClose frame.

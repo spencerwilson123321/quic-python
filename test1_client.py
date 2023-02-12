@@ -15,3 +15,4 @@ if __name__ == "__main__":
     client = QUICSocket(local_ip="10.0.0.159")
     client.connect(address=("10.0.0.131", 8000))
     status = client.send(1, b"Very cool.")
+    client.close()

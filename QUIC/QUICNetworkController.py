@@ -541,23 +541,6 @@ class QUICNetworkController:
         # Now we can read from the receive_stream.
         data: bytes = self._receive_streams[stream_id].read(num_bytes)
         return data, self.peer_issued_connection_closed
-        # if self.peer_issued_connection_closed:
-        #         return b""
-        # data_not_read = True
-        # data = b""
-        # while data_not_read:
-        #     # First, we need to receive all new packets in kernel queue,
-        #     # and process each one.
-        #     packets = self.receive_new_packets(udp_socket)
-        #     # if not packets:
-        #     #     continue
-        #     self.process_packets(packets, udp_socket)
-        #     # if self.peer_issued_connection_closed:
-        #     #     return b""
-        #     data += self._receive_streams[stream_id].read(num_bytes)
-        #     if data:
-        #         data_not_read = False
-        # return data
 
 
 

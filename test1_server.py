@@ -11,6 +11,10 @@ if __name__ == "__main__":
     server.listen(8000)
     client = server.accept() # Accept a connection.
     data = b""
-    while not data:
-        data, disconnected = client.recv(1, 1024)
-    print(f"Received: {data}")
+    disconnected = False
+    while not disconnected:
+        bytes_read, disconnected = client.recv(1, 80)
+        data += bytes_read
+    print(f"Data Received: {data}")
+    print(f"Client closed connection.")
+    client.release()
