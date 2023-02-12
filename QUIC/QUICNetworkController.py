@@ -4,7 +4,7 @@ from .QUICConnection import ConnectionContext, create_connection_id
 from .QUICEncryption import EncryptionContext
 from socket import socket, AF_INET, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR
 import math
-from time import time
+from time import time, sleep
 import logging
 
 # Initialize logging facility.
@@ -853,6 +853,7 @@ class QUICSenderSideController:
     def send_packet_cc(self, packet: Packet, udp_socket: socket, connection_context: ConnectionContext) -> None:
         # Send packets based on the internal congestion control state.
         udp_socket.sendto(packet.raw(), connection_context.get_peer_address())
+        sleep(0.2)
         self.bytes_in_flight += len(packet.raw())
         self.packets_sent[packet.header.packet_number] = PacketSentInfo(time_sent=time(), 
                                                                     in_flight=True,

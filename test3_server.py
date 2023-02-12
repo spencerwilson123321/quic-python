@@ -14,7 +14,7 @@ if __name__ == "__main__":
     disconnected = False
     data = b""
     while len(data) < 1024:
-        received, disconnected = client.recv(1, 80)
+        received, disconnected = client.recv(1, 120)
         data += received
     print(f"Received data: {data}")
     print("Client closed the connection.")
