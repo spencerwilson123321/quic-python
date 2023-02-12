@@ -440,7 +440,6 @@ class QUICNetworkController:
             exit(1)
         while not self.is_server_handshake_complete():
             packets = self.receive_new_packets(udp_socket)
-            print(packets)
             self.process_packets(packets, udp_socket)
         self.client_initial_received = False
         self.client_handshake_received = False
