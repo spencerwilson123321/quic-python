@@ -701,6 +701,9 @@ class QUICNetworkController:
 
 
     def on_stream_frame_received(self, frame: StreamFrame):
+        if not self.is_active_stream(frame.stream_id):
+            self.create_stream(1)
+
         if self.is_active_stream(frame.stream_id):
             stream = self._receive_streams[frame.stream_id]
             if frame.offset != stream.offset:
