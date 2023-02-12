@@ -326,8 +326,7 @@ class QUICNetworkController:
         self._receive_streams = dict() # Key: Stream ID (int) | Value: Stream object
         self._send_streams = dict()
         self.buffered_packets = []
-
-		self.new_socket = None
+        self.new_socket = None
         self.peer_issued_connection_closed = False
 
         # ---- Handshake Data ----
