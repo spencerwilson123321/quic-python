@@ -435,6 +435,7 @@ class QUICNetworkController:
 
 
     def accept_connection(self, udp_socket: socket) -> ConnectionContext:
+        self.create_stream(1)
         if self.state != LISTENING_INITIAL:
             print("Must be in LISTENING state to accept()")
             exit(1)
@@ -443,6 +444,7 @@ class QUICNetworkController:
             self.process_packets(packets, udp_socket)
         self.client_initial_received = False
         self.client_handshake_received = False
+        # self.create_stream(1)
         # while self.state == LISTENING_INITIAL:
         #     # We are listening for INITIAL packets.
         #     packets = self.receive_new_packets(udp_socket)
@@ -648,7 +650,6 @@ class QUICNetworkController:
         if self.get_state() == LISTENING_HANDSHAKE:
             if packet.header.type == HT_HANDSHAKE:
                 self.client_handshake_received = True
-                self.create_stream(1)
                 self.state = CONNECTED
             else:
                 self.buffered_packets.append(packet)
