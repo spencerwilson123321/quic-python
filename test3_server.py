@@ -15,6 +15,7 @@ if __name__ == "__main__":
     data = b""
     while bytes_read < 1024:
         received = client.recv(1, 80)
+        print(received)
         data += received
         bytes_read += len(received)
     print(f"Received data: {received}")
