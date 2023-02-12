@@ -709,9 +709,8 @@ class QUICNetworkController:
                 stream.write(frame.data)
             self._receive_streams[frame.stream_id] = stream
         else:
-            print("Zoinks")
-
-
+            print(f"Stream ID {frame.stream_id} does not exist.")
+            exit(1)
 
 
     def extract_ack_frame(self, pkt_number: int) -> bool:
