@@ -33,6 +33,8 @@ class QUICSocket:
         connection._socket.connect(connection._network_controller._connection_context.get_peer_address())
         connection._network_controller.set_state(CONNECTED)
         connection._network_controller.buffered_packets = self._network_controller.buffered_packets
+        connection._network_controller._receive_streams = self._network_controller._receive_streams
+        connection._network_controller._send_streams = self._network_controller._send_streams
         self._network_controller = QUICNetworkController()
 
         old_connection_state = connection.get_connection_state()

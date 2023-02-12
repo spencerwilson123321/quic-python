@@ -13,6 +13,6 @@ if __name__ == "__main__":
     client = QUICSocket(local_ip="10.0.0.159")
     client.connect(address=("10.0.0.131", 8000))
     msg = b"Hello"
-    time.sleep(3)
     client.send(1, msg)
     print(f"Sent: {msg}")
+    time.sleep(3)
