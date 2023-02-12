@@ -18,5 +18,6 @@ if __name__ == "__main__":
         print(received)
         data += received
         bytes_read += len(received)
+        print("bytes_read = " + bytes_read)
     print(f"Received data: {received}")
     client.release()           # Close the connection i.e. send ConnectionClose frame.
