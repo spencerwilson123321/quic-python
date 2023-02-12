@@ -544,7 +544,7 @@ class QUICNetworkController:
             if not packets:
                 continue
             if self.peer_issued_connection_closed:
-                return data
+                return b""
             self.process_packets(packets, udp_socket)
             data += self._receive_streams[stream_id].read(num_bytes)
             if data:
