@@ -663,7 +663,6 @@ class QUICNetworkController:
 
 
     def process_packets(self, packets: list[Packet], udp_socket: socket) -> None:
-        print(f"Buffered Packets: {len(self.buffered_packets)}")
         packets = packets + self.buffered_packets
         self.buffered_packets = []
         for packet in packets:
