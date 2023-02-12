@@ -476,7 +476,7 @@ class QUICNetworkController:
         new_socket = socket(AF_INET, SOCK_DGRAM)
         new_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         new_socket.bind(self._connection_context.get_local_address())
-        new_socket.bind(self._connection_context.get_peer_address())
+        new_socket.connect(self._connection_context.get_peer_address())
         return new_socket, self._connection_context, self._encryption_context, self.buffered_packets, self._receive_streams, self._send_streams, self.state
         # self.create_stream(1)
         # while self.state == LISTENING_INITIAL:
