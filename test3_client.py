@@ -13,7 +13,6 @@ if __name__ == "__main__":
     data = b""
     with open("data.txt", "rb") as f:
         data = f.read()[0:1024]
-    print(len(data))
     client.send(1, data)
     print("Closing the connection...")
     client.close()
