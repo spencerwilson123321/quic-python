@@ -369,7 +369,6 @@ class QUICNetworkController:
     def is_client_handshake_complete(self) -> bool:
         return self.server_handshake_received and self.server_initial_received
 
-
     def is_server_handshake_complete(self) -> bool:
         return self.client_handshake_received and self.client_initial_received
 
