@@ -657,12 +657,11 @@ class QUICNetworkController:
 
 
     def process_packets(self, packets: list[Packet], udp_socket: socket) -> None:
-        # 1. Server receives: HT_INITIAL from client.
-        # 2. Server receives: HT_HANDSHAKE and HT_DATA from client.
 
         # We should process long header packets first.
         lh_packets = [packet for packet in packets if packet.header.type in [HT_INITIAL, HT_HANDSHAKE, HT_RETRY]]
         sh_packets = [packet for packet in packets if packet.header.type in [HT_DATA]]
+        print(f"Process Packets: \n{packets}")
         for packet in lh_packets:
             self.process_long_header_packet(packet, udp_socket)
         for packet in sh_packets:
