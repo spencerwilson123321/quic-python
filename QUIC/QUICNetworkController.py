@@ -473,8 +473,7 @@ class QUICNetworkController:
         self.client_initial_received = False
         self.client_handshake_received = False
         self.state = CONNECTED
-        self.create_stream(1)
-        return self._connection_context, self._encryption_context, self.buffered_packets, self._receive_streams, self._send_streams
+        return self._connection_context, self._encryption_context, self.buffered_packets, self._receive_streams, self._send_streams, self.state
         # self.create_stream(1)
         # while self.state == LISTENING_INITIAL:
         #     # We are listening for INITIAL packets.

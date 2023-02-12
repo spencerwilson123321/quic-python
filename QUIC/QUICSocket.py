@@ -27,13 +27,16 @@ class QUICSocket:
         # TODO this probably needs to be refactored, it is a hacky solution.
 
         # We give the network controller our wildcard socket.
-        connection_context, encryption_context, buffered_packets, recv_streams, send_streams = self._network_controller.accept_connection(self._socket)
+        connection_context, encryption_context, buffered_packets, recv_streams, send_streams, state = self._network_controller.accept_connection(self._socket)
         connection = QUICSocket("")
         connection._network_controller.set_connection_context(connection_context)
         connection._network_controller.set_encryption_context(encryption_context)
         connection._network_controller.set_buffered_packets(buffered_packets)
         connection._network_controller.set_receive_streams(recv_streams)
         connection._network_controller.set_send_streams(send_streams)
+        connection._network_controller.set_state(state)
+        connection._network_controller.create_stream(1)
+        print(f"Inside accept() - buffered_packets: {buffered_packets}")
         connection._socket.bind(connection_context.get_local_address())
         connection._socket.connect(connection_context.get_peer_address())
 
