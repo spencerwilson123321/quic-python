@@ -48,9 +48,8 @@ class QUICSocket:
         # connection._network_controller._receive_streams = self._network_controller._receive_streams
         # connection._network_controller._send_streams = self._network_controller._send_streams
         self._network_controller = QUICNetworkController()
-        old_connection_state = connection.get_connection_state()
-        self._network_controller._connection_context.set_local_ip(old_connection_state.get_local_ip())
-        self._network_controller._connection_context.set_local_port(old_connection_state.get_local_port())
+        self._network_controller._connection_context.set_local_ip(connection_context.get_local_ip())
+        self._network_controller._connection_context.set_local_port(connection_context.get_local_port())
         self._network_controller._connection_context.update_local_address()
         # Set network controller back to listening state.
         self._network_controller.state = LISTENING_INITIAL
