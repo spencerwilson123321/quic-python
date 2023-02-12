@@ -536,6 +536,7 @@ class QUICNetworkController:
         while True:
             try:
                 datagram, address = udp_socket.recvfrom(4096)
+                print(f"receive_new_packets - datagram: {datagram}")
                 datagrams.append(datagram)
             except BlockingIOError:
                 break
