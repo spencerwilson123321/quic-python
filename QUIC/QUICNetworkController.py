@@ -2,7 +2,7 @@ from .QUICPacketParser import parse_packet_bytes, PacketParserError
 from .QUICPacket import *
 from .QUICConnection import ConnectionContext, create_connection_id
 from .QUICEncryption import EncryptionContext
-from socket import socket, AF_INET, SOCK_DGRAM
+from socket import socket, AF_INET, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR
 import math
 from time import time
 import logging
@@ -474,6 +474,7 @@ class QUICNetworkController:
         self.client_handshake_received = False
         self.state = CONNECTED
         new_socket = socket(AF_INET, SOCK_DGRAM)
+        new_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         new_socket.bind(self._connection_context.get_local_address())
         new_socket.bind(self._connection_context.get_peer_address())
         return new_socket, self._connection_context, self._encryption_context, self.buffered_packets, self._receive_streams, self._send_streams, self.state
