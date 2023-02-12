@@ -11,6 +11,4 @@ from QUIC import QUICSocket
 if __name__ == "__main__":
     client = QUICSocket(local_ip="10.0.0.159")
     client.connect(address=("10.0.0.131", 8000))
-    # data = client.recv(1, 1024) # A return value of "" indicates that the connection has been closed by the peer.
-    # if not data:
-    #     client.release() # This closes the socket but doesn't send a ConnectionClose frame.
+    client.send(1, b"Very cool.")

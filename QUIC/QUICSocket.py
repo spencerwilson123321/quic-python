@@ -39,21 +39,12 @@ class QUICSocket:
 
         # When the above call is complete, the network controller's connection context will be filled out.
         # We just need  to copy it's QUICPacketizer and ConnectionContext into a new socket and then return it.
-        # connection._network_controller = self._network_controller
-        # connection._network_controller._connection_context = self._network_controller._connection_context
-        # connection._socket.bind(connection._network_controller._connection_context.get_local_address())
-        # connection._socket.connect(connection._network_controller._connection_context.get_peer_address())
-        # connection._network_controller.set_state(CONNECTED)
-        # connection._network_controller.buffered_packets = self._network_controller.buffered_packets
-        # connection._network_controller._receive_streams = self._network_controller._receive_streams
-        # connection._network_controller._send_streams = self._network_controller._send_streams
         self._network_controller = QUICNetworkController()
         self._network_controller._connection_context.set_local_ip(connection_context.get_local_ip())
         self._network_controller._connection_context.set_local_port(connection_context.get_local_port())
         self._network_controller._connection_context.update_local_address()
         # Set network controller back to listening state.
         self._network_controller.state = LISTENING_INITIAL
-
         return connection
 
 
