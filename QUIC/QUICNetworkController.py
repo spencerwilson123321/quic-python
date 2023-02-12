@@ -664,6 +664,9 @@ class QUICNetworkController:
 
     def process_packets(self, packets: list[Packet], udp_socket: socket) -> None:
 
+        if not packets:
+            return
+
         # We should process long header packets first.
         lh_packets = [packet for packet in packets if packet.header.type in [HT_INITIAL, HT_HANDSHAKE, HT_RETRY]]
         sh_packets = [packet for packet in packets if packet.header.type in [HT_DATA]]
