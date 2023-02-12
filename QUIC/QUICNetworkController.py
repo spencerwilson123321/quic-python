@@ -380,13 +380,37 @@ class QUICNetworkController:
 
     def get_state(self) -> int:
         return self.state
+    
+
+    def set_receive_streams(self, recv_streams: dict):
+        self._receive_streams = recv_streams
+
+    
+    def get_receive_streams(self) -> dict:
+        return self._receive_streams
 
 
-    def set_connection_state(self, connection_context: ConnectionContext) -> None:
+    def set_send_streams(self, send_streams: dict):
+        self._send_streams = send_streams
+
+
+    def get_send_streams(self) -> dict:
+        return self._send_streams
+
+
+    def set_encryption_context(self, encryption_context: EncryptionContext) -> None:
+        self._encryption_context = encryption_context
+
+
+    def get_encryption_context(self) -> EncryptionContext | None:
+        return self._encryption_context 
+    
+
+    def set_connection_context(self, connection_context: ConnectionContext) -> None:
         self._connection_context = connection_context
 
 
-    def get_connection_state(self) -> ConnectionContext | None:
+    def get_connection_context(self) -> ConnectionContext | None:
         return self._connection_context 
 
 
