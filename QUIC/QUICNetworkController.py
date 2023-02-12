@@ -540,7 +540,8 @@ class QUICNetworkController:
 
 
     def receive_new_packets(self, udp_socket: socket, block=False):
-        packets: list[Packet] = []
+        packets: list[Packet] = [] + self.buffered_packets.copy()
+        self.buffered_packets.clear()
         datagrams: list[bytes] = []
         udp_socket.setblocking(block)
         while True:
@@ -667,8 +668,7 @@ class QUICNetworkController:
 
 
     def process_packets(self, packets: list[Packet], udp_socket: socket) -> None:
-        packets = packets + self.buffered_packets.copy()
-        self.buffered_packets = []
+        packets = packets
         for packet in packets:
             if packet.header.type == HT_DATA:
                     self.process_short_header_packet(packet)
