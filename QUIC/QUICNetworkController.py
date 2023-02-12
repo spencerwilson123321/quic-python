@@ -469,6 +469,7 @@ class QUICNetworkController:
         while not self.is_server_handshake_complete():
             packets = self.receive_new_packets(udp_socket)
             self.process_packets(packets, udp_socket)
+        print(f"accept_connection - buffered_packets: {self.buffered_packets}")
         self.client_initial_received = False
         self.client_handshake_received = False
         self.create_stream(1)
@@ -548,11 +549,9 @@ class QUICNetworkController:
             self.process_packets(packets, udp_socket)
             if self.peer_issued_connection_closed:
                 return b""
-            stream: ReceiveStream = self._receive_streams[stream_id]
-            data += stream.read(num_bytes)
-            self._receive_streams[stream_id] = stream
+            data += self._receive_streams[stream_id].read(num_bytes)
             if data:
-                print(data)
+                print(f"read_stream_data - data: {data}")
                 data_not_read = False
         return data
 
