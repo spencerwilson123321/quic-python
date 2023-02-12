@@ -15,4 +15,4 @@ if __name__ == "__main__":
         data = f.read()[0:1024]
     client.send(1, data)
     print("Closing the connection...")
-    client.close()
+    # client.close()
