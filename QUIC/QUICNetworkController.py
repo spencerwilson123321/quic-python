@@ -659,7 +659,8 @@ class QUICNetworkController:
 
 
     def process_packets(self, packets: list[Packet], udp_socket: socket) -> None:
-        packets = packets
+        packets = packets + self.buffered_packets
+        self.buffered_packets = []
         for packet in packets:
             if packet.header.type == HT_DATA:
                     self.process_short_header_packet(packet)
