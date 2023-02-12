@@ -514,13 +514,11 @@ class QUICNetworkController:
             # First, we need to receive all new packets in kernel queue,
             # and process each one.
             packets = self.receive_new_packets(udp_socket)
-            print(f"read_stream_data - packets: {packets}")
             self.process_packets(packets, udp_socket)
             if self.peer_issued_connection_closed:
                 return b""
             stream: ReceiveStream = self._receive_streams[stream_id]
             data += stream.read(num_bytes)
-            print(f"read_stream_data - data: {data}")
             self._receive_streams[stream_id] = stream
             if data:
                 data_not_read = False
@@ -660,22 +658,24 @@ class QUICNetworkController:
 
 
     def process_packets(self, packets: list[Packet], udp_socket: socket) -> None:
-        packets = packets + self.buffered_packets
-        self.buffered_packets = []
-        for packet in packets:
-            if packet.header.type == HT_DATA:
-                    self.process_short_header_packet(packet)
-            elif packet.header.type in [HT_INITIAL, HT_HANDSHAKE, HT_RETRY]:
-                self.process_long_header_packet(packet, udp_socket)
+        # 1. Server receives: HT_INITIAL from client.
+        # 2. Server receives: HT_HANDSHAKE and HT_DATA from client.
 
+        # We should process long header packets first.
+        lh_packets = [packet for packet in packets if packet.header.type in [HT_INITIAL, HT_HANDSHAKE, HT_RETRY]]
+        sh_packets = [packet for packet in packets if packet.header.type in [HT_DATA]]
+        for packet in lh_packets:
+            self.process_long_header_packet(packet, udp_socket)
+        for packet in sh_packets:
+            self.process_short_header_packet(packet)
             # ---- PROCESS HEADER INFORMATION ----
             # 1. Update the largest packet number seen so far.
             # 2. Store which packet numbers have been received.
             # 3. Send acknowledgement if the packet is ack-eliciting.
-            self.update_largest_packet_number_received(packet)
-            self.update_received_packets(packet)
-            if self.is_ack_eliciting(packet):
-                self.create_and_send_acknowledgements(udp_socket)
+            # self.update_largest_packet_number_received(packet)
+            # self.update_received_packets(packet)
+            # if self.is_ack_eliciting(packet):
+            #     self.create_and_send_acknowledgements(udp_socket)
 
 
 
