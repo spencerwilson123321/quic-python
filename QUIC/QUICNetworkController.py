@@ -535,6 +535,8 @@ class QUICNetworkController:
         """
             This function will block until at least some data has been read.
         """
+        if self.peer_issued_connection_closed:
+                return b""
         data_not_read = True
         data = b""
         while data_not_read:
@@ -544,8 +546,9 @@ class QUICNetworkController:
             # if not packets:
             #     continue
             self.process_packets(packets, udp_socket)
-            if self.peer_issued_connection_closed:
-                return b""
+            # if self.peer_issued_connection_closed:
+            #     return b""
+            print(self._receive_streams[stream_id].data)
             data += self._receive_streams[stream_id].read(num_bytes)
             if data:
                 data_not_read = False
