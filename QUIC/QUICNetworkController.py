@@ -473,7 +473,6 @@ class QUICNetworkController:
             else:
                 packets = self.receive_new_packets(udp_socket)
                 self.process_packets(packets, udp_socket)
-        print(f"Buffered Packets: {self.buffered_packets}")
         self.client_initial_received = False
         self.client_handshake_received = False
         self.state = CONNECTED
@@ -621,7 +620,6 @@ class QUICNetworkController:
                     self.send_packets([packet], udp_socket)
                     self.state = CONNECTED
                 else:
-                    # print(f"Buffering Packet: {packet}")
                     self.buffered_packets.append(packet)
                     self.state = INITIALIZING
             return
@@ -643,7 +641,6 @@ class QUICNetworkController:
                 self.client_initial_received = True
                 self.state = LISTENING_HANDSHAKE
                 return
-            # print(f"Buffering Packet: {packet}")
             self.buffered_packets.append(packet)
             return
 
@@ -685,8 +682,6 @@ class QUICNetworkController:
 
 
     def receive_new_packets(self, udp_socket: socket, block=False):
-        if self.buffered_packets:
-            print(self.buffered_packets)
         packets: list[Packet] = [] + self.buffered_packets
         self.buffered_packets = []
         datagrams: list[bytes] = []
@@ -714,7 +709,6 @@ class QUICNetworkController:
         if self.is_active_stream(frame.stream_id):
             stream = self._receive_streams[frame.stream_id]
             if frame.offset != stream.offset:
-                print("It gets buffered")
                 stream.buffer(frame)
             else:
                 stream.write(frame.data)

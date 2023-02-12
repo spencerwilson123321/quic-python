@@ -37,7 +37,6 @@ class QUICSocket:
         connection._network_controller.set_send_streams(send_streams)
         connection._network_controller.set_state(state)
         connection._network_controller.create_stream(1)
-        print(f"Inside accept() - buffered_packets: {buffered_packets}")
 
         # When the above call is complete, the network controller's connection context will be filled out.
         # We just need  to copy it's QUICPacketizer and ConnectionContext into a new socket and then return it.
