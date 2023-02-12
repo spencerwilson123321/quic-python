@@ -17,5 +17,6 @@ if __name__ == "__main__":
         if not received:
             break
         data += received
+    print(f"Received data: {data}")
     print(f"Client Closed Connection:\n {data}")
     client.release()           # Close the connection i.e. send ConnectionClose frame.

@@ -12,10 +12,8 @@ if __name__ == "__main__":
     client.connect(address=("10.0.0.131", 8000))
     data = b""
     with open("data.txt", "rb") as f:
-        data = f.read()
-    connection_open = True
-    while connection_open:
-        connection_open = client.send(1, data)
-    print("server closed the connection")
-    client.release()
+        data = f.read()[0:1024]
+    client.send(1, data)
+    print("Closing the connection...")
+    client.close()
 

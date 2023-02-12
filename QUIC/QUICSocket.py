@@ -24,8 +24,6 @@ class QUICSocket:
 
     def accept(self):
 
-        # TODO this probably needs to be refactored, it is a hacky solution.
-
         # We give the network controller our wildcard socket.
         socket, connection_context, encryption_context, buffered_packets, recv_streams, send_streams, state = self._network_controller.accept_connection(self._socket)
         connection = QUICSocket("")
