@@ -690,8 +690,9 @@ class QUICNetworkController:
 
 
     def receive_new_packets(self, udp_socket: socket, block=False):
-        packets: list[Packet] = [] + self.buffered_packets
-        self.buffered_packets = []
+        # packets: list[Packet] = [] + self.buffered_packets
+        # self.buffered_packets = []
+        packets: list[Packet] = []
         datagrams: list[bytes] = []
         udp_socket.setblocking(block)
         while True:
@@ -711,7 +712,6 @@ class QUICNetworkController:
 
 
     def on_stream_frame_received(self, frame: StreamFrame):
-        print(frame)
         if not self.is_active_stream(frame.stream_id):
             self.create_stream(1)
 
