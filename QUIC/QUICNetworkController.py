@@ -627,6 +627,7 @@ class QUICNetworkController:
                     self.send_packets([packet], udp_socket)
                     self.state = CONNECTED
                 else:
+                    print(f"Buffering Packet: {packet}")
                     self.buffered_packets.append(packet)
                     self.state = INITIALIZING
             return
@@ -644,6 +645,7 @@ class QUICNetworkController:
                 self.client_initial_received = True
                 self.state = LISTENING_HANDSHAKE
                 return
+            print(f"Buffering Packet: {packet}")
             self.buffered_packets.append(packet)
             return
 
@@ -655,6 +657,7 @@ class QUICNetworkController:
                 self.client_handshake_received = True
                 self.state = CONNECTED
                 return
+            print(f"Buffering Packet: {packet}")
             self.buffered_packets.append(packet)
             return
 
@@ -667,6 +670,7 @@ class QUICNetworkController:
         for packet in lh_packets:
             self.process_long_header_packet(packet, udp_socket)
         if self.state != CONNECTED:
+            print(f"Buffering Packets: {sh_packets}")
             self.buffered_packets += sh_packets
         else:
             for packet in sh_packets:
