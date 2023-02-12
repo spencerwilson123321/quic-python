@@ -321,13 +321,13 @@ class QUICNetworkController:
 
         self._connection_context: ConnectionContext = ConnectionContext()
         self._encryption_context: EncryptionContext = EncryptionContext()
-        self.peer_issued_connection_closed = False
-
         self._sender_side_controller = QUICSenderSideController()
         self._packetizer = QUICPacketizer()
         self._receive_streams = dict() # Key: Stream ID (int) | Value: Stream object
         self._send_streams = dict()
         self.buffered_packets = []
+
+        self.peer_issued_connection_closed = False
 
         # ---- Handshake Data ----
         self.handshake_complete = False
