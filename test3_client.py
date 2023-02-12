@@ -14,7 +14,5 @@ if __name__ == "__main__":
     with open("data.txt", "rb") as f:
         data = f.read()[0:1024]
     client.send(1, data)
-    response = client.recv(1, 1024)
-    if not response:
-        print("Server closed the connection...")
-        client.release()
+    print("Closing the connection...")
+    client.close()
