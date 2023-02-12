@@ -327,6 +327,7 @@ class QUICNetworkController:
         self._send_streams = dict()
         self.buffered_packets = []
 
+		self.new_socket = None
         self.peer_issued_connection_closed = False
 
         # ---- Handshake Data ----
@@ -467,27 +468,21 @@ class QUICNetworkController:
             print("Must be in LISTENING state to accept()")
             exit(1)
         while not self.is_server_handshake_complete():
-            packets = self.receive_new_packets(udp_socket)
-            self.process_packets(packets, udp_socket)
+            if self.new_socket:
+                packets = self.receive_new_packets(self.new_socket)
+                self.process_packets(packets, self.new_socket)
+            else:
+                packets = self.receive_new_packets(udp_socket)
+                self.process_packets(packets, udp_socket)
         print(f"Buffered Packets: {self.buffered_packets}")
         self.client_initial_received = False
         self.client_handshake_received = False
         self.state = CONNECTED
-        new_socket = socket(AF_INET, SOCK_DGRAM)
-        new_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        new_socket.bind(self._connection_context.get_local_address())
-        new_socket.connect(self._connection_context.get_peer_address())
-        return new_socket, self._connection_context, self._encryption_context, self.buffered_packets, self._receive_streams, self._send_streams, self.state
-        # self.create_stream(1)
-        # while self.state == LISTENING_INITIAL:
-        #     # We are listening for INITIAL packets.
-        #     packets = self.receive_new_packets(udp_socket)
-        #     self.process_packets(packets, udp_socket)
-        # while self.state == LISTENING_HANDSHAKE:
-        #     packets = self.receive_new_packets(udp_socket)
-        #     self.process_packets(packets, udp_socket)
-        # self.state = CONNECTED
-        # After this point the handshake is complete.
+        # new_socket = socket(AF_INET, SOCK_DGRAM)
+        # new_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        # new_socket.bind(self._connection_context.get_local_address())
+        # new_socket.connect(self._connection_context.get_peer_address())
+        return self.new_socket, self._connection_context, self._encryption_context, self.buffered_packets, self._receive_streams, self._send_streams, self.state
 
 
 
@@ -613,13 +608,14 @@ class QUICNetworkController:
 
     def process_long_header_packet(self, packet: Packet, udp_socket: socket) -> None:
 
-        if self.get_state() == CONNECTED:
-            pass
-
         # Client has sent the HT_INITIAL packet to the server.
         # Client is waiting for the HT_INITIAL and HT_HANDSHAKE response.
         if self.get_state() == INITIALIZING:
             if packet.header.type == HT_INITIAL:
+                self.new_socket = socket(AF_INET, SOCK_DGRAM)
+                self.new_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+                self.new_socket.bind(self._connection_context.get_local_address())
+                self.new_socket.connect(self._connection_context.get_peer_address())
                 self._connection_context.set_peer_address(self.last_peer_address_received)
                 self._connection_context.set_local_connection_id(packet.header.destination_connection_id)
                 self.server_initial_received = True
@@ -640,6 +636,7 @@ class QUICNetworkController:
             # When we are listening for INITIAL packets,
             # we only care about INITIAL packets so buffer all other types.
             if packet.header.type == HT_INITIAL:
+                
                 self._connection_context.set_peer_address(self.last_peer_address_received)
                 self._connection_context.set_local_connection_id(packet.header.destination_connection_id)
                 self._connection_context.set_peer_connection_id(create_connection_id())
