@@ -25,10 +25,11 @@ class QUICSocket:
         # We give the network controller our wildcard socket.
         self._network_controller.accept_connection(self._socket)
 
+
         # When the above call is complete, the network controller's connection context will be filled out.
         # We just need  to copy it's QUICPacketizer and ConnectionContext into a new socket and then return it.
         connection = QUICSocket("")
-        connection._network_controller = self._network_controller
+        # connection._network_controller = self._network_controller
         connection._socket.bind(connection._network_controller._connection_context.get_local_address())
         connection._socket.connect(connection._network_controller._connection_context.get_peer_address())
         connection._network_controller.set_state(CONNECTED)
