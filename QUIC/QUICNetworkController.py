@@ -527,29 +527,7 @@ class QUICNetworkController:
 
 
 
-    def receive_new_packets(self, udp_socket: socket, block=False):
-        packets: list[Packet] = [] + self.buffered_packets
-        self.buffered_packets = []
-        datagrams: list[bytes] = []
-        udp_socket.setblocking(block)
-        while True:
-            try:
-                datagram, address = udp_socket.recvfrom(4096)
-                print(f"receive_new_packets - datagram: {datagram}")
-                datagrams.append(datagram)
-            except BlockingIOError:
-                break
-            # except ConnectionRefusedError:
-            #     # This means that the peer has closed
-            #     # the connection.
-            #     break
-        for datagram in datagrams:
-            packet = parse_packet_bytes(datagram)
-            if packet.header.type == HT_INITIAL:
-                self.last_peer_address_received = address
-            received_log.debug(f"Received: \n{packet}")
-            packets.append(packet)
-        return packets
+
 
 
 
@@ -639,6 +617,7 @@ class QUICNetworkController:
                 self.send_packets(packets, udp_socket)
                 self.client_initial_received = True
                 self.state = LISTENING_HANDSHAKE
+                return
             self.buffered_packets.append(packet)
             return
 
@@ -672,6 +651,30 @@ class QUICNetworkController:
             # if self.is_ack_eliciting(packet):
             #     self.create_and_send_acknowledgements(udp_socket)
 
+
+    def receive_new_packets(self, udp_socket: socket, block=False):
+        packets: list[Packet] = [] + self.buffered_packets
+        self.buffered_packets = []
+        datagrams: list[bytes] = []
+        udp_socket.setblocking(block)
+        while True:
+            try:
+                datagram, address = udp_socket.recvfrom(4096)
+                print(f"receive_new_packets - datagram: {datagram}")
+                datagrams.append(datagram)
+            except BlockingIOError:
+                break
+            # except ConnectionRefusedError:
+            #     # This means that the peer has closed
+            #     # the connection.
+            #     break
+        for datagram in datagrams:
+            packet = parse_packet_bytes(datagram)
+            if packet.header.type == HT_INITIAL:
+                self.last_peer_address_received = address
+            received_log.debug(f"Received: \n{packet}")
+            packets.append(packet)
+        return packets
 
 
 
