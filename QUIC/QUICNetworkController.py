@@ -360,12 +360,10 @@ class QUICNetworkController:
         self.state = CLOSED
 
 
-    
     def respond_to_connection_termination(self, udp_socket: socket):
         udp_socket.close()
         self._connection_context.connected = False
         self.state = CLOSED
-
 
 
     def is_client_handshake_complete(self) -> bool:
@@ -380,24 +378,16 @@ class QUICNetworkController:
         self.state = state
 
 
-
-
     def get_state(self) -> int:
         return self.state
-
-
 
 
     def set_connection_state(self, connection_context: ConnectionContext) -> None:
         self._connection_context = connection_context
 
 
-
-
     def get_connection_state(self) -> ConnectionContext | None:
         return self._connection_context 
-
-
 
 
     def create_stream(self, stream_id: int) -> None:
@@ -523,11 +513,13 @@ class QUICNetworkController:
             # First, we need to receive all new packets in kernel queue,
             # and process each one.
             packets = self.receive_new_packets(udp_socket)
+            print(f"read_stream_data - packets: {packets}")
             self.process_packets(packets, udp_socket)
             if self.peer_issued_connection_closed:
                 return b""
             stream: ReceiveStream = self._receive_streams[stream_id]
             data += stream.read(num_bytes)
+            print(f"read_stream_data - data: {data}")
             self._receive_streams[stream_id] = stream
             if data:
                 data_not_read = False
