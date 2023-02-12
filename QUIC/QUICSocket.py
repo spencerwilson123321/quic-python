@@ -28,7 +28,6 @@ class QUICSocket:
 
         # We give the network controller our wildcard socket.
         connection_context, encryption_context, buffered_packets, recv_streams, send_streams = self._network_controller.accept_connection(self._socket)
-        print(buffered_packets)
         connection = QUICSocket("")
         connection._network_controller.set_connection_context(connection_context)
         connection._network_controller.set_encryption_context(encryption_context)
