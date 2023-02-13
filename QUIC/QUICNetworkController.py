@@ -590,8 +590,8 @@ class QUICNetworkController:
         for frame in packet.frames:
             if frame.type == FT_STREAM:
                 self.on_stream_frame_received(frame)
-            if frame.type == FT_ACK:
-                self.on_ack_frame_received(frame)
+            # if frame.type == FT_ACK:
+            #     self.on_ack_frame_received(frame)
             if frame.type == FT_CONNECTIONCLOSE:
                 self.peer_issued_connection_closed = True
             # TODO: Add checks for other frame types i.e. StreamClose, ConnectionClose, etc.
@@ -675,8 +675,8 @@ class QUICNetworkController:
         for packet in packets:
             self.update_largest_packet_number_received(packet)
             self.update_received_packet_numbers(packet.header.packet_number)
-        # if self.is_ack_eliciting(packet):
-        #     self.create_and_send_acknowledgements(udp_socket)
+        if self.is_ack_eliciting(packet):
+            self.create_and_send_acknowledgements(udp_socket)
 
 
     def receive_new_packets(self, udp_socket: socket, block=False):
