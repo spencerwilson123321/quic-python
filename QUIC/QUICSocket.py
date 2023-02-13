@@ -25,7 +25,7 @@ class QUICSocket:
     def accept(self):
 
         # We give the network controller our wildcard socket.
-        socket, connection_context, encryption_context, buffered_packets, recv_streams, send_streams, state = self._network_controller.accept_connection(self._socket)
+        socket, connection_context, encryption_context, buffered_packets, recv_streams, send_streams, state, packetizer = self._network_controller.accept_connection(self._socket)
         connection = QUICSocket("")
         connection._socket = socket
         connection._network_controller.set_connection_context(connection_context)
@@ -34,6 +34,7 @@ class QUICSocket:
         connection._network_controller.set_receive_streams(recv_streams)
         connection._network_controller.set_send_streams(send_streams)
         connection._network_controller.set_state(state)
+        connection._network_controller.set_packetizer(packetizer)
         connection._network_controller.create_stream(1)
 
         # When the above call is complete, the network controller's connection context will be filled out.

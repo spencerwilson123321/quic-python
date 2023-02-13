@@ -376,6 +376,12 @@ class QUICNetworkController:
     def get_buffered_packets(self) -> list:
         return self.buffered_packets
 
+    def set_packetizer(self, packetizer: QUICPacketizer):
+        self._packetizer = packetizer
+    
+    def get_packetizer(self) -> QUICPacketizer:
+        return self._packetizer
+
     def set_state(self, state: int) -> None:
         self.state = state
 
@@ -478,7 +484,7 @@ class QUICNetworkController:
         # new_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         # new_socket.bind(self._connection_context.get_local_address())
         # new_socket.connect(self._connection_context.get_peer_address())
-        return self.new_socket, self._connection_context, self._encryption_context, self.buffered_packets, self._receive_streams, self._send_streams, self.state
+        return self.new_socket, self._connection_context, self._encryption_context, self.buffered_packets, self._receive_streams, self._send_streams, self.state, self._packetizer
 
 
 
