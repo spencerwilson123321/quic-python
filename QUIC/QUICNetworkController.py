@@ -480,10 +480,6 @@ class QUICNetworkController:
         self.client_initial_received = False
         self.client_handshake_received = False
         self.state = CONNECTED
-        # new_socket = socket(AF_INET, SOCK_DGRAM)
-        # new_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        # new_socket.bind(self._connection_context.get_local_address())
-        # new_socket.connect(self._connection_context.get_peer_address())
         return self.new_socket, self._connection_context, self._encryption_context, self.buffered_packets, self._receive_streams, self._send_streams, self.state, self._packetizer
 
 
@@ -682,8 +678,8 @@ class QUICNetworkController:
             self.update_largest_packet_number_received(packet)
             self.update_received_packet_numbers(packet.header.packet_number)
         if self.is_ack_eliciting(packet):
-            self.create_and_send_acknowledgements(udp_socket)
-
+            pkt = self._packetizer.packetize_acknowledgement(self._connection_context, self.packet_numbers_received)
+            self.send_packets([pkt], udp_socket)
 
     def receive_new_packets(self, udp_socket: socket, block=False):
         packets: list[Packet] = [] + self.buffered_packets
