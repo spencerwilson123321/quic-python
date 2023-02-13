@@ -577,8 +577,8 @@ class QUICNetworkController:
 
 
 
-    def update_received_packets(self, packet: Packet) -> None:
-        self.packet_numbers_received.append(packet.header.packet_number)
+    def update_received_packet_numbers(self, pkt_num: int) -> None:
+        self.packet_numbers_received.append(pkt_num)
 
 
 
@@ -674,7 +674,7 @@ class QUICNetworkController:
         # 3. Send acknowledgement if the packet is ack-eliciting.
         for packet in packets:
             self.update_largest_packet_number_received(packet)
-            # self.update_received_packets(packet)
+            self.update_received_packet_numbers(packet.header.packet_number)
         # if self.is_ack_eliciting(packet):
         #     self.create_and_send_acknowledgements(udp_socket)
 
