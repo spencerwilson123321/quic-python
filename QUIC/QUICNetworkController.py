@@ -851,7 +851,6 @@ class QUICSenderSideController:
     def send_packet_cc(self, packet: Packet, udp_socket: socket, connection_context: ConnectionContext) -> None:
         # Send packets based on the internal congestion control state.
         udp_socket.sendto(packet.raw(), connection_context.get_peer_address())
-        sleep(0.2)
         self.bytes_in_flight += len(packet.raw())
         self.packets_sent[packet.header.packet_number] = PacketSentInfo(time_sent=time(), 
                                                                     in_flight=True,
@@ -866,7 +865,6 @@ class QUICSenderSideController:
     def send_non_ack_eliciting_packet(self, packet: Packet, udp_socket: socket, connection_context: ConnectionContext) -> None:
         # For non-ack eliciting packets we don't care about congestion control state.
         udp_socket.sendto(packet.raw(), connection_context.get_peer_address())
-        sleep(0.2)
         self.packets_sent[packet.header.packet_number] = PacketSentInfo(time_sent=time(), 
                                                                     in_flight=False,
                                                                     ack_eliciting=False,
