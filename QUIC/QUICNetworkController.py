@@ -697,6 +697,8 @@ class QUICNetworkController:
                 datagrams.append(datagram)
             except BlockingIOError:
                 break
+            except ConnectionRefusedError:
+                break
         for datagram in datagrams:
             packet = parse_packet_bytes(datagram)
             if packet.header.type == HT_INITIAL:
