@@ -1,6 +1,5 @@
 from socket import socket, AF_INET, SOCK_DGRAM, SO_REUSEADDR, SOL_SOCKET
-from .QUICNetworkController import QUICNetworkController, CONNECTED, QUICPacketizer, LISTENING_INITIAL
-from copy import deepcopy
+from .QUICNetworkController import QUICNetworkController, LISTENING_INITIAL
 
 
 class QUICSocket:
