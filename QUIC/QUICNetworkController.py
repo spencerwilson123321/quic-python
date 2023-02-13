@@ -477,10 +477,11 @@ class QUICNetworkController:
             else:
                 packets = self.receive_new_packets(udp_socket)
                 self.process_packets(packets, udp_socket)
-        self.client_initial_received = False
-        self.client_handshake_received = False
+        # self.client_initial_received = False
+        # self.client_handshake_received = False
         self.state = CONNECTED
-        return self.new_socket, self._connection_context, self._encryption_context, self.buffered_packets, self._receive_streams, self._send_streams, self.state, self._packetizer
+        return self
+        # return self.new_socket, self._connection_context, self._encryption_context, self.buffered_packets, self._receive_streams, self._send_streams, self.state, self._packetizer
 
 
 
