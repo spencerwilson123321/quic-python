@@ -581,7 +581,8 @@ class QUICNetworkController:
 
 
     def update_received_packet_numbers(self, pkt_num: int) -> None:
-        self.packet_numbers_received.append(pkt_num)
+        if pkt_num not in self.packet_numbers_received:
+            self.packet_numbers_received.append(pkt_num)
 
 
 
