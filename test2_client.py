@@ -13,6 +13,14 @@ if __name__ == "__main__":
     client = QUICSocket(local_ip="10.0.0.159")
     client.connect(address=("10.0.0.131", 8000))
     msg = b"Hello"
+    
     client.send(1, msg)
     print(f"Sent: {msg}")
-    time.sleep(3)
+
+    response = b""
+    while not response:
+        response, disconnected = client.recv(1, 1024)
+
+    print(f"Received: {response}")
+
+    client.close()

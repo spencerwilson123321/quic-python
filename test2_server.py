@@ -10,5 +10,13 @@ if __name__ == "__main__":
     server = QUICSocket(local_ip="10.0.0.131")
     server.listen(8000)
     client = server.accept() # Accept a connection.
-    msg = client.recv(1, 1024)
+    
+    msg = b""
+    while not msg:
+        msg, disconnected = client.recv(1, 1024)
     print(f"Received: {msg}")
+
+    client.send(1, msg)
+    print(f"Sent: {msg}")
+
+    client.release()
