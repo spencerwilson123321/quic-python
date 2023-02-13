@@ -8,12 +8,13 @@ from QUIC import QUICSocket
 """
 
 if __name__ == "__main__":
-    server = QUICSocket(local_ip="10.0.0.131")
+    server = QUICSocket(local_ip="10.0.0.159")
     server.listen(8000)
     client = server.accept() # Accept a connection.
     disconnected = False
     data = b""
-    while not disconnected:
+    # while not disconnected:
+    while len(data) < 1024:
         received, disconnected = client.recv(1, 120)
         data += received
     print(f"Received data: {data}")

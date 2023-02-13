@@ -229,13 +229,11 @@ class QUICPacketizer:
         MAX_ALLOWED = SAFE_DATAGRAM_PAYLOAD_SIZE-LONG_HEADER_SIZE-STREAM_FRAME_SIZE
         # If the length of this data would go over the safe datagram size - long header size - stream frame size,
         # then we need to split this data into multiple QUIC packets.
-        if len(data) > MAX_ALLOWED:
+        datasize = len(data)
+        if datasize > MAX_ALLOWED:
             bytes_written = 0
-            while bytes_written < len(data):
+            while bytes_written < datasize:
                 data_chunk = data[0:MAX_ALLOWED]
-                hdr = ShortHeader(
-                    destination_connection_id=connection_context.get_peer_connection_id(), 
-                    packet_number=self.get_next_packet_number())
                 hdr = self.create_header(HT_DATA, connection_context)
                 frames = [StreamFrame(stream_id=stream_id, offset=send_streams[stream_id].get_offset(), length=len(data_chunk), data=data_chunk)]
                 packets.append(Packet(header=hdr, frames=frames))
