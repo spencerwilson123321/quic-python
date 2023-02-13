@@ -676,6 +676,9 @@ class QUICNetworkController:
         # 1. Update the largest packet number seen so far.
         # 2. Store which packet numbers have been received.
         # 3. Send acknowledgement if the packet is ack-eliciting.
+        if packet.header.type == HT_DATA and self.state in [LISTENING_HANDSHAKE, LISTENING_INITIAL]:
+            return
+
         for packet in packets:
             self.update_largest_packet_number_received(packet)
             self.update_received_packet_numbers(packet.header.packet_number)
