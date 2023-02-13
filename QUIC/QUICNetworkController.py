@@ -522,14 +522,20 @@ class QUICNetworkController:
                 # then send it with congestion control.
                 if self._sender_side_controller.can_send():
                     # bytes in flight < congestion window
-                    self._sender_side_controller.send_packet_cc(packet, udp_socket, self._connection_context)
+                    try:
+                        self._sender_side_controller.send_packet_cc(packet, udp_socket, self._connection_context)
+                    except ConnectionRefusedError:
+                        pass
                 else:
                     # bytes in flight >= congestion window
                     # Need to wait to receive more acks before continuing to send.
                     could_not_send.append(packet)
             else:
                 # This is an Ack, Padding, or ConnectionClose packet,
-                self._sender_side_controller.send_non_ack_eliciting_packet(packet, udp_socket, self._connection_context)
+                try:
+                    self._sender_side_controller.send_non_ack_eliciting_packet(packet, udp_socket, self._connection_context)
+                except ConnectionRefusedError:
+                    pass
         return could_not_send
 
 
