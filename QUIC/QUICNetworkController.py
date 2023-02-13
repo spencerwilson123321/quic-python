@@ -666,8 +666,9 @@ class QUICNetworkController:
         # 1. Update the largest packet number seen so far.
         # 2. Store which packet numbers have been received.
         # 3. Send acknowledgement if the packet is ack-eliciting.
-        # self.update_largest_packet_number_received(packet)
-        # self.update_received_packets(packet)
+        for packet in packets:
+            self.update_largest_packet_number_received(packet)
+            # self.update_received_packets(packet)
         # if self.is_ack_eliciting(packet):
         #     self.create_and_send_acknowledgements(udp_socket)
 
