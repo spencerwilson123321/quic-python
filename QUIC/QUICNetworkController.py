@@ -682,9 +682,11 @@ class QUICNetworkController:
         for packet in packets:
             self.update_largest_packet_number_received(packet)
             self.update_received_packet_numbers(packet.header.packet_number)
-        if self.is_ack_eliciting(packet):
-            pkt = self._packetizer.packetize_acknowledgement(self._connection_context, self.packet_numbers_received)
-            self.send_packets([pkt], udp_socket)
+            if self.is_ack_eliciting(packet):
+                pkt = self._packetizer.packetize_acknowledgement(self._connection_context, self.packet_numbers_received)
+                self.send_packets([pkt], udp_socket)
+
+
 
     def receive_new_packets(self, udp_socket: socket, block=False):
         packets: list[Packet] = [] + self.buffered_packets
