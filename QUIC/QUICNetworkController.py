@@ -594,8 +594,8 @@ class QUICNetworkController:
         for frame in packet.frames:
             if frame.type == FT_STREAM:
                 self.on_stream_frame_received(frame)
-            # if frame.type == FT_ACK:
-            #     self.on_ack_frame_received(frame)
+            if frame.type == FT_ACK:
+                self.on_ack_frame_received(frame)
             if frame.type == FT_CONNECTIONCLOSE:
                 self.peer_issued_connection_closed = True
             # TODO: Add checks for other frame types i.e. StreamClose, ConnectionClose, etc.
@@ -688,6 +688,7 @@ class QUICNetworkController:
 
 
 
+
     def receive_new_packets(self, udp_socket: socket, block=False):
         packets: list[Packet] = [] + self.buffered_packets
         self.buffered_packets = []
@@ -708,6 +709,7 @@ class QUICNetworkController:
             received_log.debug(f"Received: \n{packet}")
             packets.append(packet)
         return packets
+
 
 
 
@@ -765,6 +767,10 @@ class QUICNetworkController:
                 pn -= ackrange.gap
                 pkt_nums_acknowledged += [i for i in range(pn, pn-ackrange.ack_range_length-1, -1)]
         
+        # Temporary for debugging purposes.
+        print(f"on_ack_frame_received: Packet numbers being acked - {pkt_nums_acknowledged}")
+        return None
+
         self.remove_from_packets_received(pkt_nums_acknowledged)
         self.largest_acknowledged = max(self.largest_acknowledged, max(pkt_nums_acknowledged))
 
