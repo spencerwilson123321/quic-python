@@ -540,7 +540,6 @@ class QUICNetworkController:
 
     def read_stream_data(self, stream_id: int, num_bytes: int, udp_socket: socket) -> tuple[bytes, bool]:
         """
-            This function will block until at least some data has been read.
         """
         # Receive and process new packets.
         packets: list[Packet] = self.receive_new_packets(udp_socket)
@@ -667,16 +666,20 @@ class QUICNetworkController:
 
         for packet in lh_packets:
             self.process_long_header_packet(packet, udp_socket)
-        for packet in sh_packets:
-            self.process_short_header_packet(packet)
+        if self.state == CONNECTED:
+            for packet in sh_packets:
+                self.process_short_header_packet(packet)
+        else:
+            self.buffered_packets += sh_packets
         # if packet.header.type == HT_DATA and self.state in [LISTENING_HANDSHAKE, LISTENING_INITIAL]:
         #     return
         for packet in packets:
             self.update_largest_packet_number_received(packet)
             self.update_received_packet_numbers(packet.header.packet_number)
-            if self.is_ack_eliciting(packet):
-                pkt = self._packetizer.packetize_acknowledgement(self._connection_context, self.packet_numbers_received)
-                self.send_packets([pkt], udp_socket)
+            if self.state == CONNECTED:
+                if self.is_ack_eliciting(packet):
+                    pkt = self._packetizer.packetize_acknowledgement(self._connection_context, self.packet_numbers_received)
+                    self.send_packets([pkt], udp_socket)
 
 
 
