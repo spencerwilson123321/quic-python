@@ -15,9 +15,7 @@ def setup_logger(name: str, filepath: str, level=logging.DEBUG):
     logger.addHandler(file_handler)
     return logger
 
-sent_log = setup_logger("sent_log", "sent.log")
-received_log = setup_logger("received_log", "received.log")
-
+log = setup_logger("log", "packet.log")
 
 # Congestion Controller States
 SLOW_START = 1
@@ -523,7 +521,7 @@ class QUICNetworkController:
     def send_packets(self, packets: list[Packet], udp_socket: socket) -> list[Packet]:
         could_not_send: list[Packet] = []
         for packet in packets:
-            sent_log.debug(f"Sent: \n{packet}")
+            log.debug(f"Sent: \n{packet}")
             if self.is_ack_eliciting(packet):
                 # If the packet is ack eliciting,
                 # then send it with congestion control.
@@ -709,7 +707,7 @@ class QUICNetworkController:
             packet = parse_packet_bytes(datagram)
             if packet.header.type == HT_INITIAL:
                 self.last_peer_address_received = address
-            received_log.debug(f"Received: \n{packet}")
+            log.debug(f"Received: \n{packet}")
             packets.append(packet)
         return packets
 
