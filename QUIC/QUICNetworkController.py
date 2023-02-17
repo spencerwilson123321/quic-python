@@ -464,7 +464,7 @@ class QUICNetworkController:
 
         # ---- PROCESSING RESPONSE ----
         while not self.is_client_handshake_complete():
-            packets = self.receive_new_packets(udp_socket)
+            packets = self.receive_new_packets(udp_socket, self._encryption_context)
             self.process_packets(packets, udp_socket)
         
         # ---- Connection Complete ----
@@ -480,10 +480,10 @@ class QUICNetworkController:
             exit(1)
         while not self.is_server_handshake_complete():
             if self.new_socket:
-                packets = self.receive_new_packets(self.new_socket)
+                packets = self.receive_new_packets(self.new_socket, self._encryption_context)
                 self.process_packets(packets, self.new_socket)
             else:
-                packets = self.receive_new_packets(udp_socket)
+                packets = self.receive_new_packets(udp_socket, self._encryption_context)
                 self.process_packets(packets, udp_socket)
         self.state = CONNECTED
         return self
@@ -493,7 +493,7 @@ class QUICNetworkController:
 
     def send_stream_data(self, stream_id: int, data: bytes, udp_socket: socket) -> bool:
         # Check for new packets to process and process them.
-        packets_to_process = self.receive_new_packets(udp_socket)
+        packets_to_process = self.receive_new_packets(udp_socket, self._encryption_context)
         self.process_packets(packets_to_process, udp_socket)
 
         # If the connection has been closed, we return -1.
@@ -507,7 +507,7 @@ class QUICNetworkController:
         could_not_send: list[Packet] = self.send_packets(packets, udp_socket)
         while could_not_send:
             # Reprocess packets that could not be sent.
-            packets_to_process = self.receive_new_packets(udp_socket)
+            packets_to_process = self.receive_new_packets(udp_socket, self._encryption_context)
             self.process_packets(packets_to_process, udp_socket)
             could_not_send = self.send_packets(could_not_send, udp_socket)        
         return True
@@ -525,7 +525,7 @@ class QUICNetworkController:
                 if self._sender_side_controller.can_send():
                     # bytes in flight < congestion window
                     try:
-                        self._sender_side_controller.send_packet_cc(packet, udp_socket, self._connection_context)
+                        self._sender_side_controller.send_packet_cc(packet, udp_socket, self._connection_context, self._encryption_context)
                     except ConnectionRefusedError:
                         pass
                 else:
@@ -535,7 +535,7 @@ class QUICNetworkController:
             else:
                 # This is an Ack, Padding, or ConnectionClose packet,
                 try:
-                    self._sender_side_controller.send_non_ack_eliciting_packet(packet, udp_socket, self._connection_context)
+                    self._sender_side_controller.send_non_ack_eliciting_packet(packet, udp_socket, self._connection_context, self._encryption_context)
                 except ConnectionRefusedError:
                     pass
         return could_not_send
@@ -547,7 +547,7 @@ class QUICNetworkController:
         """
         """
         # Receive and process new packets.
-        packets: list[Packet] = self.receive_new_packets(udp_socket)
+        packets: list[Packet] = self.receive_new_packets(udp_socket, self._encryption_context)
         self.process_packets(packets, udp_socket)
         # Now we can read from the receive_stream.
         data: bytes = self._receive_streams[stream_id].read(num_bytes)
@@ -641,7 +641,6 @@ class QUICNetworkController:
                 self.new_socket.bind(self._connection_context.get_local_address())
                 self.new_socket.connect(self._connection_context.get_peer_address())
                 self._encryption_context = EncryptionContext()
-                print(f"Created Encryption Key: {self._encryption_context.key}")
                 packets = self._packetizer.packetize_connection_response_packets(self._connection_context, self._encryption_context)
                 self.send_packets(packets, self.new_socket)
                 self.client_initial_received = True
@@ -690,7 +689,7 @@ class QUICNetworkController:
 
 
 
-    def receive_new_packets(self, udp_socket: socket, block=False):
+    def receive_new_packets(self, udp_socket: socket, encryption_context: EncryptionContext or None, block=False):
         packets: list[Packet] = [] + self.buffered_packets
         self.buffered_packets = []
         datagrams: list[bytes] = []
@@ -704,7 +703,10 @@ class QUICNetworkController:
             except ConnectionRefusedError:
                 break
         for datagram in datagrams:
-            packet = parse_packet_bytes(datagram)
+            if encryption_context:
+                packet = parse_packet_bytes(encryption_context.decrypt(datagram))
+            else:
+                packet = parse_packet_bytes(datagram)
             if packet.header.type == HT_INITIAL:
                 self.last_peer_address_received = address
             log.debug(f"Received: \n{packet}")
@@ -863,9 +865,12 @@ class QUICSenderSideController:
 
 
 
-    def send_packet_cc(self, packet: Packet, udp_socket: socket, connection_context: ConnectionContext) -> None:
+    def send_packet_cc(self, packet: Packet, udp_socket: socket, connection_context: ConnectionContext, encryption_context: EncryptionContext or None) -> None:
         # Send packets based on the internal congestion control state.
-        udp_socket.sendto(packet.raw(), connection_context.get_peer_address())
+        if encryption_context:
+            udp_socket.sendto(encryption_context.encrypt(packet.raw()), connection_context.get_peer_address())
+        else:
+            udp_socket.sendto(packet.raw(), connection_context.get_peer_address())
         self.bytes_in_flight += len(packet.raw())
         self.packets_sent[packet.header.packet_number] = PacketSentInfo(time_sent=time(), 
                                                                     in_flight=True,
@@ -877,9 +882,12 @@ class QUICSenderSideController:
 
 
 
-    def send_non_ack_eliciting_packet(self, packet: Packet, udp_socket: socket, connection_context: ConnectionContext) -> None:
+    def send_non_ack_eliciting_packet(self, packet: Packet, udp_socket: socket, connection_context: ConnectionContext, encryption_context: EncryptionContext or None) -> None:
         # For non-ack eliciting packets we don't care about congestion control state.
-        udp_socket.sendto(packet.raw(), connection_context.get_peer_address())
+        if encryption_context:
+            udp_socket.sendto(encryption_context.encrypt(packet.raw()), connection_context.get_peer_address())
+        else:
+            udp_socket.sendto(packet.raw(), connection_context.get_peer_address())
         self.packets_sent[packet.header.packet_number] = PacketSentInfo(time_sent=time(), 
                                                                     in_flight=False,
                                                                     ack_eliciting=False,

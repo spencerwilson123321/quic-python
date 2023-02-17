@@ -30,7 +30,6 @@ class QUICSocket:
         connection._socket = network_con.new_socket
         connection._network_controller = network_con
         connection._network_controller.create_stream(1)
-        print(f"Client Encryption Key: {connection._network_controller._encryption_context.key}")
 
         # When the above call is complete, the network controller's connection context will be filled out.
         # We just need  to copy it's QUICPacketizer and ConnectionContext into a new socket and then return it.
