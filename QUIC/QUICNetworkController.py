@@ -339,7 +339,7 @@ class QUICNetworkController:
         # ---- Acknowledgement Data ----
         self.largest_acknowledged = -1
         self.largest_packet_number_received: int = 0
-        self.packet_numbers_received: list[int] = []
+        self.unacked_packet_numbers_received: list[int] = []
     
 
 
@@ -567,7 +567,7 @@ class QUICNetworkController:
 
 
     def create_and_send_acknowledgements(self, udp_socket: socket) -> None:
-        ack_pkt: Packet = self._packetizer.packetize_acknowledgement(self._connection_context, self.packet_numbers_received)
+        ack_pkt: Packet = self._packetizer.packetize_acknowledgement(self._connection_context, self.unacked_packet_numbers_received)
         self.send_packets([ack_pkt], udp_socket)
 
 
@@ -580,8 +580,8 @@ class QUICNetworkController:
 
 
     def update_received_packet_numbers(self, pkt_num: int) -> None:
-        if pkt_num not in self.packet_numbers_received:
-            self.packet_numbers_received.append(pkt_num)
+        if pkt_num not in self.unacked_packet_numbers_received:
+            self.unacked_packet_numbers_received.append(pkt_num)
 
 
 
@@ -676,7 +676,7 @@ class QUICNetworkController:
             self.update_received_packet_numbers(packet.header.packet_number)
             if self.state == CONNECTED:
                 if self.is_ack_eliciting(packet):
-                    pkt = self._packetizer.packetize_acknowledgement(self._connection_context, self.packet_numbers_received)
+                    pkt = self._packetizer.packetize_acknowledgement(self._connection_context, self.unacked_packet_numbers_received)
                     self.send_packets([pkt], udp_socket)
 
 
@@ -745,7 +745,7 @@ class QUICNetworkController:
             if frame is not None:
                 pkts_acknowledged = [i for i in range(frame.largest_acknowledged, frame.largest_acknowledged - frame.first_ack_range - 1, -1)]
                 for num in pkts_acknowledged:
-                    self.packet_numbers_received.remove(num)
+                    self.unacked_packet_numbers_received.remove(num)
 
 
 
@@ -761,15 +761,15 @@ class QUICNetworkController:
                 pkt_nums_acknowledged += [i for i in range(pn, pn-ackrange.ack_range_length-1, -1)]
         
         print(f"on_ack_frame_received: Packet numbers being acked - {pkt_nums_acknowledged}")
-        print(f"self.packet_numbers_received: before {self.packet_numbers_received}")
-        self.remove_from_packets_received(pkt_nums_acknowledged)
-        print(f"self.packet_numbers_received: after {self.packet_numbers_received}")
+        # This updates the congestion controllers bytes_in_flights and packets_sent state.
+        print(f"on_ack_frame_received: packets sent before - {self._sender_side_controller.packets_sent}")
+        self._sender_side_controller.on_packet_numbers_acked(pkt_nums_acknowledged)
+        print(f"on_ack_frame_received: packets sent after - {self._sender_side_controller.packets_sent}")
         # Temporary for debugging purposes.
         return None
         self.largest_acknowledged = max(self.largest_acknowledged, max(pkt_nums_acknowledged))
+        self.remove_from_packets_received(pkt_nums_acknowledged)
 
-        # This updates the congestion controllers bytes_in_flights and packets_sent state.
-        self._sender_side_controller.on_packet_numbers_acked(pkt_nums_acknowledged)
 
         # Detect and handle packet loss.
         lost_packets = self._sender_side_controller.detect_and_remove_lost_packets(self.largest_acknowledged)
@@ -834,7 +834,7 @@ class QUICSenderSideController:
 
     def on_packet_numbers_acked(self, packet_numbers: list[int]) -> None:
 
-        # We only want to process packet numbers that still need to be processed.
+        # We only want to process packet numbers that exist in our packets_sent list.
         packet_numbers = [x for x in packet_numbers if x in self.packets_sent]
 
         for x in packet_numbers:
