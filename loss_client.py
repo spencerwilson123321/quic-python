@@ -10,8 +10,8 @@ import time
 """
 
 if __name__ == "__main__":
-    client = QUICSocket(local_ip="10.0.0.159")
-    client.connect(address=("10.0.0.131", 8000))
+    client = QUICSocket(local_ip="10.0.0.131")
+    client.connect(address=("10.0.0.159", 8000))
     msg = b"Hello"
 
     for i in range(0, 5):    

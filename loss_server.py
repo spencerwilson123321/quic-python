@@ -8,7 +8,7 @@ from QUIC import *
 
 if __name__ == "__main__":
 
-    server = QUICSocket(local_ip="10.0.0.131")
+    server = QUICSocket(local_ip="10.0.0.159")
     server.listen(8000)
     client = server.accept() # Accept a connection.
     address = None
@@ -16,7 +16,7 @@ if __name__ == "__main__":
     sock = client._socket
     sock.setblocking(False)
     datagrams_received = 0
-    while datagrams_received < 4:
+    while datagrams_received < 5:
         try:
             datagram = None
             datagram, address = sock.recvfrom(1024)
