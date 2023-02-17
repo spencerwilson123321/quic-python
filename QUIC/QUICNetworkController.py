@@ -183,11 +183,11 @@ class QUICPacketizer:
         return Packet(header=hdr, frames=frames)
 
 
-    def packetize_connection_response_packets(self, connection_context: ConnectionContext) -> list[Packet]:
+    def packetize_connection_response_packets(self, connection_context: ConnectionContext, encryption_context: EncryptionContext) -> list[Packet]:
         hdr1 = self.create_header(HT_INITIAL, connection_context)
         hdr2 = self.create_header(HT_HANDSHAKE, connection_context)
         frames1 = []
-        frames2 = []
+        frames2 = [CryptoFrame(offset=0, length=len(encryption_context.key), data=encryption_context.key)]
         initial, handshake = Packet(header=hdr1, frames=frames1), Packet(header=hdr2, frames=frames2)
         return [initial, handshake]
     
@@ -326,7 +326,7 @@ class QUICNetworkController:
     def __init__(self):
 
         self._connection_context: ConnectionContext = ConnectionContext()
-        self._encryption_context: EncryptionContext = EncryptionContext()
+        self._encryption_context: EncryptionContext = None # This gets set when a connection is made.
         self._sender_side_controller = QUICSenderSideController()
         self._packetizer = QUICPacketizer()
         self._receive_streams = dict() # Key: Stream ID (int) | Value: Stream object
@@ -485,11 +485,8 @@ class QUICNetworkController:
             else:
                 packets = self.receive_new_packets(udp_socket)
                 self.process_packets(packets, udp_socket)
-        # self.client_initial_received = False
-        # self.client_handshake_received = False
         self.state = CONNECTED
         return self
-        # return self.new_socket, self._connection_context, self._encryption_context, self.buffered_packets, self._receive_streams, self._send_streams, self.state, self._packetizer
 
 
 
@@ -642,7 +639,8 @@ class QUICNetworkController:
                 self.new_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
                 self.new_socket.bind(self._connection_context.get_local_address())
                 self.new_socket.connect(self._connection_context.get_peer_address())
-                packets = self._packetizer.packetize_connection_response_packets(self._connection_context)
+                self._encryption_context = EncryptionContext()
+                packets = self._packetizer.packetize_connection_response_packets(self._connection_context, self._encryption_context)
                 self.send_packets(packets, self.new_socket)
                 self.client_initial_received = True
                 self.state = LISTENING_HANDSHAKE

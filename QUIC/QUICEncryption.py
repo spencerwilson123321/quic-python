@@ -7,11 +7,17 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms
 from os import urandom
 from secrets import token_bytes
 
+# Hard coded for simplicity.
+nonce = b"[\x8bp\xcbY\x7fA\xed\x01\xba\xcb\x14\x96t\\`"
+
 class EncryptionContext:
 
-    def __init__(self):
-        self.key = token_bytes(32)
-        self.nonce = urandom(16)
+    def __init__(self, key=None):
+        if key:
+            self.key = key
+        else:
+            self.key = token_bytes(32)
+        self.nonce = nonce
         self.algorithm = algorithms.ChaCha20(self.key, self.nonce)
         self.cipher = Cipher(self.algorithm, mode=None, backend=None)
         self.encryptor = self.cipher.encryptor()
