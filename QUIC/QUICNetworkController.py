@@ -641,6 +641,7 @@ class QUICNetworkController:
                 self.new_socket.bind(self._connection_context.get_local_address())
                 self.new_socket.connect(self._connection_context.get_peer_address())
                 self._encryption_context = EncryptionContext()
+                print(f"Created Encryption Key: {self._encryption_context.key}")
                 packets = self._packetizer.packetize_connection_response_packets(self._connection_context, self._encryption_context)
                 self.send_packets(packets, self.new_socket)
                 self.client_initial_received = True
