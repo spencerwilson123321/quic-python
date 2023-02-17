@@ -813,7 +813,10 @@ class QUICSenderSideController:
         for pkt_num in self.packets_sent:
             packet_is_lost = pkt_num < largest_acknowledged and self.packets_sent[pkt_num].ack_eliciting and self.packets_sent[pkt_num].in_flight and (largest_acknowledged - pkt_num) >= 3
             if packet_is_lost:                               # If the packet is deemed lost.
-                lost_packets.append(self.packets_sent[pkt_num])      # Add to lost packets list.
+                lost_packets.append(self.packets_sent.pop(pkt_num))      # Add to lost packets list.
+        if lost_packets:
+            for info in lost_packets:
+                self.bytes_in_flight -= info.sent_bytes
         # if lost_packets:
         #     self.sent_time_of_last_loss = time()
         #     for lost_packet in lost_packets:

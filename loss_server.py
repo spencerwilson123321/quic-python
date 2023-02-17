@@ -16,7 +16,7 @@ if __name__ == "__main__":
     sock = client._socket
     sock.setblocking(False)
     datagrams_received = 0
-    while datagrams_received < 3:
+    while datagrams_received < 4:
         try:
             datagram = None
             datagram, address = sock.recvfrom(1024)

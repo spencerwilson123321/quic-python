@@ -14,7 +14,7 @@ if __name__ == "__main__":
     client.connect(address=("10.0.0.131", 8000))
     msg = b"Hello"
 
-    for i in range(0, 3):    
+    for i in range(0, 4):    
         client.send(1, msg)
         print(f"Sent: {msg}")
     
