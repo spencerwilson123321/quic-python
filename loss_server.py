@@ -14,8 +14,15 @@ if __name__ == "__main__":
     address = None
     # Get the 5 client datagrams.
     sock = client.get_udp_socket()
-    for i in range(0, 5):
-        datagram, address = sock.recvfrom(1024)
+    datagrams_received = 0
+    while datagrams_received < 5:
+        try:
+            datagram = None
+            datagram, address = sock.recvfrom(1024)
+            if datagram:
+                datagrams_received += 1
+        except BlockingIOError:
+            pass
 
     # Send an AckFrame which will cause a packet loss detection
     # and retransmission.
