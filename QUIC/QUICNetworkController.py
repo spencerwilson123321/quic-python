@@ -619,9 +619,9 @@ class QUICNetworkController:
             if packet.header.type == HT_HANDSHAKE:
                 self.server_handshake_received = True
                 if self.server_initial_received:
-                    self._encryption_context = EncryptionContext(key=packet.frames[0].data)
                     packet = self._packetizer.packetize_handshake_packet(self._connection_context)
                     self.send_packets([packet], udp_socket)
+                    self._encryption_context = EncryptionContext(key=packet.frames[0].data)
                     self.state = CONNECTED
                 else:
                     self.buffered_packets.append(packet)
@@ -640,8 +640,8 @@ class QUICNetworkController:
                 self.new_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
                 self.new_socket.bind(self._connection_context.get_local_address())
                 self.new_socket.connect(self._connection_context.get_peer_address())
-                self._encryption_context = EncryptionContext()
                 packets = self._packetizer.packetize_connection_response_packets(self._connection_context, self._encryption_context)
+                self._encryption_context = EncryptionContext()
                 self.send_packets(packets, self.new_socket)
                 self.client_initial_received = True
                 self.state = LISTENING_HANDSHAKE
