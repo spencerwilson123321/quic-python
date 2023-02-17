@@ -14,6 +14,7 @@ if __name__ == "__main__":
     address = None
     # Get the 5 client datagrams.
     sock = client._socket
+    sock.setblocking(False)
     datagrams_received = 0
     while datagrams_received < 4:
         try:
