@@ -755,24 +755,24 @@ class QUICNetworkController:
                 pn -= ackrange.gap
                 pkt_nums_acknowledged += [i for i in range(pn, pn-ackrange.ack_range_length-1, -1)]
         
-        print(f"on_ack_frame_received: Packet numbers being acked - {pkt_nums_acknowledged}")
+        # print(f"on_ack_frame_received: Packet numbers being acked - {pkt_nums_acknowledged}")
         # This updates the congestion controllers bytes_in_flights and packets_sent state.
-        print(f"on_ack_frame_received: packets sent before - {self._sender_side_controller.packets_sent}")
+        # print(f"on_ack_frame_received: packets sent before - {self._sender_side_controller.packets_sent}")
         packets_acked = self._sender_side_controller.on_packet_numbers_acked(pkt_nums_acknowledged)
-        print(f"on_ack_frame_received: packets sent after - {self._sender_side_controller.packets_sent}")
+        # print(f"on_ack_frame_received: packets sent after - {self._sender_side_controller.packets_sent}")
         self.largest_acknowledged = max(self.largest_acknowledged, max(pkt_nums_acknowledged))
-        print(f"on_ack_frame_received: packets received before - {self.unacked_packet_numbers_received}")
+        # print(f"on_ack_frame_received: packets received before - {self.unacked_packet_numbers_received}")
         self.remove_from_packets_received(packets_acked)
-        print(f"on_ack_frame_received: packets received after - {self.unacked_packet_numbers_received}")
-        return None
-
+        # print(f"on_ack_frame_received: packets received after - {self.unacked_packet_numbers_received}")
+        # return None
 
         # Detect and handle packet loss.
         lost_packets = self._sender_side_controller.detect_and_remove_lost_packets(self.largest_acknowledged)
         if lost_packets: # Packet loss detected.
-            self._sender_side_controller.on_packet_loss() # Update congestion control state.
-            retransmissions = self._packetizer.packetize_retransmissions(lost_packets) # Creates new packets
-            self.send_packets(retransmissions) # Retransmits packets.
+            print("LOSS DETECTED!!!!")
+            # self._sender_side_controller.on_packet_loss() # Update congestion control state.
+            # retransmissions = self._packetizer.packetize_retransmissions(lost_packets) # Creates new packets
+            # self.send_packets(retransmissions) # Retransmits packets.
         # If there is no loss, then continue as normal.
 
 
@@ -814,15 +814,15 @@ class QUICSenderSideController:
             packet_is_lost = pkt_num < largest_acknowledged and self.packets_sent[pkt_num].ack_eliciting and self.packets_sent[pkt_num].in_flight and (largest_acknowledged - pkt_num) >= 3
             if packet_is_lost:                               # If the packet is deemed lost.
                 lost_packets.append(self.packets_sent[pkt_num])      # Add to lost packets list.
-        if lost_packets:
-            self.sent_time_of_last_loss = 0
-            for lost_packet in lost_packets:
-                self.packets_sent.pop(lost_packet.packet_number)
-                if lost_packet.in_flight:
-                    self.bytes_in_flight -= lost_packet.sent_bytes
-                    self.sent_time_of_last_loss = max(self.sent_time_of_last_loss, lost_packet.time_sent)
-            if self.sent_time_of_last_loss != 0:
-                self.on_packet_loss()
+        # if lost_packets:
+        #     self.sent_time_of_last_loss = time()
+        #     for lost_packet in lost_packets:
+        #         self.packets_sent.pop(lost_packet.packet_number)
+        #         if lost_packet.in_flight:
+        #             self.bytes_in_flight -= lost_packet.sent_bytes
+        #             self.sent_time_of_last_loss = max(self.sent_time_of_last_loss, lost_packet.time_sent)
+        #     if self.sent_time_of_last_loss != 0:
+        #         self.on_packet_loss()
         return lost_packets
 
 
