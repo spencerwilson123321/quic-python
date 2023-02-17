@@ -20,7 +20,15 @@ if __name__ == "__main__":
     response = b""
     while not response:
         response, disconnected = client.recv(1, 1024)
-
     print(f"Received: {response}")
+
+    client.send(1, msg)
+    print(f"Sent: {msg}")
+
+    response = b""
+    while not response:
+        response, disconnected = client.recv(1, 1024)
+    print(f"Received: {response}")
+
 
     client.close()

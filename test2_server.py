@@ -19,4 +19,13 @@ if __name__ == "__main__":
     client.send(1, msg)
     print(f"Sent: {msg}")
 
+    msg = b""
+    while not msg:
+        msg, disconnected = client.recv(1, 1024)
+    print(f"Received: {msg}")
+
+    client.send(1, msg)
+    print(f"Sent: {msg}")
+
+
     client.release()
