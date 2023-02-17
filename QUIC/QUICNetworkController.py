@@ -671,8 +671,6 @@ class QUICNetworkController:
                 self.process_short_header_packet(packet)
         else:
             self.buffered_packets += sh_packets
-        # if packet.header.type == HT_DATA and self.state in [LISTENING_HANDSHAKE, LISTENING_INITIAL]:
-        #     return
         for packet in packets:
             self.update_largest_packet_number_received(packet)
             self.update_received_packet_numbers(packet.header.packet_number)
@@ -762,11 +760,12 @@ class QUICNetworkController:
                 pn -= ackrange.gap
                 pkt_nums_acknowledged += [i for i in range(pn, pn-ackrange.ack_range_length-1, -1)]
         
-        # Temporary for debugging purposes.
         print(f"on_ack_frame_received: Packet numbers being acked - {pkt_nums_acknowledged}")
-        return None
-
+        print(f"self.packet_numbers_received: before {self.packet_numbers_received}")
         self.remove_from_packets_received(pkt_nums_acknowledged)
+        print(f"self.packet_numbers_received: after {self.packet_numbers_received}")
+        # Temporary for debugging purposes.
+        return None
         self.largest_acknowledged = max(self.largest_acknowledged, max(pkt_nums_acknowledged))
 
         # This updates the congestion controllers bytes_in_flights and packets_sent state.

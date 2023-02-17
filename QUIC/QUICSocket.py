@@ -29,15 +29,6 @@ class QUICSocket:
         connection = QUICSocket("")
         connection._socket = network_con.new_socket
         connection._network_controller = network_con
-        # connection
-        # connection._socket = socket
-        # connection._network_controller.set_connection_context(connection_context)
-        # connection._network_controller.set_encryption_context(encryption_context)
-        # connection._network_controller.set_buffered_packets(buffered_packets)
-        # connection._network_controller.set_receive_streams(recv_streams)
-        # connection._network_controller.set_send_streams(send_streams)
-        # connection._network_controller.set_state(state)
-        # connection._network_controller.set_packetizer(packetizer)
         connection._network_controller.create_stream(1)
 
         # When the above call is complete, the network controller's connection context will be filled out.
