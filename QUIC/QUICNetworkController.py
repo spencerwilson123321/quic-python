@@ -724,30 +724,25 @@ class QUICNetworkController:
 
 
 
-    def extract_ack_frame(self, pkt_number: int) -> bool:
-        if pkt_number not in self._sender_side_controller.packets_sent:
-            return None
-        for frame in self._sender_side_controller.packets_sent[pkt_number].packet.frames:
+    def extract_ack_frame(self, pkt: Packet) -> bool:
+        for frame in pkt.frames:
             if frame.type == FT_ACK:
                 return frame
         return None
 
 
-    
-
-    def remove_from_packets_received(self, packet_nums_acknowledged: list[int]) -> None:
+    def remove_from_packets_received(self, packets_acked: list[PacketSentInfo]) -> None:
         # This function iterates through the packet nums acknoweledged,
         # and checks whether any of the packets that were acknowledged are
         # ack packets, if they are ack packets, then we remove from our list of received packets,
         # so that we don't double acknowledge packets.
-        for pkt_num in packet_nums_acknowledged:
-            frame: AckFrame = self.extract_ack_frame(pkt_num)
-            if frame is not None:
-                pkts_acknowledged = [i for i in range(frame.largest_acknowledged, frame.largest_acknowledged - frame.first_ack_range - 1, -1)]
-                for num in pkts_acknowledged:
-                    self.unacked_packet_numbers_received.remove(num)
-
-
+        for info in packets_acked:
+            frame: AckFrame = self.extract_ack_frame(info.packet)
+            if frame:
+                # If ack ack frame was acked, we can remove the packet numbers it was acking from out received list.
+                pkt_nums_acked = [i for i in range(frame.largest_acknowledged, frame.largest_acknowledged - frame.first_ack_range - 1, -1)]
+                for pn in pkt_nums_acked:
+                    self.unacked_packet_numbers_received.remove(pn)
 
 
     def on_ack_frame_received(self, frame: AckFrame):
@@ -763,12 +758,13 @@ class QUICNetworkController:
         print(f"on_ack_frame_received: Packet numbers being acked - {pkt_nums_acknowledged}")
         # This updates the congestion controllers bytes_in_flights and packets_sent state.
         print(f"on_ack_frame_received: packets sent before - {self._sender_side_controller.packets_sent}")
-        self._sender_side_controller.on_packet_numbers_acked(pkt_nums_acknowledged)
+        packets_acked = self._sender_side_controller.on_packet_numbers_acked(pkt_nums_acknowledged)
         print(f"on_ack_frame_received: packets sent after - {self._sender_side_controller.packets_sent}")
-        # Temporary for debugging purposes.
-        return None
         self.largest_acknowledged = max(self.largest_acknowledged, max(pkt_nums_acknowledged))
-        self.remove_from_packets_received(pkt_nums_acknowledged)
+        print(f"on_ack_frame_received: packets received before - {self.unacked_packet_numbers_received}")
+        self.remove_from_packets_received(packets_acked)
+        print(f"on_ack_frame_received: packets received after - {self.unacked_packet_numbers_received}")
+        return None
 
 
         # Detect and handle packet loss.
@@ -836,16 +832,17 @@ class QUICSenderSideController:
 
         # We only want to process packet numbers that exist in our packets_sent list.
         packet_numbers = [x for x in packet_numbers if x in self.packets_sent]
+        packets_acked = []
 
         for x in packet_numbers:
             if not self.packets_sent[x].in_flight:
                 # packets that aren't in flight don't count toward cwnd or bytes_in_flight.
-                self.packets_sent.pop(x)
+                packets_acked.append(self.packets_sent.pop(x))
                 continue
             self.bytes_in_flight -= self.packets_sent[x].sent_bytes
             if self.in_recovery(self.packets_sent[x].time_sent):
                 # recovery state, don't increase congestion window.
-                self.packets_sent.pop(x)
+                packets_acked.append(self.packets_sent.pop(x))
                 continue
             if self.in_slow_start():
                 # slow start
@@ -855,7 +852,8 @@ class QUICSenderSideController:
                 # congestion avoidance
                 # Additive increase, multiplicitive decrease
                 self.congestion_window += MAX_DATAGRAM_SIZE * self.packets_sent[x].sent_bytes / self.congestion_window
-            self.packets_sent.pop(x)
+            packets_acked.append(self.packets_sent.pop(x))
+        return packets_acked
 
 
 
