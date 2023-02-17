@@ -13,12 +13,13 @@ if __name__ == "__main__":
     client = server.accept() # Accept a connection.
     address = None
     # Get the 5 client datagrams.
-    sock = client.get_udp_socket()
+    sock = client._socket
     datagrams_received = 0
-    while datagrams_received < 5:
+    while datagrams_received < 4:
         try:
             datagram = None
             datagram, address = sock.recvfrom(1024)
+            print(datagram)
             if datagram:
                 datagrams_received += 1
         except BlockingIOError:
