@@ -596,7 +596,7 @@ class QUICNetworkController:
 
 
 
-    def process_short_header_packet(self, packet: Packet) -> None:
+    def process_short_header_packet(self, packet: Packet, udp_socket: socket) -> None:
         # Processing Short Header Packet Frames:
         # 1. Stream Frame --> Write to stream or buffer data.
         # 2. Ack Frame    --> Remove from packets_sent, decrement bytes_in_flight, other congestion control stuff.
@@ -604,7 +604,7 @@ class QUICNetworkController:
             if frame.type == FT_STREAM:
                 self.on_stream_frame_received(frame)
             if frame.type == FT_ACK:
-                self.on_ack_frame_received(frame)
+                self.on_ack_frame_received(frame, udp_socket)
             if frame.type == FT_CONNECTIONCLOSE:
                 self.peer_issued_connection_closed = True
             # TODO: Add checks for other frame types i.e. StreamClose, ConnectionClose, etc.
@@ -678,7 +678,7 @@ class QUICNetworkController:
             self.process_long_header_packet(packet, udp_socket)
         if self.state == CONNECTED:
             for packet in sh_packets:
-                self.process_short_header_packet(packet)
+                self.process_short_header_packet(packet, udp_socket)
         else:
             self.buffered_packets += sh_packets
         for packet in packets:
@@ -755,7 +755,7 @@ class QUICNetworkController:
                     self.unacked_packet_numbers_received.remove(pn)
 
 
-    def on_ack_frame_received(self, frame: AckFrame):
+    def on_ack_frame_received(self, frame: AckFrame, udp_socket: socket):
 
         # Calculate packet numbers being acked.
         pkt_nums_acknowledged = [i for i in range(frame.largest_acknowledged, frame.largest_acknowledged-frame.first_ack_range-1, -1)]
@@ -773,7 +773,7 @@ class QUICNetworkController:
         lost_packets = self._sender_side_controller.detect_and_remove_lost_packets(self.largest_acknowledged)
         if lost_packets: # Packet loss detected.
             retransmissions = self._packetizer.packetize_retransmissions(lost_packets) # Creates new packets
-            self.send_packets(retransmissions) # Retransmits packets.
+            self.send_packets(retransmissions, udp_socket) # Retransmits packets.
         # If there is no loss, then continue as normal.
 
 
