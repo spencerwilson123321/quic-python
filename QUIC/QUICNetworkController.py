@@ -640,9 +640,10 @@ class QUICNetworkController:
                 self.new_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
                 self.new_socket.bind(self._connection_context.get_local_address())
                 self.new_socket.connect(self._connection_context.get_peer_address())
-                packets = self._packetizer.packetize_connection_response_packets(self._connection_context, self._encryption_context)
-                self._encryption_context = EncryptionContext()
+                encryption_context = EncryptionContext()
+                packets = self._packetizer.packetize_connection_response_packets(self._connection_context, encryption_context)
                 self.send_packets(packets, self.new_socket)
+                self._encryption_context = encryption_context
                 self.client_initial_received = True
                 self.state = LISTENING_HANDSHAKE
                 return
