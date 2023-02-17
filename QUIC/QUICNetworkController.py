@@ -619,8 +619,8 @@ class QUICNetworkController:
             if packet.header.type == HT_HANDSHAKE:
                 self.server_handshake_received = True
                 if self.server_initial_received:
-                    packet = self._packetizer.packetize_handshake_packet(self._connection_context)
-                    self.send_packets([packet], udp_socket)
+                    response = self._packetizer.packetize_handshake_packet(self._connection_context)
+                    self.send_packets([response], udp_socket)
                     self._encryption_context = EncryptionContext(key=packet.frames[0].data)
                     self.state = CONNECTED
                 else:
