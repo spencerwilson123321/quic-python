@@ -8,7 +8,7 @@ from QUIC import *
 
 if __name__ == "__main__":
 
-    server = QUICSocket(local_ip="10.0.0.159")
+    server = QUICSocket(local_ip="10.0.0.131")
     server.listen(8000)
     client = server.accept() # Accept a connection.
     address = None
@@ -16,7 +16,7 @@ if __name__ == "__main__":
     sock = client._socket
     sock.setblocking(False)
     datagrams_received = 0
-    while datagrams_received < 5:
+    while datagrams_received < 3:
         try:
             datagram = None
             datagram, address = sock.recvfrom(1024)
@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     # Send an AckFrame which will cause a packet loss detection
     # and retransmission.
-    frame = AckFrame(largest_acknowledged = 6, ack_delay=0, ack_range_count=1, first_ack_range=3, ack_range=[AckRange(gap=1, ack_range_length=2)])
+    frame = AckFrame(largest_acknowledged = 4, ack_delay=0, ack_range_count=1, first_ack_range=2, ack_range=[AckRange(gap=1, ack_range_length=1)])
     hdr = ShortHeader(destination_connection_id=0, packet_number=2)
     pkt = Packet(header=hdr, frames=[frame])
 
