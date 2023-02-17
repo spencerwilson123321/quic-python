@@ -12,7 +12,7 @@ if __name__ == "__main__":
     client.connect(address=("10.0.0.131", 8000))
     data = b""
     with open("data.txt", "rb") as f:
-        data = f.read()[0:5000]
+        data = f.read()[0:10000]
     client.send(1, data)
     print(f"Sent: {data}")
     print("Closing the connection...")
