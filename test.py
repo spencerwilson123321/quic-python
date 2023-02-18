@@ -50,9 +50,9 @@ class TestNetworkController(unittest.TestCase):
         f3 = StreamFrame(stream_id=1, offset=10, length=5, data=b"abcde")
         nc = QUICNetworkController()
         nc.create_stream(1)
-        nc.on_stream_frame_received(f1)
         nc.on_stream_frame_received(f2)
         nc.on_stream_frame_received(f3)
+        nc.on_stream_frame_received(f1)
         self.assertEqual(nc._receive_streams[1].data, b"0123456789abcde") 
 
         f1 = StreamFrame(stream_id=1, offset=0, length=5, data=b"01234")
@@ -60,8 +60,8 @@ class TestNetworkController(unittest.TestCase):
         f2 = StreamFrame(stream_id=1, offset=5, length=5, data=b"56789")
         nc = QUICNetworkController()
         nc.create_stream(1)
-        nc.on_stream_frame_received(f1)
         nc.on_stream_frame_received(f2)
+        nc.on_stream_frame_received(f1)
         nc.on_stream_frame_received(f3)
         self.assertEqual(nc._receive_streams[1].data, b"0123456789abcde") 
 
@@ -70,8 +70,8 @@ class TestNetworkController(unittest.TestCase):
         f1 = StreamFrame(stream_id=1, offset=0, length=5, data=b"01234")
         nc = QUICNetworkController()
         nc.create_stream(1)
-        nc.on_stream_frame_received(f1)
         nc.on_stream_frame_received(f2)
+        nc.on_stream_frame_received(f1)
         nc.on_stream_frame_received(f3)
         self.assertEqual(nc._receive_streams[1].data, b"0123456789abcde") 
 
