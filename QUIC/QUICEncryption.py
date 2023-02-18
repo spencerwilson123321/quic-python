@@ -4,7 +4,6 @@
     It defines the EncryptionContext class.
 """
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms
-from os import urandom
 from secrets import token_bytes
 
 # Hard coded for simplicity.
