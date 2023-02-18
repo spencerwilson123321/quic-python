@@ -108,6 +108,24 @@ class TestQUICPacket(unittest.TestCase):
             header = LongHeader(type=HT_INITIAL, destination_connection_id=1023, source_connection_id=None, packet_number=1)
 
 
+class TestEncryptionContext(unittest.TestCase):
+
+    def test_encryption_context(self):
+        TEST_KEY = token_bytes(32)
+        msg = b"This is a message."
+        encrypted = None
+
+        ec = EncryptionContext(key=TEST_KEY)
+        
+        self.assertEqual(TEST_KEY, ec.key)
+        self.assertEqual(True, type(ec.algorithm) == algorithms.ChaCha20)
+        self.assertEqual(True, nonce == ec.nonce)
+
+        encrypted = ec.encrypt(msg)
+        self.assertEquals(False, msg == encrypted)
+        decrypted = ec.decrypt(encrypted)
+        self.assertEqual(True, msg == decrypted)
+
 
 TEST_DB = "./test_database.txt"
 
