@@ -23,8 +23,14 @@ class EncryptionContext:
         self.decryptor = self.cipher.decryptor()
 
     def encrypt(self, plaintext: bytes) -> bytes:
+        """
+            Encrypts the given plaintext bytes.
+        """
         return self.encryptor.update(plaintext)
 
     def decrypt(self, ciphertext: bytes) -> bytes:
+        """
+            Decrypts the given ciphertext bytes.
+        """
         return self.decryptor.update(ciphertext)
 
