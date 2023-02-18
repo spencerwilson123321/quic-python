@@ -327,6 +327,7 @@ class QUICNetworkController:
 
         self._connection_context: ConnectionContext = ConnectionContext()
         self._encryption_context: EncryptionContext = None # This gets set when a connection is made.
+        self.temp_encryption_context = None
         self._sender_side_controller = QUICSenderSideController()
         self._packetizer = QUICPacketizer()
         self._receive_streams = dict() # Key: Stream ID (int) | Value: Stream object
@@ -640,10 +641,9 @@ class QUICNetworkController:
                 self.new_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
                 self.new_socket.bind(self._connection_context.get_local_address())
                 self.new_socket.connect(self._connection_context.get_peer_address())
-                encryption_context = EncryptionContext()
-                packets = self._packetizer.packetize_connection_response_packets(self._connection_context, encryption_context)
+                self.temp_encryption_context = EncryptionContext()
+                packets = self._packetizer.packetize_connection_response_packets(self._connection_context, self.temp_encryption_context)
                 self.send_packets(packets, self.new_socket)
-                self._encryption_context = encryption_context
                 self.client_initial_received = True
                 self.state = LISTENING_HANDSHAKE
                 return
@@ -656,6 +656,8 @@ class QUICNetworkController:
         if self.get_state() == LISTENING_HANDSHAKE:
             if packet.header.type == HT_HANDSHAKE:
                 self.client_handshake_received = True
+                self._encryption_context = self.temp_encryption_context
+                self.temp_encryption_context = None
                 return
             self.buffered_packets.append(packet)
             return
