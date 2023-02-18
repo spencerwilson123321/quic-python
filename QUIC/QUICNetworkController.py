@@ -1,10 +1,10 @@
-from .QUICPacketParser import parse_packet_bytes, PacketParserError
+from .QUICPacketParser import parse_packet_bytes
 from .QUICPacket import *
 from .QUICConnection import ConnectionContext, create_connection_id
 from .QUICEncryption import EncryptionContext
 from socket import socket, AF_INET, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR
 import math
-from time import time, sleep
+from time import time
 import logging
 
 # Initialize logging facility.
@@ -44,62 +44,6 @@ LISTENING_HANDSHAKE = 5
 
 # This means that we have closed the connection.
 CLOSED = 6
-
-
-# Slow Start:
-# congestion window is increased by the number of acknowledged bytes every time an ACK is processed.
-# upon packet loss being detected, the controller enters the recovery state.
-
-# Recovery:
-# Slow start gets set to half of the congestion window.
-# When a packet sent during recovery is acked, then we exit recovery and enter congestion avoidance.
-
-# Congestion Avoidance:
-# The controller is in congestion avoidance mode when the congestion window is equal to or greater than the slow start threshold and isn't in recovery mode.
-# For each full congestion window amount of bytes acknowledged, increase the congestion window by 1 maximum datagram size.
-# If a packet is lost, then enter recovery.
-
-# Ack-eliciting Frames:
-# Frames other than ACK, PADDING, CONNECTION_CLOSE are ack-eliciting.
-
-# Ack-eliciting Packets:
-# Packets that contain ack-eliciting frames elicit an ACK from the receiver 
-# within the maximum acknowledgement delay.
-
-# In-flight Packets:
-# Packets are considered in-flight when they are ack-eliciting and they
-# have been sent but not acknowledged or declared lost.
-
-# Congestion Control Important Information:
-# --> All packets must be acknowledged.
-# --> Packets with frames other than CONNECTION_CLOSE and ACK count towards bytes in flight.
-# --> 
-
-# Sender Side Congestion Control:
-# Send all packets that you can while staying below the congestion control limits.
-# Must track how many bytes are in flight with each packet sent.
-# Must store packets in a buffer until they get acknowledged.
-# When a packet is considered lost, resend the packets frames in a new packet.
-
-# Loss Epoch
-# When a packet is lost, a timer is started called "loss epoch".
-# When a packet sent after the loss epoch has started is acknowledged,
-# then the loss epoch ends.
-
-# RTT Measurement:
-# Track when each packet is sent.
-# Track when each packet is acked.
-# These values are used as an RTT sample.
-# BUT we also need to follow these rules:
-# - The largest acknowledged packet number must be newly acknowledged.
-# - At least one of the newly acknowledged packets was ack-eliciting.
-
-# latest_rtt = ack_time - send_time_of_largest_acked.
-
-# Minimum RTT:
-# min_rtt is tracked and represents the minimum rtt observed.
-# Can be used by loss detection to reject implausibly small RTT samples.
-# Each time an rtt sample is taken, we must potentially update min_rtt.
 
 
 def contains_long_header(pkt: Packet):
@@ -310,17 +254,7 @@ class ReceiveStream:
 
 class QUICNetworkController:
     """
-        When a send_stream_data or read_stream_data function is called:
-            Invoke the receiver_side_controller to read and parse QUIC packets and return them to the NetworkController for processing.
-                Received data can be:
-                    1. Stream Data --> This needs to be written to a stream buffer inside of the network controller object.
-                    2. Acks        --> This information is needed to update the sender side controller's internal state (congestion window, etc).
-                        2.1. Packet loss
-            If this is a send_stream_data call:
-                Once the received packets are processed, then we can send our stream data by invoking the sender side controller.
-                The sender side controller will packetize the data and send it based on it's congestion window etc.
-            If this is a read_stream_data call:
-                We just return the requested number of bytes from the stream buffer.
+        TODO: docstring
     """
 
     def __init__(self):
@@ -349,7 +283,6 @@ class QUICNetworkController:
         self.largest_acknowledged = -1
         self.largest_packet_number_received: int = 0
         self.unacked_packet_numbers_received: list[int] = []
-    
 
 
     def initiate_connection_termination(self, udp_socket: socket) -> None:
@@ -436,13 +369,11 @@ class QUICNetworkController:
         self._send_streams[stream_id] = SendStream(stream_id=stream_id)
 
 
-
     def listen(self, udp_socket: socket):
         # When a socket is listening, we need to bind it to the wildcard
         # address so that it doesn't associate itself with incoming connections.
         self.state = LISTENING_INITIAL
         udp_socket.bind(("", self._connection_context.get_local_port()))
-
 
 
     def create_connection(self, udp_socket: socket, server_address: tuple[str, int]):
@@ -473,8 +404,6 @@ class QUICNetworkController:
         self.create_stream(1)
 
 
-
-
     def accept_connection(self, udp_socket: socket) -> ConnectionContext:
         if self.state != LISTENING_INITIAL:
             print("Must be in LISTENING state to accept()")
@@ -488,8 +417,6 @@ class QUICNetworkController:
                 self.process_packets(packets, udp_socket)
         self.state = CONNECTED
         return self
-
-
 
 
     def send_stream_data(self, stream_id: int, data: bytes, udp_socket: socket) -> bool:
@@ -512,8 +439,6 @@ class QUICNetworkController:
             self.process_packets(packets_to_process, udp_socket)
             could_not_send = self.send_packets(could_not_send, udp_socket)        
         return True
-
-
 
 
     def send_packets(self, packets: list[Packet], udp_socket: socket) -> list[Packet]:
@@ -542,8 +467,6 @@ class QUICNetworkController:
         return could_not_send
 
 
-
-
     def read_stream_data(self, stream_id: int, num_bytes: int, udp_socket: socket) -> tuple[bytes, bool]:
         """
         """
@@ -555,12 +478,8 @@ class QUICNetworkController:
         return data, self.peer_issued_connection_closed
 
 
-
-
     def is_active_stream(self, stream_id: int) -> bool:
         return stream_id in self._receive_streams
-
-
 
 
     def is_ack_eliciting(self, packet: Packet) -> bool:
@@ -570,26 +489,18 @@ class QUICNetworkController:
         return False
 
 
-
-
     def create_and_send_acknowledgements(self, udp_socket: socket) -> None:
         ack_pkt: Packet = self._packetizer.packetize_acknowledgement(self._connection_context, self.unacked_packet_numbers_received)
         self.send_packets([ack_pkt], udp_socket)
-
-
 
 
     def update_largest_packet_number_received(self, packet: Packet) -> None:
         self.largest_packet_number_received = max(packet.header.packet_number, self.largest_packet_number_received)
 
 
-
-
     def update_received_packet_numbers(self, pkt_num: int) -> None:
         if pkt_num not in self.unacked_packet_numbers_received:
             self.unacked_packet_numbers_received.append(pkt_num)
-
-
 
 
     def process_short_header_packet(self, packet: Packet, udp_socket: socket) -> None:
@@ -604,8 +515,6 @@ class QUICNetworkController:
             if frame.type == FT_CONNECTIONCLOSE:
                 self.peer_issued_connection_closed = True
             # TODO: Add checks for other frame types i.e. StreamClose, ConnectionClose, etc.
-
-
 
 
     def process_long_header_packet(self, packet: Packet, udp_socket: socket) -> None:
@@ -663,8 +572,6 @@ class QUICNetworkController:
             return
 
 
-
-
     def process_packets(self, packets: list[Packet], udp_socket: socket) -> None:
 
         if not packets:
@@ -688,8 +595,6 @@ class QUICNetworkController:
                 if self.is_ack_eliciting(packet):
                     pkt = self._packetizer.packetize_acknowledgement(self._connection_context, self.unacked_packet_numbers_received)
                     self.send_packets([pkt], udp_socket)
-
-
 
 
     def receive_new_packets(self, udp_socket: socket, encryption_context: EncryptionContext or None, block=False):
@@ -717,8 +622,6 @@ class QUICNetworkController:
         return packets
 
 
-
-
     def on_stream_frame_received(self, frame: StreamFrame):
         if not self.is_active_stream(frame.stream_id):
             self.create_stream(1)
@@ -733,8 +636,6 @@ class QUICNetworkController:
         else:
             print(f"Stream ID {frame.stream_id} does not exist.")
             exit(1)
-
-
 
 
     def extract_ack_frame(self, pkt: Packet) -> bool:
@@ -796,16 +697,12 @@ class QUICSenderSideController:
         self.sent_time_of_last_loss = 0
     
 
-
-
     def on_packet_loss(self):
         if self.in_recovery(self.sent_time_of_last_loss):
             return
         self.slow_start_threshold = self.congestion_window / 2
         self.congestion_window = max(self.slow_start_threshold, MINIMUM_CONGESTION_WINDOW)
         self.congestion_recovery_start_time = time()
-
-
 
 
     def detect_and_remove_lost_packets(self, largest_acknowledged: int) -> list[PacketSentInfo]:
@@ -826,8 +723,6 @@ class QUICSenderSideController:
             if self.sent_time_of_last_loss != 0:
                 self.on_packet_loss()
         return lost_packets
-
-
 
 
     def on_packet_numbers_acked(self, packet_numbers: list[int]) -> None:
@@ -860,12 +755,8 @@ class QUICSenderSideController:
         return packets_acked
 
 
-
-
     def in_recovery(self, time_sent: float) -> bool:
         return time_sent <= self.congestion_recovery_start_time
-
-
 
 
     def send_packet_cc(self, packet: Packet, udp_socket: socket, connection_context: ConnectionContext, encryption_context: EncryptionContext or None) -> None:
@@ -883,8 +774,6 @@ class QUICSenderSideController:
                                                                     packet=packet)
 
 
-
-
     def send_non_ack_eliciting_packet(self, packet: Packet, udp_socket: socket, connection_context: ConnectionContext, encryption_context: EncryptionContext or None) -> None:
         # For non-ack eliciting packets we don't care about congestion control state.
         if encryption_context:
@@ -899,12 +788,8 @@ class QUICSenderSideController:
                                                                     packet=packet)
 
 
-
-
     def can_send(self):
         return self.bytes_in_flight < self.congestion_window
-
-
 
 
     def in_slow_start(self) -> bool:
