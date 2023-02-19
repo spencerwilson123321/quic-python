@@ -1,4 +1,4 @@
-from .QUICPacketParser import parse_packet_bytes
+from .QUICPacketParser import parse_packet_bytes, PacketParserError
 from .QUICPacket import *
 from .QUICConnection import ConnectionContext, create_connection_id
 from .QUICEncryption import EncryptionContext
@@ -611,10 +611,13 @@ class QUICNetworkController:
             except ConnectionRefusedError:
                 break
         for datagram in datagrams:
-            if encryption_context:
-                packet = parse_packet_bytes(encryption_context.decrypt(datagram))
-            else:
-                packet = parse_packet_bytes(datagram)
+            try:
+                if encryption_context:
+                    packet = parse_packet_bytes(encryption_context.decrypt(datagram))
+                else:
+                    packet = parse_packet_bytes(datagram)
+            except PacketParserError:
+                continue # If a datagram fails to be parsed, just drop it.
             if packet.header.type == HT_INITIAL:
                 self.last_peer_address_received = address
             log.debug(f"Received: \n{packet}")
