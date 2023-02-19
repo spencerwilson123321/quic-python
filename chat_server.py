@@ -1,5 +1,5 @@
 from QUIC import QUICSocket
-from threading import Lock
+from threading import Lock, Thread, get_ident
 
 
 class ChatServer:
@@ -11,8 +11,11 @@ class ChatServer:
         self.threads = []
         self.clients = []
 
+
     def client_thread_handler(self, client: QUICSocket):
-        pass
+        print(f"Thread {get_ident()} started...")
+        client.close()
+        print(f"Closing thread {get_ident()}...")
 
 
     def mainloop(self):
@@ -20,7 +23,12 @@ class ChatServer:
         """
         print("Starting mainloop...")
         while True:
-            pass
+            client = self.listener.accept()
+            print("Connection accepted...")
+            client_thread = Thread(target=self.client_thread_handler, args=(self, client,))
+            client_thread.start()
+            self.threads.append(client_thread)
+            self.clients.append(client)
 
 
     def shutdown(self):
