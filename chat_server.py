@@ -8,14 +8,11 @@ class ChatServer:
         self.listener = QUICSocket(ip)
         self.listener.listen(port)
 
-        self.threads = []
-        self.clients = []
-
 
     def client_thread_handler(self, client: QUICSocket):
         print(f"Thread {get_ident()} started...")
         client.close()
-        print(f"Closing thread {get_ident()}...")
+        print(f"Thread {get_ident()} finished...")
 
 
     def mainloop(self):
@@ -25,10 +22,8 @@ class ChatServer:
         while True:
             client = self.listener.accept()
             print("Connection accepted...")
-            client_thread = Thread(target=self.client_thread_handler, args=(self, client,))
+            client_thread = Thread(target=self.client_thread_handler, args=(client,))
             client_thread.start()
-            self.threads.append(client_thread)
-            self.clients.append(client)
 
 
     def shutdown(self):
