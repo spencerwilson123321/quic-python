@@ -1,5 +1,6 @@
 from QUIC import QUICSocket
-from threading import Lock, Thread, get_ident
+from database import Database
+from threading import Lock, Thread
 import time
 
 class ChatServer:
@@ -10,6 +11,7 @@ class ChatServer:
         self.listener = QUICSocket(ip)
         self.listener.listen(port)
         self.threads: list[Thread] = []
+        self.database = Database()
 
 
     def client_thread_handler(self, client: QUICSocket):
