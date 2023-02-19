@@ -14,7 +14,8 @@ if __name__ == "__main__":
     # window.title("QUIC-Chat")
     # login = LoginView(master=window)
     # window.mainloop()
-    client = QUICSocket("10.0.0.131")
-    client.connect(("10.0.0.159", 8000))
+    client = QUICSocket("10.0.0.159")
+    client.connect(("10.0.0.131", 8000))
     data, connected = client.recv(1, 1024)
     client.release()
+
