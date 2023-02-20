@@ -1,4 +1,4 @@
-from tkinter import Tk, Frame, Entry, Label, Button, Text, Message, Scrollbar
+from tkinter import Tk, Frame, Entry, Label, Button, Text, Message, Scrollbar, END
 from QUIC import QUICSocket
 
 
@@ -64,7 +64,10 @@ class ChatClient:
         # TODO implement for real.
         self.socket.connect(address)
         self.socket.send(1, display_name.encode("utf-8"))
-        self.socket.release()
+    
+
+    def end_connection(self) -> None:
+        self.socket.close()
 
 
 class ChatApplication:
@@ -110,7 +113,9 @@ class ChatApplication:
 
 
     def disconnect(self, event):
-        print("Disconnected")
+        self.chat_client.end_connection()
+        self.connected = False
+        self.chatview.chat.delete(0, END)
 
 
     def send_message(self, event):
