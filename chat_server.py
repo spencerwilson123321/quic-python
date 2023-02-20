@@ -32,7 +32,8 @@ class ChatServer:
                 username, disconnected = client.recv(1, 20)
                 if username: print(f"Received username: {username}")
             _, disconnected = client.recv(1, 1024)
-            time.sleep(2)
+        disconnected = False
+        username = b""
         client.release()
         print("Closing thread...")
 

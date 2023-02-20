@@ -76,6 +76,7 @@ class ChatApplication:
     def __init__(self, ip: str) -> None:
 
         self.connected = False
+        self.ip = ip
 
         self.chat_client = ChatClient(ip)
         self.window = Tk()
@@ -117,6 +118,8 @@ class ChatApplication:
         self.chat_client.end_connection()
         self.connected = False
         self.chatview.chat.delete(0, END)
+        # Create a new chat client.
+        self.chat_client = ChatClient(self.ip)
 
 
     def send_message(self, event):
