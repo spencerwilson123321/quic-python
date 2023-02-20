@@ -28,6 +28,7 @@ class ChatServer:
         disconnected = False
         username = b""
         username_received = False
+        print(f"This should be empty: {username}")
         while not disconnected and not self.SHUTDOWN:
             if not username_received:
                 username, disconnected = client.recv(1, 20)
