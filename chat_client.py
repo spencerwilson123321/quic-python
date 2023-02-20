@@ -113,6 +113,7 @@ class ChatApplication:
 
 
     def disconnect(self, event):
+        print("Disconnecting...")
         self.chat_client.end_connection()
         self.connected = False
         self.chatview.chat.delete(0, END)
