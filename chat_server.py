@@ -32,7 +32,7 @@ class ChatServer:
             if not username:
                 username, disconnected = client.recv(1, 20)
                 if username: print(f"Received username: {username}")
-            
+            print("Does this run?")            
             _, disconnected = client.recv(1, 1024)
             print(disconnected)
             time.sleep(2)
