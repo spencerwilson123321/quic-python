@@ -41,14 +41,13 @@ class ChatServer:
         # username = b""
         # username_received = False
         username = b""
+        disconnected = False
         while not username:
             username, disconnected = client.recv(1, 1024)
         print(f"Username: {username.decode('utf-8')}")
-        if disconnected:
-            client.release()
-            return
-        while not self.SHUTDOWN:
-            time.sleep(1)
+        while not self.SHUTDOWN and not disconnected:
+            _, disconnected = client.recv(1, 1024)
+            # time.sleep(1)
         print("Closing thread...")
 
 
