@@ -37,8 +37,6 @@ class ChatServer:
                     username_received = True
                 continue
             data, disconnected = client.recv(1, 1024)
-            print(f"data: {data}")
-            print(f"disconnected: {disconnected}")
         disconnected = False
         username = b""
         username_received = False
