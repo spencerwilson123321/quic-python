@@ -28,15 +28,16 @@ class ChatServer:
         disconnected = False
         username = b""
         username_received = False
-        while not disconnected and not self.SHUTDOWN:
+        while not self.SHUTDOWN:
             # time.sleep(0.5)
             if not username_received:
                 username, disconnected = client.recv(1, 20)
                 if len(username) > 0: 
                     print(f"Received username: {username}")
                     username_received = True
-                    continue
+                continue
             _, disconnected = client.recv(1, 1024)
+            if disconnected: break
         disconnected = False
         username = b""
         username_received = False
