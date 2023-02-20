@@ -27,13 +27,17 @@ class ChatServer:
     def client_thread_handler(self, client: QUICSocket, client_id: int):
         disconnected = False
         username = b""
+        username_received = False
         while not disconnected and not self.SHUTDOWN:
-            if not username:
+            if not username_received:
                 username, disconnected = client.recv(1, 20)
-                if username: print(f"Received username: {username}")
+                if len(username) > 0: 
+                    print(f"Received username: {username}")
+                    username_received = True
             _, disconnected = client.recv(1, 1024)
         disconnected = False
         username = b""
+        username_received = False
         client.release()
         print("Closing thread...")
 
@@ -49,7 +53,7 @@ class ChatServer:
             self.clients[client_id] = client
             client_thread = Thread(target=self.client_thread_handler, args=(client, client_id,))
             client_thread.start()
-            print(f"Thread {client_thread.ident} started...")
+            print(f"Thread {client_thread.native_id} started...")
             self.threads.append(client_thread)
 
 
@@ -58,7 +62,7 @@ class ChatServer:
         print("\nShutting down threads...")
         for thread in self.threads:
             thread.join()
-            print(f"Thread {thread.ident} finished...")
+            print(f"Thread {thread.native_id} finished...")
         print("Shutting down server...")
         self.listener.release()
 
