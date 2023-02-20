@@ -26,8 +26,12 @@ class ChatServer:
 
     def client_thread_handler(self, client: QUICSocket, client_id: int):
         disconnected = False
+        username = b""
         while not disconnected and not self.SHUTDOWN:
             time.sleep(2)
+            if not username:
+                username, disconnected = client.recv(1, 20)
+                print(f"Received username: {username}")
         client.release()
 
 
