@@ -28,15 +28,11 @@ class ChatServer:
         disconnected = False
         username = b""
         while not disconnected and not self.SHUTDOWN:
-
             if not username:
                 username, disconnected = client.recv(1, 20)
                 if username: print(f"Received username: {username}")
-            print("Does this run?")            
             _, disconnected = client.recv(1, 1024)
-            print(disconnected)
             time.sleep(2)
-
         client.release()
         print("Closing thread...")
 
