@@ -91,6 +91,7 @@ class ChatClient:
             return "Account created successfully."
         elif response == "fail":
             return "Could not create account, username and password already exist."
+        self.socket.close()
 
 
     def sign_in(self, ip: str, port: int, username: str, password: str) -> bool:
@@ -181,7 +182,9 @@ class ChatApplication:
         username = pad(username, 12)
         password = pad(password, 12)
 
-        self.chat_client.create_account(ip, int(port), username, password)
+        server_response: str = self.chat_client.create_account(ip, int(port), username, password)
+        self.write_message_to_console("SERVER: " + server_response)
+        self.chat_client = ChatClient(self.ip)
 
 
     def on_click_sign_in(self, event):

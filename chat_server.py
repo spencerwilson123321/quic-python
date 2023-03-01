@@ -46,8 +46,7 @@ class ChatServer:
         username = b""
         password = b""
 
-        sleep(1)
-        
+        status = False
         while not reason:
             reason, status = client.recv(1, 12)
 
@@ -77,19 +76,10 @@ class ChatServer:
                 client.send(1, b"success")
             else:
                 client.send(1, b"fail")
-
-        # 1. Get the client's username.
-        # username = b""
-        # disconnected = False
-        # while not username:
-        #     username, disconnected = client.recv(1, 1024)
-        # print(f"Username: {username.decode('utf-8')}")
-
-        # # 2. Wait for message data and broadcast it to all other connected users.
-        # # TODO implement
-        # while not self.SHUTDOWN and not disconnected:
-        #     _, disconnected = client.recv(1, 1024)
-        # print("Closing thread...")
+        
+        while not status:
+            _, status = client.recv(1, 12)
+        print("Closing thread...")
 
 
     def mainloop(self):
