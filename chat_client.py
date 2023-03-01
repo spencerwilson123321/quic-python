@@ -77,10 +77,9 @@ class ChatClient:
         self.socket = QUICSocket(ip)
 
 
-    def create_account(self, ip: str, port: int, username: str, password: str) -> int:
+    def create_account(self, ip: str, port: int, username: str, password: str) -> str:
         reason = pad("create", 12)
         self.socket.connect((ip, port))
-        sleep(2)
         self.socket.send(1, reason.encode("utf-8"))
         self.socket.send(1, username.encode("utf-8"))
         self.socket.send(1, password.encode("utf-8"))
@@ -97,12 +96,24 @@ class ChatClient:
             return "Could not create account, username and password already exist."
 
 
-    def sign_in(self, ip: str, port: int, username: str, password: str) -> bool:
+    def sign_in(self, ip: str, port: int, username: str, password: str) -> str:
+        reason = pad("sign in", 12)
         self.socket.connect((ip, port))
+        self.socket.send(1, reason.encode("utf-8"))
         self.socket.send(1, username.encode("utf-8"))
         self.socket.send(1, password.encode("utf-8"))
-        return True
-    
+        response = b""
+        while not response:
+            response, status = self.socket.recv(1, 12)
+        response = response.decode("utf-8")
+        response = response.strip()
+        if response == "success":
+            self.socket.close()
+            return "Signed in successfully."
+        elif response == "fail":
+            self.socket.close()
+            return "Could not sign in, username and password combination not found."
+
 
     def disconnect(self) -> None:
         self.socket.close()

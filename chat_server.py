@@ -70,6 +70,15 @@ class ChatServer:
             else:
                 client.send(1, b"fail")
         
+        if reason == "sign in":
+            self.lock.acquire()
+            result: bool = self.sign_in(username, password)
+            self.lock.release()
+            if result:
+                client.send(1, b"success")
+            else:
+                client.send(1, b"fail")
+        
         if status == True:
             client.release()
             print("Closing thread.")            
@@ -78,12 +87,7 @@ class ChatServer:
         while status == False:
             data, status = client.recv(1, 1024)
         print("Closing thread.")            
-        # if reason == "sign in":
-        #     result: bool = self.sign_in(username, password)
-        #     if result:
-        #         client.send(1, b"success")
-        #     else:
-        #         client.send(1, b"fail")
+
 
 
     def mainloop(self):
