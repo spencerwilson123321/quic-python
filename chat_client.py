@@ -136,6 +136,7 @@ class ChatApplication:
         self.window.title("QUIC-Chat")
         self.content = Frame(self.window)
         self.content.grid(row=0, column=0)
+        self.username = ""
 
         self.information_entry_view = InformationEntryView(master=self.content)
         self.button_panel_view = ButtonPanelView(master=self.content)
@@ -231,6 +232,7 @@ class ChatApplication:
             self.signed_in = True
             self.receive_thread = Thread(target=self.receive_thread_handler)
             self.receive_thread.start()
+            self.username = username
         else:
             self.write_message_to_console("SERVER: Sign in failed, username and password combination not found.")
             self.chat_client = ChatClient(self.ip)
@@ -263,6 +265,7 @@ class ChatApplication:
             return
         # 5. Send the message to the server using the chat client.
         self.chat_client.send_message(message)
+        self.write_message_to_console(f"{self.username}: {message}")
 
 
 if __name__ == "__main__":

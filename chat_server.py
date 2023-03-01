@@ -79,13 +79,12 @@ class ChatServer:
                     # Wait for messages from client.
                     data, status = client.recv(1, 1024)
                     if data:
-                        print(f"Received from client #{client_id}: {data}")
                         self.client_lock.acquire()
                         for id in self.clients:
                             if id == client_id:
                                 continue
-                            self.clients[id].send(1, data)
-                        self.client_lock.release()                          
+                            self.clients[id].send(1, username.encode("utf-8") + b": " + data)
+                        self.client_lock.release()
             else:
                 client.send(1, b"fail")
         
