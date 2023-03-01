@@ -80,7 +80,7 @@ class ChatClient:
     def create_account(self, ip: str, port: int, username: str, password: str) -> int:
         reason = pad("create", 12)
         self.socket.connect((ip, port))
-        sleep(1)
+        sleep(2)
         self.socket.send(1, reason.encode("utf-8"))
         self.socket.send(1, username.encode("utf-8"))
         self.socket.send(1, password.encode("utf-8"))
