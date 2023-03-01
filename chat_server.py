@@ -70,13 +70,13 @@ class ChatServer:
             else:
                 client.send(1, b"fail")
         
-        # if status == True:
-        #     client.release()
-        #     print("Closing thread.")            
-        #     return
+        if status == True:
+            client.release()
+            print("Closing thread.")            
+            return
         
-        # while status == False:
-        #     data, status = client.recv(1, 1024)
+        while status == False:
+            data, status = client.recv(1, 1024)
         print("Closing thread.")            
         # if reason == "sign in":
         #     result: bool = self.sign_in(username, password)

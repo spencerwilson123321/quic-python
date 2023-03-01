@@ -245,7 +245,7 @@ class ReceiveStream:
 
     def read(self, num_bytes: int) -> bytes:
         data = self.data[0:num_bytes]
-        self.data = self.data[num_bytes:]
+        self.data = self.data[len(data):]
         return data
 
 
@@ -524,7 +524,7 @@ class QUICNetworkController:
         if self.get_state() == INITIALIZING:
             if packet.header.type == HT_INITIAL:
                 self.server_initial_received = True
-                self._connection_context.set_peer_address(self.last_peer_address_received)
+                self._connection_context.set_peer_address(self.last_peer_address_received) # TODO This doesn't need to be here
                 self._connection_context.set_local_connection_id(packet.header.destination_connection_id)
             if packet.header.type == HT_HANDSHAKE:
                 self.server_handshake_received = True

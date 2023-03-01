@@ -90,10 +90,11 @@ class ChatClient:
         response = response.decode("utf-8")
         response = response.strip()
         if response == "success":
+            self.socket.close()
             return "Account created successfully."
         elif response == "fail":
+            self.socket.close()
             return "Could not create account, username and password already exist."
-        self.socket.close()
 
 
     def sign_in(self, ip: str, port: int, username: str, password: str) -> bool:
