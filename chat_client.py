@@ -108,7 +108,6 @@ class ChatClient:
         response = response.decode("utf-8")
         response = response.strip()
         if response == "success":
-            # self.socket.close()
             return True
         elif response == "fail":
             self.socket.close()
@@ -224,12 +223,14 @@ class ChatApplication:
 
 
     def on_click_disconnect(self, event):
-        print("Disconnecting...")
+        if not self.signed_in:
+            self.write_message_to_console("CHAT CLIENT: Cannot disconnect, not currently connected to a server.")
+            return
         self.chat_client.disconnect()
         self.signed_in = False
-        self.chatview.chat.delete(0, END)
-        # Create a new chat client.
+        self.chatview.chat.delete("1.0", END)
         self.chat_client = ChatClient(self.ip)
+        self.write_message_to_console("CHAT CLIENT: Disconnected from the server...")
 
 
     def on_click_send(self, event):
@@ -238,9 +239,9 @@ class ChatApplication:
             self.write_message_to_console("CHAT CLIENT: You must be signed into a server to send messages.")
             return
         # 2. Get the message from the text box.
-        message: str = self.messageview.message_entry.get(0, END)
+        message: str = self.messageview.message_entry.get("1.0", END)
         # 3. Clear the text box.
-        self.messageview.message_entry.delete(0, END)
+        self.messageview.message_entry.delete("1.0", END)
         # 4. Make sure the message is less than 256 characters.
         if len(message) > 256 or len(message) == 0:
             self.write_message_to_console("CHAT CLIENT: Messages cannot be empty or greater than 256 characters.")
