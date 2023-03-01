@@ -38,8 +38,8 @@ class Database:
         if self.exists(username, password):
             return False
         with open(self.filepath, APPEND) as database:
-            database.write(f"{username}:{password}")
-        return True    
+            database.write(f"{username}:{password}\n")
+        return True
 
 
     def remove(self, username: str, password: str) -> bool:
