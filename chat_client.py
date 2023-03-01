@@ -1,6 +1,7 @@
 from tkinter import Tk, Frame, Entry, Label, Button, Text, END
 from QUIC import QUICSocket
 from ipaddress import ip_address
+from time import sleep
 
 
 def pad(input: str, pad_length: int) -> str:
@@ -79,6 +80,7 @@ class ChatClient:
     def create_account(self, ip: str, port: int, username: str, password: str) -> int:
         reason = pad("create", 12)
         self.socket.connect((ip, port))
+        sleep(1)
         self.socket.send(1, reason.encode("utf-8"))
         self.socket.send(1, username.encode("utf-8"))
         self.socket.send(1, password.encode("utf-8"))
