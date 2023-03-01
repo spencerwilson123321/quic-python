@@ -402,6 +402,7 @@ class QUICNetworkController:
         # ---- Connection Complete ----
         self.state = CONNECTED
         self.create_stream(1)
+        print("Pog")
 
 
     def accept_connection(self, udp_socket: socket) -> ConnectionContext:
