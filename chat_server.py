@@ -1,6 +1,7 @@
 from QUIC import QUICSocket
 from database import Database
 from threading import Thread, Lock
+from time import sleep
 
 
 class ChatServer:
@@ -44,6 +45,8 @@ class ChatServer:
         reason = b""
         username = b""
         password = b""
+
+        sleep(1)
         
         while not reason:
             reason, status = client.recv(1, 12)

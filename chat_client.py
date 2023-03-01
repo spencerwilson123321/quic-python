@@ -77,9 +77,9 @@ class ChatClient:
 
 
     def create_account(self, ip: str, port: int, username: str, password: str) -> int:
-        self.socket.connect((ip, port))
         reason = pad("create", 12)
-        self.socket.send(1, reason)
+        self.socket.connect((ip, port))
+        self.socket.send(1, reason.encode("utf-8"))
         self.socket.send(1, username.encode("utf-8"))
         self.socket.send(1, password.encode("utf-8"))
         response = b""
@@ -99,7 +99,7 @@ class ChatClient:
         self.socket.send(1, password.encode("utf-8"))
         return True
     
-    
+
     def disconnect(self) -> None:
         self.socket.close()
 
