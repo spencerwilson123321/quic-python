@@ -1,6 +1,6 @@
 from QUIC import QUICSocket
 from database import Database
-from threading import Thread
+from threading import Thread, Lock
 
 
 class ChatServer:
@@ -16,6 +16,21 @@ class ChatServer:
         self.clients = {}
         self.threads: list[Thread] = []
         self.database = Database()
+        self.lock = Lock()
+    
+    
+    def create_account(self, username: str, password: str) -> bool:
+        self.lock.acquire()
+        result: bool = self.database.add(username, password)
+        self.lock.release()
+        return result
+    
+
+    def sign_in(self, username: str, password: str) -> bool:
+        self.lock.acquire()
+        result: bool = self.database.exists(username, password)
+        self.lock.release()
+        return result
 
 
     def create_new_client_id(self):
@@ -25,18 +40,53 @@ class ChatServer:
 
     def client_thread_handler(self, client: QUICSocket, client_id: int):
 
-        # 1. Get the client's username.
+        # 1. Get the reason for connection.
+        reason = b""
         username = b""
-        disconnected = False
-        while not username:
-            username, disconnected = client.recv(1, 1024)
-        print(f"Username: {username.decode('utf-8')}")
+        password = b""
+        
+        while not reason:
+            reason, status = client.recv(1, 12)
 
-        # 2. Wait for message data and broadcast it to all other connected users.
-        # TODO implement
-        while not self.SHUTDOWN and not disconnected:
-            _, disconnected = client.recv(1, 1024)
-        print("Closing thread...")
+        while not username:
+            username, status = client.recv(1, 12)
+
+        while not password:
+            password, status = client.recv(1, 12)
+        
+        reason = reason.strip()
+        username = username.strip()
+        password = password.strip()
+
+        reason = reason.decode("utf-8")
+        username = username.decode("utf-8")
+        password = password.decode("utf-8")
+
+        if reason == "create":
+            result: bool = self.create_account(username, password)
+            if result:
+                client.send(1, b"success")
+            else:
+                client.send(1, b"fail")
+        if reason == "sign in":
+            result: bool = self.sign_in(username, password)
+            if result:
+                client.send(1, b"success")
+            else:
+                client.send(1, b"fail")
+
+        # 1. Get the client's username.
+        # username = b""
+        # disconnected = False
+        # while not username:
+        #     username, disconnected = client.recv(1, 1024)
+        # print(f"Username: {username.decode('utf-8')}")
+
+        # # 2. Wait for message data and broadcast it to all other connected users.
+        # # TODO implement
+        # while not self.SHUTDOWN and not disconnected:
+        #     _, disconnected = client.recv(1, 1024)
+        # print("Closing thread...")
 
 
     def mainloop(self):

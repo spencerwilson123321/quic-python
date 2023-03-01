@@ -3,6 +3,12 @@ from QUIC import QUICSocket
 from ipaddress import ip_address
 
 
+def pad(input: str, pad_length: int) -> str:
+    while len(input) < pad_length:
+        input += " "
+    return input
+
+
 class InformationEntryView(Frame):
     
     def __init__(self, **kwargs):
@@ -69,14 +75,30 @@ class ChatClient:
     def __init__(self, ip: str):
         self.socket = QUICSocket(ip)
 
-    def create_account(self) -> int:
-        pass
+
+    def create_account(self, ip: str, port: int, username: str, password: str) -> int:
+        self.socket.connect((ip, port))
+        reason = pad("create", 12)
+        self.socket.send(1, reason)
+        self.socket.send(1, username.encode("utf-8"))
+        self.socket.send(1, password.encode("utf-8"))
+        response = b""
+        while not response:
+            response, status = self.socket.recv(1, 12)
+        response = response.decode("utf-8")
+        response = response.strip()
+        if response == "success":
+            return "Account created successfully."
+        elif response == "fail":
+            return "Could not create account, username and password already exist."
+
 
     def sign_in(self, ip: str, port: int, username: str, password: str) -> bool:
         self.socket.connect((ip, port))
         self.socket.send(1, username.encode("utf-8"))
         self.socket.send(1, password.encode("utf-8"))
         return True
+    
     
     def disconnect(self) -> None:
         self.socket.close()
@@ -87,7 +109,7 @@ class ChatApplication:
 
     def __init__(self, ip: str) -> None:
 
-        self.connected = False
+        self.signed_in = False
         self.ip = ip
 
         self.chat_client = ChatClient(ip)
@@ -112,6 +134,7 @@ class ChatApplication:
     def run(self):
         self.window.mainloop()
     
+
     def validate_inputs(self, ip: str, port: str, username: str, password: str) -> bool:
         try:
             ip_address(ip)
@@ -134,11 +157,6 @@ class ChatApplication:
         return True
     
 
-    def pad(self, input: str, pad_length: int) -> str:
-        while len(input) < pad_length:
-            input += " "
-        return input
-
 
     def write_message_to_console(self, message: str):
         self.chatview.chat.config(state="normal")
@@ -151,11 +169,8 @@ class ChatApplication:
 
 
     def on_click_create_account(self, event):
-        print("Creating account...")
-
-
-    def on_click_sign_in(self, event):
-        if self.connected:
+        if self.signed_in:
+            # Can't make an account if already signed in.
             return None
         ip, port, username, password = self.get_all_entries()
         
@@ -163,16 +178,32 @@ class ChatApplication:
             return
 
         # Pad username / password with whitespace so that they are both len == 12
-        username = self.pad(username, 12)
-        password = self.pad(password, 12)
+        username = pad(username, 12)
+        password = pad(password, 12)
 
-        self.connected = self.chat_client.sign_in(ip, port, username, password)
+        self.chat_client.create_account(ip, int(port), username, password)
+
+
+    def on_click_sign_in(self, event):
+        if self.signed_in:
+            return None
+        ip, port, username, password = self.get_all_entries()
+        
+        if not self.validate_inputs(ip, port, username, password):
+            return
+
+        # Pad username / password with whitespace so that they are both len == 12
+        username = pad(username, 12)
+        password = pad(password, 12)
+
+        print("TODO: implement sign in")
+        # self.connected = self.chat_client.sign_in(ip, int(port), username, password)
         
 
     def on_click_disconnect(self, event):
         print("Disconnecting...")
         self.chat_client.disconnect()
-        self.connected = False
+        self.signed_in = False
         self.chatview.chat.delete(0, END)
         # Create a new chat client.
         self.chat_client = ChatClient(self.ip)
