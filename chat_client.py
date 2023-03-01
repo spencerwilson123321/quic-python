@@ -1,5 +1,6 @@
 from tkinter import Tk, Frame, Entry, Label, Button, Text, END
 from QUIC import QUICSocket
+from ipaddress import ip_address
 
 
 class InformationEntryView(Frame):
@@ -71,13 +72,11 @@ class ChatClient:
     def create_account(self) -> int:
         pass
 
-    def sign_in(self, address: tuple[str, int], display_name: str) -> int:
-        # 1. Attempt to create a connection to the QUIC server.
-        #   - Could fail.
-        # 2. Once connected, send the user's display name to the server.
-        # TODO implement for real.
-        self.socket.connect(address)
-        self.socket.send(1, display_name.encode("utf-8"))
+    def sign_in(self, ip: str, port: int, username: str, password: str) -> bool:
+        self.socket.connect((ip, port))
+        self.socket.send(1, username.encode("utf-8"))
+        self.socket.send(1, password.encode("utf-8"))
+        return True
     
     def disconnect(self) -> None:
         self.socket.close()
@@ -104,33 +103,57 @@ class ChatApplication:
         self.messageview = MessageView(master=self.content)
 
         # Event bindings.
-        self.button_panel_view.bind('<Button-1>', self.on_click_create_account)
-        self.button_panel_view.connect_button.bind('<Button-1>', self.on_click_connect)
+        self.button_panel_view.create_account_button.bind('<Button-1>', self.on_click_create_account)
+        self.button_panel_view.connect_button.bind('<Button-1>', self.on_click_sign_in)
         self.button_panel_view.disconnect_button.bind('<Button-1>', self.on_click_disconnect)
         self.messageview.send_button.bind('<Button-1>', self.on_click_send)
 
 
     def run(self):
         self.window.mainloop()
+    
+    def write_message_to_console(self, message: str):
+        self.chatview.chat.config(state="normal")
+        self.chatview.chat.insert(END, message + "\n")
+        self.chatview.chat.config(state="disabled")
 
+    def get_all_entries(self) -> tuple[str, str, str, str]:
+        return self.information_entry_view.ip_entry.get(), self.information_entry_view.port_entry.get(), self.information_entry_view.username_entry.get(), self.information_entry_view.password_entry.get()
 
     def on_click_create_account(self, event):
         print("Creating account...")
 
-
-    def on_click_connect(self, event):
+    def on_click_sign_in(self, event):
         if self.connected:
             return None
-        ip, port, display_name = self.connectionview.ip_entry.get(), self.connectionview.port_entry.get(), self.connectionview.username_entry.get()
-        # TODO Verify user input.
-        # IPv4 - Cannot be empty, must be a proper IPv4 address.
-        # Port - Must be empty or a valid integer between 0-65535
-        # Display Name - Must not be empty, cannot be longer than 12 characters.
+        ip, port, username, password = self.get_all_entries()
+        try:
+            ip_address(ip)
+        except ValueError:
+            self.write_message_to_console("Invalid IP address, try again.")
+            return
+        try:
+            port = int(port)
+            if port < 1 or port > 65535:
+                raise ValueError
+        except ValueError:
+            self.write_message_to_console("'port' must be an integer between 1 and 65535.")
+            return
+        if len(username) == 0 or len(username) > 12:
+            self.write_message_to_console("Username cannot be empty or greater than 12 characters.")
+            return
+        if len(password) == 0 or len(password) > 12:
+            self.write_message_to_console("Password cannot be empty or greater than 12 characters.")
+            return
 
-        # Assume inputs are correct.
-        self.chat_client.sign_in((ip, int(port)), display_name)
-        self.connected = True
+        # Pad username / password with whitespace so that they are both len == 12
+        while len(username) < 12:
+            username += " "
+        while len(password) < 12:
+            password += " "
 
+        self.connected = self.chat_client.sign_in(ip, port, username, password)
+        
 
     def on_click_disconnect(self, event):
         print("Disconnecting...")
