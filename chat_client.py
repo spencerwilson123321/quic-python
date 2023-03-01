@@ -112,45 +112,59 @@ class ChatApplication:
     def run(self):
         self.window.mainloop()
     
-    def write_message_to_console(self, message: str):
-        self.chatview.chat.config(state="normal")
-        self.chatview.chat.insert(END, message + "\n")
-        self.chatview.chat.config(state="disabled")
-
-    def get_all_entries(self) -> tuple[str, str, str, str]:
-        return self.information_entry_view.ip_entry.get(), self.information_entry_view.port_entry.get(), self.information_entry_view.username_entry.get(), self.information_entry_view.password_entry.get()
-
-    def on_click_create_account(self, event):
-        print("Creating account...")
-
-    def on_click_sign_in(self, event):
-        if self.connected:
-            return None
-        ip, port, username, password = self.get_all_entries()
+    def validate_inputs(self, ip: str, port: str, username: str, password: str) -> bool:
         try:
             ip_address(ip)
         except ValueError:
             self.write_message_to_console("Invalid IP address, try again.")
-            return
+            return False
         try:
             port = int(port)
             if port < 1 or port > 65535:
                 raise ValueError
         except ValueError:
             self.write_message_to_console("'port' must be an integer between 1 and 65535.")
-            return
+            return False
         if len(username) == 0 or len(username) > 12:
             self.write_message_to_console("Username cannot be empty or greater than 12 characters.")
-            return
+            return False
         if len(password) == 0 or len(password) > 12:
             self.write_message_to_console("Password cannot be empty or greater than 12 characters.")
+            return False
+        return True
+    
+
+    def pad(self, input: str, pad_length: int) -> str:
+        while len(input) < pad_length:
+            input += " "
+        return input
+
+
+    def write_message_to_console(self, message: str):
+        self.chatview.chat.config(state="normal")
+        self.chatview.chat.insert(END, message + "\n")
+        self.chatview.chat.config(state="disabled")
+
+
+    def get_all_entries(self) -> tuple[str, str, str, str]:
+        return self.information_entry_view.ip_entry.get(), self.information_entry_view.port_entry.get(), self.information_entry_view.username_entry.get(), self.information_entry_view.password_entry.get()
+
+
+    def on_click_create_account(self, event):
+        print("Creating account...")
+
+
+    def on_click_sign_in(self, event):
+        if self.connected:
+            return None
+        ip, port, username, password = self.get_all_entries()
+        
+        if not self.validate_inputs(ip, port, username, password):
             return
 
         # Pad username / password with whitespace so that they are both len == 12
-        while len(username) < 12:
-            username += " "
-        while len(password) < 12:
-            password += " "
+        username = self.pad(username, 12)
+        password = self.pad(password, 12)
 
         self.connected = self.chat_client.sign_in(ip, port, username, password)
         
