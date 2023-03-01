@@ -154,17 +154,13 @@ class ChatApplication:
     
     
     def receive_thread_handler(self):
-        # sleep(1)
-        # self.lock.acquire()
         disconnected = False
-        while not disconnected:
+        while not disconnected and self.signed_in:
             self.lock.acquire()
             data, disconnected = self.chat_client.socket.recv(1, 1024)
             if data:
                 self.write_message_to_console(data.decode("utf-8"))
             self.lock.release()
-        # self.lock.release()
-        # pass
 
 
     def validate_inputs(self, ip: str, port: str, username: str, password: str) -> bool:
@@ -233,6 +229,8 @@ class ChatApplication:
         if result:
             self.write_message_to_console("SERVER: Signed in successfully.")
             self.signed_in = True
+            self.receive_thread = Thread(target=self.receive_thread_handler)
+            self.receive_thread.start()
         else:
             self.write_message_to_console("SERVER: Sign in failed, username and password combination not found.")
             self.chat_client = ChatClient(self.ip)
@@ -242,8 +240,9 @@ class ChatApplication:
         if not self.signed_in:
             self.write_message_to_console("CHAT CLIENT: Cannot disconnect, not currently connected to a server.")
             return
-        self.chat_client.disconnect()
         self.signed_in = False
+        self.receive_thread.join()
+        self.chat_client.disconnect()
         self.chatview.chat.delete("1.0", END)
         self.chat_client = ChatClient(self.ip)
         self.write_message_to_console("CHAT CLIENT: Disconnected from the server...")
