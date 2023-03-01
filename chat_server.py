@@ -74,6 +74,11 @@ class ChatServer:
             self.lock.release()
             if result:
                 client.send(1, b"success")
+                while not status:
+                    # Wait for messages from client.
+                    data, status = client.recv(1, 1024)
+                    if data:
+                        print(f"Received from client #{client_id}: {data}")
             else:
                 client.send(1, b"fail")
         

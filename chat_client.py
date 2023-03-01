@@ -108,12 +108,14 @@ class ChatClient:
         response = response.decode("utf-8")
         response = response.strip()
         if response == "success":
-            self.socket.close()
-            return "Signed in successfully."
+            # self.socket.close()
+            return True
         elif response == "fail":
             self.socket.close()
-            return "Could not sign in, username and password combination not found."
-
+            return False
+    
+    def send_message(self, message: str):
+        self.socket.send(1, message.encode("utf-8"))
 
     def disconnect(self) -> None:
         self.socket.close()
@@ -172,7 +174,6 @@ class ChatApplication:
         return True
     
 
-
     def write_message_to_console(self, message: str):
         self.chatview.chat.config(state="normal")
         self.chatview.chat.insert(END, message + "\n")
@@ -213,9 +214,13 @@ class ChatApplication:
         username = pad(username, 12)
         password = pad(password, 12)
 
-        server_response: str = self.chat_client.sign_in(ip, int(port), username, password)
-        self.write_message_to_console("SERVER: " + server_response)
-        self.chat_client = ChatClient(self.ip)
+        result: bool = self.chat_client.sign_in(ip, int(port), username, password)
+        if result:
+            self.write_message_to_console("SERVER: Signed in successfully.")
+            self.signed_in = True
+        else:
+            self.write_message_to_console("SERVER: Sign in failed, username and password combination not found.")
+            self.chat_client = ChatClient(self.ip)
 
 
     def on_click_disconnect(self, event):
@@ -228,7 +233,20 @@ class ChatApplication:
 
 
     def on_click_send(self, event):
-        print("Sending Message")
+        # 1. Check if we are currently connected.
+        if not self.signed_in:
+            self.write_message_to_console("CHAT CLIENT: You must be signed into a server to send messages.")
+            return
+        # 2. Get the message from the text box.
+        message: str = self.messageview.message_entry.get(0, END)
+        # 3. Clear the text box.
+        self.messageview.message_entry.delete(0, END)
+        # 4. Make sure the message is less than 256 characters.
+        if len(message) > 256 or len(message) == 0:
+            self.write_message_to_console("CHAT CLIENT: Messages cannot be empty or greater than 256 characters.")
+            return
+        # 5. Send the message to the server using the chat client.
+        self.chat_client.send_message(message)
 
 
 if __name__ == "__main__":
