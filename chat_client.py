@@ -257,6 +257,7 @@ class ChatApplication:
             return
         # 2. Get the message from the text box.
         message: str = self.messageview.message_entry.get("1.0", END)
+        message = message.strip()
         # 3. Clear the text box.
         self.messageview.message_entry.delete("1.0", END)
         # 4. Make sure the message is less than 256 characters.
@@ -265,7 +266,7 @@ class ChatApplication:
             return
         # 5. Send the message to the server using the chat client.
         self.chat_client.send_message(message)
-        self.write_message_to_console(f"{self.username}: {message}")
+        self.write_message_to_console(f"{self.username.strip()}: {message}")
 
 
 if __name__ == "__main__":

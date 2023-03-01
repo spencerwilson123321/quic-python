@@ -83,7 +83,8 @@ class ChatServer:
                         for id in self.clients:
                             if id == client_id:
                                 continue
-                            self.clients[id].send(1, username.encode("utf-8") + b": " + data)
+                            data = username.encode("utf-8") + b": " + data
+                            self.clients[id].send(1, data)
                         self.client_lock.release()
             else:
                 client.send(1, b"fail")
