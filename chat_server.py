@@ -1,7 +1,6 @@
 from QUIC import QUICSocket
 from database import Database
-from threading import Lock, Thread
-import time
+from threading import Thread
 
 
 class ChatServer:
