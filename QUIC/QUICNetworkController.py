@@ -649,7 +649,7 @@ class QUICNetworkController:
 
 
     def remove_from_packets_received(self, packets_acked: list[PacketSentInfo]) -> None:
-        # This function iterates through the packet nums acknoweledged,
+        # This function iterates through the packet nums acknowledged,
         # and checks whether any of the packets that were acknowledged are
         # ack packets, if they are ack packets, then we remove from our list of received packets,
         # so that we don't double acknowledge packets.
@@ -659,7 +659,10 @@ class QUICNetworkController:
                 # If ack ack frame was acked, we can remove the packet numbers it was acking from out received list.
                 pkt_nums_acked = [i for i in range(frame.largest_acknowledged, frame.largest_acknowledged - frame.first_ack_range - 1, -1)]
                 for pn in pkt_nums_acked:
-                    self.unacked_packet_numbers_received.remove(pn)
+                    try:
+                        self.unacked_packet_numbers_received.remove(pn)
+                    except ValueError:
+                        pass
 
 
     def on_ack_frame_received(self, frame: AckFrame, udp_socket: socket):
