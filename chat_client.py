@@ -65,12 +65,13 @@ class MessageView(Frame):
 
 class ChatClient:
 
-
     def __init__(self, ip: str):
         self.socket = QUICSocket(ip)
 
+    def create_account(self) -> int:
+        pass
 
-    def create_connection(self, address: tuple[str, int], display_name: str) -> None:
+    def sign_in(self, address: tuple[str, int], display_name: str) -> int:
         # 1. Attempt to create a connection to the QUIC server.
         #   - Could fail.
         # 2. Once connected, send the user's display name to the server.
@@ -78,8 +79,7 @@ class ChatClient:
         self.socket.connect(address)
         self.socket.send(1, display_name.encode("utf-8"))
     
-
-    def end_connection(self) -> None:
+    def disconnect(self) -> None:
         self.socket.close()
 
 
@@ -104,21 +104,21 @@ class ChatApplication:
         self.messageview = MessageView(master=self.content)
 
         # Event bindings.
-        self.button_panel_view.bind('<Button-1>', self.create_account)
-        self.button_panel_view.connect_button.bind('<Button-1>', self.connect)
-        self.button_panel_view.disconnect_button.bind('<Button-1>', self.disconnect)
-        self.messageview.send_button.bind('<Button-1>', self.send_message)
+        self.button_panel_view.bind('<Button-1>', self.on_click_create_account)
+        self.button_panel_view.connect_button.bind('<Button-1>', self.on_click_connect)
+        self.button_panel_view.disconnect_button.bind('<Button-1>', self.on_click_disconnect)
+        self.messageview.send_button.bind('<Button-1>', self.on_click_send)
 
 
     def run(self):
         self.window.mainloop()
 
 
-    def create_account(self, event):
+    def on_click_create_account(self, event):
         print("Creating account...")
 
 
-    def connect(self, event):
+    def on_click_connect(self, event):
         if self.connected:
             return None
         ip, port, display_name = self.connectionview.ip_entry.get(), self.connectionview.port_entry.get(), self.connectionview.username_entry.get()
@@ -128,43 +128,24 @@ class ChatApplication:
         # Display Name - Must not be empty, cannot be longer than 12 characters.
 
         # Assume inputs are correct.
-        self.chat_client.create_connection((ip, int(port)), display_name)
+        self.chat_client.sign_in((ip, int(port)), display_name)
         self.connected = True
 
 
-    def disconnect(self, event):
+    def on_click_disconnect(self, event):
         print("Disconnecting...")
-        self.chat_client.end_connection()
+        self.chat_client.disconnect()
         self.connected = False
         self.chatview.chat.delete(0, END)
         # Create a new chat client.
         self.chat_client = ChatClient(self.ip)
 
 
-    def send_message(self, event):
+    def on_click_send(self, event):
         print("Sending Message")
 
 
 if __name__ == "__main__":
-
-    # client = QUICSocket("10.0.0.159")
-    # client.connect(("10.0.0.131", 8000))
-    # data, connected = client.recv(1, 1024)
-    # client.release()
-
-    # window = Tk()
-    # window.resizable(False, False)
-    # window.title("QUIC-Chat")
-    # window.config(bg="skyblue")
-    # content = Frame(window)
-    # content.grid(row=0, column=0)
-
-    # connectionview = ConnectionView(master=content)
-    # chatview = ChatView(master=content)
-    # messageview = MessageView(master=content)
-
-    # window.mainloop()
-
 
     application = ChatApplication("10.0.0.159")
     application.run()
