@@ -274,8 +274,8 @@ class QUICNetworkController:
         self.handshake_complete = False
         self.server_initial_received = False
         self.server_handshake_received = False
-        self.client_initial_received = False
-        self.client_handshake_received = False
+        # self.client_initial_received = False
+        # self.client_handshake_received = False
         self.state = DISCONNECTED
         self.last_peer_address_received = None
 
@@ -309,8 +309,8 @@ class QUICNetworkController:
     def is_client_handshake_complete(self) -> bool:
         return self.server_handshake_received and self.server_initial_received
 
-    def is_server_handshake_complete(self) -> bool:
-        return self.client_handshake_received and self.client_initial_received
+    # def is_server_handshake_complete(self) -> bool:
+    #     return self.client_handshake_received and self.client_initial_received
 
     def set_buffered_packets(self, buffered_packets: list):
         self.buffered_packets = buffered_packets
@@ -402,14 +402,13 @@ class QUICNetworkController:
         # ---- Connection Complete ----
         self.state = CONNECTED
         self.create_stream(1)
-        print("Pog")
 
 
     def accept_connection(self, udp_socket: socket) -> ConnectionContext:
         if self.state != LISTENING_INITIAL:
             print("Must be in LISTENING state to accept()")
             exit(1)
-        while not self.is_server_handshake_complete():
+        while not self.handshake_complete:
             if self.new_socket:
                 packets = self.receive_new_packets(self.new_socket, self._encryption_context)
                 self.process_packets(packets, self.new_socket)
@@ -524,9 +523,9 @@ class QUICNetworkController:
         # Client is waiting for the HT_INITIAL and HT_HANDSHAKE response.
         if self.get_state() == INITIALIZING:
             if packet.header.type == HT_INITIAL:
+                self.server_initial_received = True
                 self._connection_context.set_peer_address(self.last_peer_address_received)
                 self._connection_context.set_local_connection_id(packet.header.destination_connection_id)
-                self.server_initial_received = True
             if packet.header.type == HT_HANDSHAKE:
                 self.server_handshake_received = True
                 if self.server_initial_received:
@@ -554,7 +553,7 @@ class QUICNetworkController:
                 self.temp_encryption_context = EncryptionContext()
                 packets = self._packetizer.packetize_connection_response_packets(self._connection_context, self.temp_encryption_context)
                 self.send_packets(packets, self.new_socket)
-                self.client_initial_received = True
+                # self.client_initial_received = True
                 self.state = LISTENING_HANDSHAKE
                 return
             self.buffered_packets.append(packet)
@@ -565,9 +564,10 @@ class QUICNetworkController:
         # We must buffer all other packets at this point.
         if self.get_state() == LISTENING_HANDSHAKE:
             if packet.header.type == HT_HANDSHAKE:
-                self.client_handshake_received = True
+                # self.client_handshake_received = True
                 self._encryption_context = self.temp_encryption_context
                 self.temp_encryption_context = None
+                self.handshake_complete = True
                 return
             self.buffered_packets.append(packet)
             return
