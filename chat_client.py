@@ -213,9 +213,10 @@ class ChatApplication:
         username = pad(username, 12)
         password = pad(password, 12)
 
-        print("TODO: implement sign in")
-        # self.connected = self.chat_client.sign_in(ip, int(port), username, password)
-        
+        server_response: str = self.chat_client.sign_in(ip, int(port), username, password)
+        self.write_message_to_console("SERVER: " + server_response)
+        self.chat_client = ChatClient(self.ip)
+
 
     def on_click_disconnect(self, event):
         print("Disconnecting...")

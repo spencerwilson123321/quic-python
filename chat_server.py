@@ -26,9 +26,7 @@ class ChatServer:
     
 
     def sign_in(self, username: str, password: str) -> bool:
-        self.lock.acquire()
         result: bool = self.database.exists(username, password)
-        self.lock.release()
         return result
 
 
