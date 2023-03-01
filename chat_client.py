@@ -1,6 +1,7 @@
 from tkinter import Tk, Frame, Entry, Label, Button, Text, END
 from QUIC import QUICSocket
 from ipaddress import ip_address
+from threading import Thread, Lock
 from time import sleep
 
 
@@ -127,7 +128,8 @@ class ChatApplication:
 
         self.signed_in = False
         self.ip = ip
-
+        self.receive_thread = None
+        self.lock = Lock()
         self.chat_client = ChatClient(ip)
         self.window = Tk()
         self.window.resizable(False, False)
@@ -150,6 +152,20 @@ class ChatApplication:
     def run(self):
         self.window.mainloop()
     
+    
+    def receive_thread_handler(self):
+        # sleep(1)
+        # self.lock.acquire()
+        disconnected = False
+        while not disconnected:
+            self.lock.acquire()
+            data, disconnected = self.chat_client.socket.recv(1, 1024)
+            if data:
+                self.write_message_to_console(data.decode("utf-8"))
+            self.lock.release()
+        # self.lock.release()
+        # pass
+
 
     def validate_inputs(self, ip: str, port: str, username: str, password: str) -> bool:
         try:
