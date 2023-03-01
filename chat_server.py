@@ -44,7 +44,8 @@ class ChatServer:
         username = b""
         password = b""
 
-        status = False
+        sleep(1)
+
         while not reason:
             reason, status = client.recv(1, 12)
 
