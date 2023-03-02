@@ -1,7 +1,7 @@
 from QUIC import QUICSocket
 from database import Database
 from threading import Thread, Lock
-from time import sleep
+from select import poll, EPOLLIN
 
 
 class ChatServer:
@@ -17,8 +17,10 @@ class ChatServer:
         self.clients = {}
         self.threads: list[Thread] = []
         self.database = Database()
+        self.poller = poll()
         self.db_lock = Lock()
         self.client_lock = Lock()
+        self.poller_lock = Lock()
     
     
     def create_account(self, username: str, password: str) -> bool:
@@ -74,9 +76,15 @@ class ChatServer:
             result: bool = self.sign_in(username, password)
             self.db_lock.release()
             if result:
+                # self.poller_lock.acquire()
+                # self.poller.register(client._socket.fileno(), EPOLLIN)
+                # self.poller_lock.release()
                 client.send(1, b"success")
                 while not status:
                     # Wait for messages from client.
+                    # events = self.poller.poll(5000)
+                    # for fd, event in events:
+                    #     if event and EPOLLIN:
                     data, status = client.recv(1, 1024)
                     if data:
                         self.client_lock.acquire()
@@ -94,6 +102,9 @@ class ChatServer:
             self.client_lock.acquire()
             self.clients.pop(client_id)
             self.client_lock.release()
+            # self.poller_lock.acquire()
+            # self.poller.unregister(client._socket.fileno())
+            # self.poller_lock.release() 
             print("Closing thread.")   
             return
         
@@ -102,6 +113,9 @@ class ChatServer:
         self.client_lock.acquire()
         self.clients.pop(client_id)
         self.client_lock.release()
+        # self.poller_lock.acquire()
+        # self.poller.unregister(client._socket.fileno())
+        # self.poller_lock.release() 
         print("Closing thread.")            
 
 
