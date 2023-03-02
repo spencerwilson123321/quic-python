@@ -3,7 +3,7 @@ from QUIC import QUICSocket
 from ipaddress import ip_address
 from threading import Thread, Lock
 from time import sleep
-
+import select
 
 def pad(input: str, pad_length: int) -> str:
     while len(input) < pad_length:
@@ -129,6 +129,7 @@ class ChatApplication:
         self.signed_in = False
         self.ip = ip
         self.receive_thread = None
+        self.poller = select.poll()
         self.lock = Lock()
         self.chat_client = ChatClient(ip)
         self.window = Tk()
@@ -157,11 +158,14 @@ class ChatApplication:
     def receive_thread_handler(self):
         disconnected = False
         while not disconnected and self.signed_in:
-            self.lock.acquire()
-            data, disconnected = self.chat_client.socket.recv(1, 1024)
-            if data:
-                self.write_message_to_console(data.decode("utf-8"))
-            self.lock.release()
+            events = self.poller.poll(5000)
+            for fd, event in events:
+                if event and select.POLLIN:
+                    self.lock.acquire()
+                    data, disconnected = self.chat_client.socket.recv(1, 1024)
+                    if data:
+                        self.write_message_to_console(data.decode("utf-8"))
+                    self.lock.release()
 
 
     def validate_inputs(self, ip: str, port: str, username: str, password: str) -> bool:
@@ -230,6 +234,7 @@ class ChatApplication:
         if result:
             self.write_message_to_console("SERVER: Signed in successfully.")
             self.signed_in = True
+            self.poller.register(self.chat_client.socket._socket.fileno(), select.POLLIN)
             self.receive_thread = Thread(target=self.receive_thread_handler)
             self.receive_thread.start()
             self.username = username
@@ -243,6 +248,7 @@ class ChatApplication:
             self.write_message_to_console("CHAT CLIENT: Cannot disconnect, not currently connected to a server.")
             return
         self.signed_in = False
+        self.poller.unregister(self.chat_client.socket._socket.fileno())
         self.receive_thread.join()
         self.chat_client.disconnect()
         self.chatview.chat.delete("1.0", END)
