@@ -76,15 +76,8 @@ class ChatServer:
             result: bool = self.sign_in(username, password)
             self.db_lock.release()
             if result:
-                # self.poller_lock.acquire()
-                # self.poller.register(client._socket.fileno(), EPOLLIN)
-                # self.poller_lock.release()
                 client.send(1, b"success")
                 while not status:
-                    # Wait for messages from client.
-                    # events = self.poller.poll(5000)
-                    # for fd, event in events:
-                    #     if event and EPOLLIN:
                     data, status = client.recv(1, 1024)
                     if data:
                         self.client_lock.acquire()
@@ -102,9 +95,6 @@ class ChatServer:
             self.client_lock.acquire()
             self.clients.pop(client_id)
             self.client_lock.release()
-            # self.poller_lock.acquire()
-            # self.poller.unregister(client._socket.fileno())
-            # self.poller_lock.release() 
             print("Closing thread.")   
             return
         
@@ -113,9 +103,6 @@ class ChatServer:
         self.client_lock.acquire()
         self.clients.pop(client_id)
         self.client_lock.release()
-        # self.poller_lock.acquire()
-        # self.poller.unregister(client._socket.fileno())
-        # self.poller_lock.release() 
         print("Closing thread.")            
 
 
