@@ -1,8 +1,9 @@
 from tkinter import Tk, Frame, Entry, Label, Button, Text, END
 from QUIC import QUICSocket
 from ipaddress import ip_address
+from threading import Thread, Lock
 from time import sleep
-
+import select
 
 def pad(input: str, pad_length: int) -> str:
     while len(input) < pad_length:
@@ -77,10 +78,9 @@ class ChatClient:
         self.socket = QUICSocket(ip)
 
 
-    def create_account(self, ip: str, port: int, username: str, password: str) -> int:
+    def create_account(self, ip: str, port: int, username: str, password: str) -> str:
         reason = pad("create", 12)
         self.socket.connect((ip, port))
-        sleep(1)
         self.socket.send(1, reason.encode("utf-8"))
         self.socket.send(1, username.encode("utf-8"))
         self.socket.send(1, password.encode("utf-8"))
@@ -90,18 +90,32 @@ class ChatClient:
         response = response.decode("utf-8")
         response = response.strip()
         if response == "success":
+            self.socket.close()
             return "Account created successfully."
         elif response == "fail":
+            self.socket.close()
             return "Could not create account, username and password already exist."
-        self.socket.close()
 
 
-    def sign_in(self, ip: str, port: int, username: str, password: str) -> bool:
+    def sign_in(self, ip: str, port: int, username: str, password: str) -> str:
+        reason = pad("sign in", 12)
         self.socket.connect((ip, port))
+        self.socket.send(1, reason.encode("utf-8"))
         self.socket.send(1, username.encode("utf-8"))
         self.socket.send(1, password.encode("utf-8"))
-        return True
+        response = b""
+        while not response:
+            response, status = self.socket.recv(1, 12)
+        response = response.decode("utf-8")
+        response = response.strip()
+        if response == "success":
+            return True
+        elif response == "fail":
+            self.socket.close()
+            return False
     
+    def send_message(self, message: str):
+        self.socket.send(1, message.encode("utf-8"))
 
     def disconnect(self) -> None:
         self.socket.close()
@@ -114,13 +128,16 @@ class ChatApplication:
 
         self.signed_in = False
         self.ip = ip
-
+        self.receive_thread = None
+        self.poller = select.poll()
+        self.lock = Lock()
         self.chat_client = ChatClient(ip)
         self.window = Tk()
         self.window.resizable(False, False)
         self.window.title("QUIC-Chat")
         self.content = Frame(self.window)
         self.content.grid(row=0, column=0)
+        self.username = ""
 
         self.information_entry_view = InformationEntryView(master=self.content)
         self.button_panel_view = ButtonPanelView(master=self.content)
@@ -137,6 +154,19 @@ class ChatApplication:
     def run(self):
         self.window.mainloop()
     
+    
+    def receive_thread_handler(self):
+        disconnected = False
+        while not disconnected and self.signed_in:
+            events = self.poller.poll(5000)
+            for fd, event in events:
+                if event and select.POLLIN:
+                    self.lock.acquire()
+                    data, disconnected = self.chat_client.socket.recv(1, 1024)
+                    if data:
+                        self.write_message_to_console(data.decode("utf-8"))
+                    self.lock.release()
+
 
     def validate_inputs(self, ip: str, port: str, username: str, password: str) -> bool:
         try:
@@ -159,7 +189,6 @@ class ChatApplication:
             return False
         return True
     
-
 
     def write_message_to_console(self, message: str):
         self.chatview.chat.config(state="normal")
@@ -201,21 +230,49 @@ class ChatApplication:
         username = pad(username, 12)
         password = pad(password, 12)
 
-        print("TODO: implement sign in")
-        # self.connected = self.chat_client.sign_in(ip, int(port), username, password)
-        
+        result: bool = self.chat_client.sign_in(ip, int(port), username, password)
+        if result:
+            self.write_message_to_console("SERVER: Signed in successfully.")
+            self.signed_in = True
+            self.poller.register(self.chat_client.socket._socket.fileno(), select.POLLIN)
+            self.receive_thread = Thread(target=self.receive_thread_handler)
+            self.receive_thread.start()
+            self.username = username
+        else:
+            self.write_message_to_console("SERVER: Sign in failed, username and password combination not found.")
+            self.chat_client = ChatClient(self.ip)
+
 
     def on_click_disconnect(self, event):
-        print("Disconnecting...")
-        self.chat_client.disconnect()
+        if not self.signed_in:
+            self.write_message_to_console("CHAT CLIENT: Cannot disconnect, not currently connected to a server.")
+            return
         self.signed_in = False
-        self.chatview.chat.delete(0, END)
-        # Create a new chat client.
+        self.poller.unregister(self.chat_client.socket._socket.fileno())
+        self.receive_thread.join()
+        self.chat_client.disconnect()
+        self.chatview.chat.delete("1.0", END)
         self.chat_client = ChatClient(self.ip)
+        self.write_message_to_console("CHAT CLIENT: Disconnected from the server...")
 
 
     def on_click_send(self, event):
-        print("Sending Message")
+        # 1. Check if we are currently connected.
+        if not self.signed_in:
+            self.write_message_to_console("CHAT CLIENT: You must be signed into a server to send messages.")
+            return
+        # 2. Get the message from the text box.
+        message: str = self.messageview.message_entry.get("1.0", END)
+        message = message.strip()
+        # 3. Clear the text box.
+        self.messageview.message_entry.delete("1.0", END)
+        # 4. Make sure the message is less than 256 characters.
+        if len(message) > 256 or len(message) == 0:
+            self.write_message_to_console("CHAT CLIENT: Messages cannot be empty or greater than 256 characters.")
+            return
+        # 5. Send the message to the server using the chat client.
+        self.chat_client.send_message(message)
+        self.write_message_to_console(f"{self.username.strip()}: {message}")
 
 
 if __name__ == "__main__":

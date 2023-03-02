@@ -1,7 +1,7 @@
 from QUIC import QUICSocket
 from database import Database
 from threading import Thread, Lock
-from time import sleep
+from select import poll, EPOLLIN
 
 
 class ChatServer:
@@ -17,7 +17,10 @@ class ChatServer:
         self.clients = {}
         self.threads: list[Thread] = []
         self.database = Database()
-        self.lock = Lock()
+        self.poller = poll()
+        self.db_lock = Lock()
+        self.client_lock = Lock()
+        self.poller_lock = Lock()
     
     
     def create_account(self, username: str, password: str) -> bool:
@@ -26,9 +29,7 @@ class ChatServer:
     
 
     def sign_in(self, username: str, password: str) -> bool:
-        self.lock.acquire()
         result: bool = self.database.exists(username, password)
-        self.lock.release()
         return result
 
 
@@ -62,28 +63,61 @@ class ChatServer:
         password = password.decode("utf-8")
 
         if reason == "create":
-            self.lock.acquire()
+            self.db_lock.acquire()
             result: bool = self.create_account(username, password)
-            self.lock.release()
+            self.db_lock.release()
             if result:
                 client.send(1, b"success")
             else:
                 client.send(1, b"fail")
         
-        # if status == True:
-        #     client.release()
-        #     print("Closing thread.")            
-        #     return
+        if reason == "sign in":
+            self.db_lock.acquire()
+            result: bool = self.sign_in(username, password)
+            self.db_lock.release()
+            if result:
+                # self.poller_lock.acquire()
+                # self.poller.register(client._socket.fileno(), EPOLLIN)
+                # self.poller_lock.release()
+                client.send(1, b"success")
+                while not status:
+                    # Wait for messages from client.
+                    # events = self.poller.poll(5000)
+                    # for fd, event in events:
+                    #     if event and EPOLLIN:
+                    data, status = client.recv(1, 1024)
+                    if data:
+                        self.client_lock.acquire()
+                        for id in self.clients:
+                            if id == client_id:
+                                continue
+                            data = username.encode("utf-8") + b": " + data
+                            self.clients[id].send(1, data)
+                        self.client_lock.release()
+            else:
+                client.send(1, b"fail")
         
-        # while status == False:
-        #     data, status = client.recv(1, 1024)
+        if status == True:
+            client.release()
+            self.client_lock.acquire()
+            self.clients.pop(client_id)
+            self.client_lock.release()
+            # self.poller_lock.acquire()
+            # self.poller.unregister(client._socket.fileno())
+            # self.poller_lock.release() 
+            print("Closing thread.")   
+            return
+        
+        while status == False:
+            data, status = client.recv(1, 1024)
+        self.client_lock.acquire()
+        self.clients.pop(client_id)
+        self.client_lock.release()
+        # self.poller_lock.acquire()
+        # self.poller.unregister(client._socket.fileno())
+        # self.poller_lock.release() 
         print("Closing thread.")            
-        # if reason == "sign in":
-        #     result: bool = self.sign_in(username, password)
-        #     if result:
-        #         client.send(1, b"success")
-        #     else:
-        #         client.send(1, b"fail")
+
 
 
     def mainloop(self):
