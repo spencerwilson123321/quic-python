@@ -121,7 +121,6 @@ class ChatServer:
                         self.poller.unregister(fd)
                         self.clients[fd][0].release()
                         self.clients.pop(fd)
-                        continue
                     if data:
                         username: str = self.clients[fd][1]
                         data = username.encode("utf-8") + b": " + data
