@@ -157,8 +157,8 @@ class ChatApplication:
     
     def receive_thread_handler(self):
         disconnected = False
-        while not disconnected and self.signed_in:
-            events = self.poller.poll(5000)
+        while self.signed_in:
+            events = self.poller.poll(3000)
             for fd, event in events:
                 if event and select.POLLIN:
                     self.lock.acquire()
@@ -250,7 +250,6 @@ class ChatApplication:
             return
         self.signed_in = False
         self.poller.unregister(self.chat_client.socket._socket.fileno())
-        self.receive_thread.join()
         self.chat_client.disconnect()
         self.chatview.chat.delete("1.0", END)
         self.chat_client = ChatClient(self.ip)
