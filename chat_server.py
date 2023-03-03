@@ -111,7 +111,7 @@ class ChatServer:
             for fd, event in events:
                 if event and EPOLLIN:
                     self.client_lock.acquire()
-                    data, status = self.clients[fd][0].recv(1024)
+                    data, status = self.clients[fd][0].recv(1, 1024)
                     if status:
                         # Client has closed the connection.
                         # Unregister the socket.
