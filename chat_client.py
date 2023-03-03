@@ -74,6 +74,7 @@ class MessageView(Frame):
 
 class ChatClient:
 
+
     def __init__(self, ip: str):
         self.socket = QUICSocket(ip)
 
@@ -114,8 +115,10 @@ class ChatClient:
             self.socket.close()
             return False
     
+    
     def send_message(self, message: str):
         self.socket.send(1, message.encode("utf-8"))
+
 
     def disconnect(self) -> None:
         self.socket.close()
@@ -156,7 +159,6 @@ class ChatApplication:
     
     
     def receive_thread_handler(self):
-        disconnected = False
         while self.signed_in:
             events = self.poller.poll(3000)
             for fd, event in events:
@@ -166,6 +168,10 @@ class ChatApplication:
                     if data:
                         self.write_message_to_console(data.decode("utf-8"))
                     self.lock.release()
+        self.poller.unregister(self.chat_client.socket._socket.fileno())
+        self.chat_client.disconnect()
+        self.chat_client = ChatClient(self.ip)
+        self.write_message_to_console("CHAT CLIENT: Disconnected from the server...")
 
 
     def validate_inputs(self, ip: str, port: str, username: str, password: str) -> bool:
@@ -249,11 +255,6 @@ class ChatApplication:
             self.write_message_to_console("CHAT CLIENT: Cannot disconnect, not currently connected to a server.")
             return
         self.signed_in = False
-        self.poller.unregister(self.chat_client.socket._socket.fileno())
-        self.chat_client.disconnect()
-        self.chatview.chat.delete("1.0", END)
-        self.chat_client = ChatClient(self.ip)
-        self.write_message_to_console("CHAT CLIENT: Disconnected from the server...")
 
 
     def on_click_send(self, event):
