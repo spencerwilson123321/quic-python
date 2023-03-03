@@ -97,7 +97,7 @@ class ChatServer:
                     client.send(1, b"success")
                 else:
                     client.send(1, b"fail")
-                client.release()
+                client.close()
 
             if reason == "sign in":
                 self.db_lock.acquire()

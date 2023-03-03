@@ -80,21 +80,21 @@ class ChatClient:
 
     def create_account(self, ip: str, port: int, username: str, password: str) -> str:
         reason = pad("create", 12)
+        status = False
         self.socket.connect((ip, port))
         self.socket.send(1, reason.encode("utf-8"))
         self.socket.send(1, username.encode("utf-8"))
         self.socket.send(1, password.encode("utf-8"))
         response = b""
-        while not response:
-            response, status = self.socket.recv(1, 12)
+        while not response and not status:
+            data, status = self.socket.recv(1, 12)
+            response += data
         response = response.decode("utf-8")
         response = response.strip()
+        self.socket.release()
         if response == "success":
-            self.socket.release()
             return "Account created successfully."
-        elif response == "fail":
-            self.socket.release()
-            return "Could not create account, username and password already exist."
+        return "Could not create account, username and password already exist."
 
 
     def sign_in(self, ip: str, port: int, username: str, password: str) -> str:
