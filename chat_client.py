@@ -74,27 +74,28 @@ class MessageView(Frame):
 
 class ChatClient:
 
+
     def __init__(self, ip: str):
         self.socket = QUICSocket(ip)
 
 
     def create_account(self, ip: str, port: int, username: str, password: str) -> str:
         reason = pad("create", 12)
+        status = False
         self.socket.connect((ip, port))
         self.socket.send(1, reason.encode("utf-8"))
         self.socket.send(1, username.encode("utf-8"))
         self.socket.send(1, password.encode("utf-8"))
         response = b""
-        while not response:
-            response, status = self.socket.recv(1, 12)
+        while not response and not status:
+            data, status = self.socket.recv(1, 12)
+            response += data
         response = response.decode("utf-8")
         response = response.strip()
+        self.socket.release()
         if response == "success":
-            self.socket.close()
             return "Account created successfully."
-        elif response == "fail":
-            self.socket.close()
-            return "Could not create account, username and password already exist."
+        return "Could not create account, username and password already exist."
 
 
     def sign_in(self, ip: str, port: int, username: str, password: str) -> str:
@@ -114,8 +115,10 @@ class ChatClient:
             self.socket.close()
             return False
     
+    
     def send_message(self, message: str):
         self.socket.send(1, message.encode("utf-8"))
+
 
     def disconnect(self) -> None:
         self.socket.close()
@@ -156,9 +159,8 @@ class ChatApplication:
     
     
     def receive_thread_handler(self):
-        disconnected = False
-        while not disconnected and self.signed_in:
-            events = self.poller.poll(5000)
+        while self.signed_in:
+            events = self.poller.poll(3000)
             for fd, event in events:
                 if event and select.POLLIN:
                     self.lock.acquire()
@@ -166,6 +168,10 @@ class ChatApplication:
                     if data:
                         self.write_message_to_console(data.decode("utf-8"))
                     self.lock.release()
+        self.poller.unregister(self.chat_client.socket._socket.fileno())
+        self.chat_client.disconnect()
+        self.chat_client = ChatClient(self.ip)
+        self.write_message_to_console("CHAT CLIENT: Disconnected from the server...")
 
 
     def validate_inputs(self, ip: str, port: str, username: str, password: str) -> bool:
@@ -234,6 +240,7 @@ class ChatApplication:
         if result:
             self.write_message_to_console("SERVER: Signed in successfully.")
             self.signed_in = True
+            self.poller = select.poll()
             self.poller.register(self.chat_client.socket._socket.fileno(), select.POLLIN)
             self.receive_thread = Thread(target=self.receive_thread_handler)
             self.receive_thread.start()
@@ -248,12 +255,6 @@ class ChatApplication:
             self.write_message_to_console("CHAT CLIENT: Cannot disconnect, not currently connected to a server.")
             return
         self.signed_in = False
-        self.poller.unregister(self.chat_client.socket._socket.fileno())
-        self.receive_thread.join()
-        self.chat_client.disconnect()
-        self.chatview.chat.delete("1.0", END)
-        self.chat_client = ChatClient(self.ip)
-        self.write_message_to_console("CHAT CLIENT: Disconnected from the server...")
 
 
     def on_click_send(self, event):
