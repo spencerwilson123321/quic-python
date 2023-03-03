@@ -180,28 +180,30 @@ class ChatServer:
                     client.send(1, b"fail")
                 client.close()
 
-            # if reason == "sign in":
-            #     self.db_lock.acquire()
-            #     result: bool = self.sign_in(username, password)
-            #     self.db_lock.release()
-            #     if result:
-            #         client.send(1, b"success")
-            #         while not status:
-            #             data, status = client.recv(1, 1024)
-            #             if data:
-            #                 self.client_lock.acquire()
-            #                 for id in self.clients:
-            #                     if id == client_id:
-            #                         continue
-            #                     data = username.encode("utf-8") + b": " + data
-            #                     self.clients[id].send(1, data)
-            #                 self.client_lock.release()
-            #     else:
-            #         client.send(1, b"fail")
+            if reason == "sign in":
+                self.db_lock.acquire()
+                result: bool = self.sign_in(username, password)
+                self.db_lock.release()
+                if result:
+                    client.send(1, b"success")
+                    self.client_lock.acquire()
+                    self.clients[client._socket.fileno()] = (client, username)
+                    self.poller.register(client._socket.fileno())
+                    self.client_lock.release()
+                    # while not status:
+                    #     data, status = client.recv(1, 1024)
+                    #     if data:
+                    #         self.client_lock.acquire()
+                    #         for id in self.clients:
+                    #             if id == client_id:
+                    #                 continue
+                    #             data = username.encode("utf-8") + b": " + data
+                    #             self.clients[id].send(1, data)
+                    #         self.client_lock.release()
+                else:
+                    client.send(1, b"fail")
 
-            # 1. Register the client's file decriptor in the poll object.
-            # self.clients[client._socket.fileno()] = (client, username)
-            # self.poller.register(client._socket.fileno())
+
 
 
     def shutdown(self):
