@@ -117,6 +117,7 @@ class ChatServer:
                         # Unregister the socket.
                         # Release the socket.
                         # Remove from the client's list.
+                        print("Closing client connection...")
                         self.poller.unregister(fd)
                         self.clients[fd][0].release()
                         self.clients.pop(fd)
