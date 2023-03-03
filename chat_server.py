@@ -121,11 +121,12 @@ class ChatServer:
                         self.clients[fd][0].release()
                         self.clients.pop(fd)
                         continue
-                    username: str = self.clients[fd][1]
-                    data = username.encode("utf-8") + b": " + data
-                    for key in self.clients:
-                        if key != fd:
-                            self.clients[key][0].send(1, data)
+                    if data:
+                        username: str = self.clients[fd][1]
+                        data = username.encode("utf-8") + b": " + data
+                        for key in self.clients:
+                            if key != fd:
+                                self.clients[key][0].send(1, data)
                     self.client_lock.release()
 
 
