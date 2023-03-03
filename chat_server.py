@@ -107,7 +107,7 @@ class ChatServer:
 
     def epoll_thread_handler(self):
         while not self.SHUTDOWN:
-            events = self.poller.poll()
+            events = self.poller.poll(5000)
             for fd, event in events:
                 if event and EPOLLIN:
                     self.client_lock.acquire()
