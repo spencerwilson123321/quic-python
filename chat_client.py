@@ -234,6 +234,7 @@ class ChatApplication:
         if result:
             self.write_message_to_console("SERVER: Signed in successfully.")
             self.signed_in = True
+            self.poller = select.poll()
             self.poller.register(self.chat_client.socket._socket.fileno(), select.POLLIN)
             self.receive_thread = Thread(target=self.receive_thread_handler)
             self.receive_thread.start()
