@@ -287,6 +287,22 @@ class AckFrame:
                 first_ack_range = 0,
                 ack_range = []):
 
+        if not isinstance(largest_acknowledged, int) or isinstance(largest_acknowledged, bool):
+            raise TypeError("largest_acknowledged must be of type int.")
+        
+        if not isinstance(ack_delay, int) or isinstance(ack_delay, bool):
+            raise TypeError("ack_delay must be of type int.")
+        
+        if not isinstance(ack_range_count, int) or isinstance(ack_range_count, bool):
+            raise TypeError("ack_range_count must be of type int.")
+        
+        if not isinstance(first_ack_range, int) or isinstance(first_ack_range, bool):
+            raise TypeError("first_ack_range must be of type int.")
+        
+        if not isinstance(ack_range, list):
+            raise TypeError("ack_range must be of type list.")
+
+
         check_int_type("largest_acknowledged", largest_acknowledged)
         check_int_type("ack_delay", ack_delay)
         check_int_type("ack_range_count", ack_range_count)
@@ -446,11 +462,14 @@ class ConnectionCloseFrame:
     def __init__(self, error_code=0, reason_phrase_len=0, reason_phrase=b""):
         self.type = FT_CONNECTIONCLOSE
 
+        if not isinstance(error_code, int) or isinstance(error_code, bool):
+            raise TypeError("error_code must be of type int.")
+        
+        if not isinstance(reason_phrase_len, int) or isinstance(reason_phrase_len, bool):
+            raise TypeError("reason_phrase_len must be of type int.")
+
         check_char_type("error code", error_code)
         check_char_type("reason_phrase_len", reason_phrase_len)
-
-        if len(reason_phrase) != reason_phrase_len:
-            raise InvalidArgumentException("Reason phrase length does not match the given reason phrase.")
 
         self.error_code = error_code
         self.reason_phrase_len = reason_phrase_len

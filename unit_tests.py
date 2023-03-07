@@ -207,7 +207,62 @@ class TestQUICPacket(unittest.TestCase):
 
 
     def test_ack_frame(self):
-        pass
+        # self.assertRaises(InvalidArgumentException, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count=0, first_ack_range=0, ack_range=[])
+        # self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count=0, first_ack_range=0, ack_range=[])
+        
+        # Negative values, large values
+        self.assertRaises(InvalidArgumentException, AckFrame, largest_acknowledged=-1, ack_delay=1, ack_range_count=0, first_ack_range=0, ack_range=[])
+        self.assertRaises(InvalidArgumentException, AckFrame, largest_acknowledged=123123123123, ack_delay=1, ack_range_count=0, first_ack_range=0, ack_range=[])
+
+        self.assertRaises(InvalidArgumentException, AckFrame, largest_acknowledged=1, ack_delay=-1, ack_range_count=0, first_ack_range=0, ack_range=[])
+        self.assertRaises(InvalidArgumentException, AckFrame, largest_acknowledged=1, ack_delay=11231231231231123, ack_range_count=0, first_ack_range=0, ack_range=[])
+
+        self.assertRaises(InvalidArgumentException, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count=-1, first_ack_range=0, ack_range=[])
+        self.assertRaises(InvalidArgumentException, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count=123123123123123123, first_ack_range=0, ack_range=[])
+        
+        self.assertRaises(InvalidArgumentException, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count=0, first_ack_range=-1, ack_range=[])
+        self.assertRaises(InvalidArgumentException, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count=0, first_ack_range=1231231231231231213, ack_range=[])
+
+        # Incorrect types
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged="", ack_delay=1, ack_range_count=0, first_ack_range=1, ack_range=[])
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=b"", ack_delay=1, ack_range_count=0, first_ack_range=1, ack_range=[])
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=None, ack_delay=1, ack_range_count=0, first_ack_range=1, ack_range=[])
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=123.123, ack_delay=1, ack_range_count=0, first_ack_range=1, ack_range=[])
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=True, ack_delay=1, ack_range_count=0, first_ack_range=1, ack_range=[])
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=[], ack_delay=1, ack_range_count=0, first_ack_range=1, ack_range=[])
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=set(), ack_delay=1, ack_range_count=0, first_ack_range=1, ack_range=[])
+        
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay="", ack_range_count=0, first_ack_range=1, ack_range=[])
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay=b"", ack_range_count=0, first_ack_range=1, ack_range=[])
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay=None, ack_range_count=0, first_ack_range=1, ack_range=[])
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay=123.123, ack_range_count=0, first_ack_range=1, ack_range=[])
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay=True, ack_range_count=0, first_ack_range=1, ack_range=[])
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay=[], ack_range_count=0, first_ack_range=1, ack_range=[])
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay={}, ack_range_count=0, first_ack_range=1, ack_range=[])
+
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count="", first_ack_range=0, ack_range=[])
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count=b"", first_ack_range=0, ack_range=[])
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count=None, first_ack_range=0, ack_range=[])
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count=123.123, first_ack_range=0, ack_range=[])
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count=True, first_ack_range=0, ack_range=[])
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count=[], first_ack_range=0, ack_range=[])
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count={}, first_ack_range=0, ack_range=[])
+
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count=0, first_ack_range="", ack_range=[])
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count=0, first_ack_range=b"", ack_range=[])
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count=0, first_ack_range=None, ack_range=[])
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count=0, first_ack_range=123.123, ack_range=[])
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count=0, first_ack_range=False, ack_range=[])
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count=0, first_ack_range=[], ack_range=[])
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count=0, first_ack_range={}, ack_range=[])
+
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count=0, first_ack_range=0, ack_range="")
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count=0, first_ack_range=0, ack_range=b"")
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count=0, first_ack_range=0, ack_range=None)
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count=0, first_ack_range=0, ack_range=12)
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count=0, first_ack_range=0, ack_range=123.123)
+        self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count=0, first_ack_range=0, ack_range={})
+
 
 
     def test_ack_range(self):
@@ -241,8 +296,32 @@ class TestQUICPacket(unittest.TestCase):
 
 
     def test_connection_close_frame(self):
-        pass
+        
+        # Testing negative values and large values for error_code and reason_phrase_len
+        self.assertRaises(InvalidArgumentException, ConnectionCloseFrame, error_code=-1, reason_phrase_len=1, reason_phrase=b"")
+        self.assertRaises(InvalidArgumentException, ConnectionCloseFrame, error_code=1, reason_phrase_len=-1, reason_phrase=b"")
+        self.assertRaises(InvalidArgumentException, ConnectionCloseFrame, error_code=12312123123, reason_phrase_len=1, reason_phrase=b"")
+        self.assertRaises(InvalidArgumentException, ConnectionCloseFrame, error_code=1, reason_phrase_len=123123123123, reason_phrase=b"")
+        
+        # Testing incorrect types for all parameters.
+        self.assertRaises(TypeError, ConnectionCloseFrame, error_code="", reason_phrase_len=1, reason_phrase=b"")
+        self.assertRaises(TypeError, ConnectionCloseFrame, error_code=b"", reason_phrase_len=1, reason_phrase=b"")
+        self.assertRaises(TypeError, ConnectionCloseFrame, error_code=True, reason_phrase_len=1, reason_phrase=b"")
+        self.assertRaises(TypeError, ConnectionCloseFrame, error_code=None, reason_phrase_len=1, reason_phrase=b"")
+        self.assertRaises(TypeError, ConnectionCloseFrame, error_code=[], reason_phrase_len=1, reason_phrase=b"")
+        self.assertRaises(TypeError, ConnectionCloseFrame, error_code={}, reason_phrase_len=1, reason_phrase=b"")
+        self.assertRaises(TypeError, ConnectionCloseFrame, error_code=set(), reason_phrase_len=1, reason_phrase=b"")
+        self.assertRaises(TypeError, ConnectionCloseFrame, error_code=123.123, reason_phrase_len=1, reason_phrase=b"")
 
+        self.assertRaises(TypeError, ConnectionCloseFrame, error_code=1, reason_phrase_len="", reason_phrase=b"")
+        self.assertRaises(TypeError, ConnectionCloseFrame, error_code=1, reason_phrase_len=b"", reason_phrase=b"")
+        self.assertRaises(TypeError, ConnectionCloseFrame, error_code=1, reason_phrase_len=True, reason_phrase=b"")
+        self.assertRaises(TypeError, ConnectionCloseFrame, error_code=1, reason_phrase_len=None, reason_phrase=b"")
+        self.assertRaises(TypeError, ConnectionCloseFrame, error_code=1, reason_phrase_len=[], reason_phrase=b"")
+        self.assertRaises(TypeError, ConnectionCloseFrame, error_code=1, reason_phrase_len={}, reason_phrase=b"")
+        self.assertRaises(TypeError, ConnectionCloseFrame, error_code=1, reason_phrase_len=set(), reason_phrase=b"")
+        self.assertRaises(TypeError, ConnectionCloseFrame, error_code=1, reason_phrase_len=123.123, reason_phrase=b"")
+        
 
 class TestEncryptionContext(unittest.TestCase):
 
