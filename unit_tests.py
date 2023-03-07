@@ -236,7 +236,8 @@ class TestQUICPacket(unittest.TestCase):
 
 
     def test_padding_frame(self):
-        pass
+        frame = PaddingFrame()
+        self.assertEqual(FT_PADDING, frame.type)
 
 
     def test_connection_close_frame(self):
