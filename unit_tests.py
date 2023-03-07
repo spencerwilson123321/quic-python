@@ -5,7 +5,20 @@ from os import system
 
 
 class TestSenderSideController(unittest.TestCase):
-    
+
+
+    def test_on_packet_numbers_acked(self):
+        sc = QUICSenderSideController()
+        sc.packets_sent = {
+            0: PacketSentInfo(in_flight=True, sent_bytes=10, time_sent=0.1, ack_eliciting=True, packet_number=0, packet=Packet(header=ShortHeader(destination_connection_id=1024, packet_number=0))), 
+            1: PacketSentInfo(in_flight=True, sent_bytes=10, time_sent=0.1, ack_eliciting=True, packet_number=1, packet=Packet(header=ShortHeader(destination_connection_id=1024, packet_number=1))), 
+            2: PacketSentInfo(in_flight=True, sent_bytes=10, time_sent=0.1, ack_eliciting=True, packet_number=2, packet=Packet(header=ShortHeader(destination_connection_id=1024, packet_number=2)))}
+        sc.bytes_in_flight = 30
+        sc.on_packet_numbers_acked([0, 1, 2])
+        self.assertEqual(0, len(sc.packets_sent))
+        self.assertEqual(0, sc.bytes_in_flight)
+
+
     def test_detect_and_remove_lost_packets(self):
         sc = QUICSenderSideController()
         largest_acknowledged = 2
