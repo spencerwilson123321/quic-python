@@ -134,7 +134,42 @@ class TestQUICPacket(unittest.TestCase):
         
 
     def test_stream_frame(self):
-        pass
+
+        StreamFrame(stream_id=1, offset=10, length=10, data=b"1234567890")
+
+        # Trying incorrect types for length parameter.
+        self.assertRaises(TypeError, StreamFrame, stream_id=1, offset=10, length=True, data=b"")
+        self.assertRaises(TypeError, StreamFrame, stream_id=1, offset=10, length="", data=b"")
+        self.assertRaises(TypeError, StreamFrame, stream_id=1, offset=10, length=b"", data=b"")
+        self.assertRaises(TypeError, StreamFrame, stream_id=1, offset=10, length=123.123, data=b"")
+
+        # Trying incorrect types for offset parameter.
+        self.assertRaises(TypeError, StreamFrame, stream_id=1, offset=True, length=10, data=b"")
+        self.assertRaises(TypeError, StreamFrame, stream_id=1, offset="", length=10, data=b"")
+        self.assertRaises(TypeError, StreamFrame, stream_id=1, offset=b"", length=10, data=b"")
+        self.assertRaises(TypeError, StreamFrame, stream_id=1, offset=123.123, length=10, data=b"")
+        
+        # Trying incorrect types for stream_id parameter.
+        self.assertRaises(TypeError, StreamFrame, stream_id=True, offset=10, length=10, data=b"")
+        self.assertRaises(TypeError, StreamFrame, stream_id="", offset=10, length=10, data=b"")
+        self.assertRaises(TypeError, StreamFrame, stream_id=b"", offset=10, length=10, data=b"")
+        self.assertRaises(TypeError, StreamFrame, stream_id=123.123, offset=10, length=10, data=b"")
+        
+        # Trying incorrect types for stream_id parameter.
+        self.assertRaises(TypeError, StreamFrame, stream_id=1, offset=10, length=10, data=True)
+        self.assertRaises(TypeError, StreamFrame, stream_id=1, offset=10, length=10, data="")
+        self.assertRaises(TypeError, StreamFrame, stream_id=1, offset=10, length=10, data=123.123)
+        self.assertRaises(TypeError, StreamFrame, stream_id=1, offset=10, length=10, data=123)
+        
+        # Trying negative values for integer parameters.
+        self.assertRaises(InvalidArgumentException, StreamFrame, stream_id=-1, offset=10, length=10, data=b"")
+        self.assertRaises(InvalidArgumentException, StreamFrame, stream_id=1, offset=-1, length=10, data=b"")
+        self.assertRaises(InvalidArgumentException, StreamFrame, stream_id=1, offset=10, length=-1, data=b"")
+
+        # Trying too large integer values for integer parameters.
+        self.assertRaises(InvalidArgumentException, StreamFrame, stream_id=256, offset=10, length=10, data=b"")
+        self.assertRaises(InvalidArgumentException, StreamFrame, stream_id=1, offset=10981029381093280918123123123, length=10, data=b"")
+        self.assertRaises(InvalidArgumentException, StreamFrame, stream_id=1, offset=10, length=65536, data=b"")
 
 
     def test_crypto_frame(self):

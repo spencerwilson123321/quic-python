@@ -369,6 +369,18 @@ class StreamFrame:
 
     def __init__(self, stream_id = 0, offset = 0, length = 0, data = b""):
 
+        if not isinstance(stream_id, int) or isinstance(stream_id, bool):
+            raise TypeError("stream_id must be of type int.")
+        
+        if not isinstance(offset, int) or isinstance(offset, bool):
+            raise TypeError("offset must be of type int.")
+        
+        if not isinstance(length, int) or isinstance(length, bool):
+            raise TypeError("length must be of type int.")
+        
+        if not isinstance(data, bytes):
+            raise TypeError("data must be of type bytes.")
+
         check_char_type("stream_id", stream_id)
         check_long_type("offset", offset)
         check_short_type("length", length)
@@ -629,7 +641,7 @@ class LongHeader:
         return representation
 
 
-class ShortHeader():
+class ShortHeader:
     """
         ShortHeader can only have 1 type which is a 1RTT packet or Data packet.
         It contains only the destination connection ID instead of source and destination
