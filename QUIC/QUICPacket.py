@@ -641,8 +641,14 @@ class ShortHeader():
 
         if not isinstance(destination_connection_id, int):
             raise TypeError(f"destination_connection_id expected type int but got type {type(destination_connection_id)}")
+        
+        if isinstance(destination_connection_id, bool):
+            raise TypeError(f"destination_connection_id expected type int but got type {type(destination_connection_id)}")
 
         if not isinstance(packet_number, int):
+            raise TypeError(f"packet_number expected type int but got type {type(packet_number)}")
+
+        if isinstance(packet_number, bool):
             raise TypeError(f"packet_number expected type int but got type {type(packet_number)}")
 
         check_int_type("destination_connection_id", destination_connection_id)

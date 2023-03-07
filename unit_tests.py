@@ -106,6 +106,47 @@ class TestQUICPacket(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             header = LongHeader(type=HT_INITIAL, destination_connection_id=1023, source_connection_id=None, packet_number=1)
+    
+
+    def test_short_header(self):
+        """
+            This tests different combinations of parameters for the short header class.
+        """
+        # Testing destination_connection_id integer parameters that are invalid.
+        self.assertRaises(InvalidArgumentException, ShortHeader, destination_connection_id=-1, packet_number=1)
+        self.assertRaises(InvalidArgumentException, ShortHeader, destination_connection_id=1409128301928301923, packet_number=1)
+
+        # Testing packet_number integer parameters that are invalid.
+        self.assertRaises(InvalidArgumentException, ShortHeader, destination_connection_id=1023, packet_number=-11)
+        self.assertRaises(InvalidArgumentException, ShortHeader, destination_connection_id=1023, packet_number=1123123123123123)
+        
+        # Testing incorrect types for destination_connection_id.
+        self.assertRaises(TypeError, ShortHeader, destination_connection_id=None, packet_number=1)
+        self.assertRaises(TypeError, ShortHeader, destination_connection_id="", packet_number=1)
+        self.assertRaises(TypeError, ShortHeader, destination_connection_id=b"", packet_number=1)
+        self.assertRaises(TypeError, ShortHeader, destination_connection_id=True, packet_number=1)
+
+        # Testing incorrect types for packet_number.
+        self.assertRaises(TypeError, ShortHeader, destination_connection_id=1023, packet_number=None)
+        self.assertRaises(TypeError, ShortHeader, destination_connection_id=1023, packet_number="")
+        self.assertRaises(TypeError, ShortHeader, destination_connection_id=1023, packet_number=b"")
+        self.assertRaises(TypeError, ShortHeader, destination_connection_id=1023, packet_number=True)
+        
+
+    def test_stream_frame(self):
+        pass
+
+
+    def test_crypto_frame(self):
+        pass
+
+
+    def test_ack_frame(self):
+        pass
+
+
+    def test_ack_range(self):
+        pass
 
 
 class TestEncryptionContext(unittest.TestCase):
@@ -122,7 +163,7 @@ class TestEncryptionContext(unittest.TestCase):
         self.assertEqual(True, nonce == ec.nonce)
 
         encrypted = ec.encrypt(msg)
-        self.assertEquals(False, msg == encrypted)
+        self.assertEqual(False, msg == encrypted)
         decrypted = ec.decrypt(encrypted)
         self.assertEqual(True, msg == decrypted)
 
