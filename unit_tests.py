@@ -207,8 +207,6 @@ class TestQUICPacket(unittest.TestCase):
 
 
     def test_ack_frame(self):
-        # self.assertRaises(InvalidArgumentException, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count=0, first_ack_range=0, ack_range=[])
-        # self.assertRaises(TypeError, AckFrame, largest_acknowledged=1, ack_delay=1, ack_range_count=0, first_ack_range=0, ack_range=[])
         
         # Negative values, large values
         self.assertRaises(InvalidArgumentException, AckFrame, largest_acknowledged=-1, ack_delay=1, ack_range_count=0, first_ack_range=0, ack_range=[])
