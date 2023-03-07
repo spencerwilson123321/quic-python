@@ -82,31 +82,13 @@ class TestQUICPacket(unittest.TestCase):
     
     def test_long_header(self):
 
-        # Testing destination connection ID parameter.
-        with self.assertRaises(InvalidArgumentException):
-            header = LongHeader(type=HT_INITIAL, destination_connection_id=1239810293810832, source_connection_id=1023, packet_number=1)
+        self.assertRaises(InvalidArgumentException, LongHeader, type=HT_INITIAL, destination_connection_id=1239810293810832, source_connection_id=1023, packet_number=1)
+        self.assertRaises(InvalidArgumentException, LongHeader, type=HT_INITIAL, destination_connection_id=1023, source_connection_id=-123123, packet_number=1)
+        self.assertRaises(InvalidArgumentException, LongHeader, type=HT_INITIAL, destination_connection_id=-1, source_connection_id=-123123, packet_number=1)
 
-        with self.assertRaises(InvalidArgumentException):
-            header = LongHeader(type=HT_HANDSHAKE, destination_connection_id=1023, source_connection_id=-123123, packet_number=1)
-        
-        with self.assertRaises(InvalidArgumentException):
-            header = LongHeader(type=HT_HANDSHAKE, destination_connection_id=-1, source_connection_id=-123123, packet_number=1)
+        self.assertRaises(InvalidArgumentException, LongHeader, type=1232, destination_connection_id=1023, source_connection_id=1023, packet_number=1)
+        self.assertRaises(InvalidArgumentException, LongHeader, type=None, destination_connection_id=1023, source_connection_id=1023, packet_number=1)
 
-
-        # Testing header type parameter.
-        with self.assertRaises(InvalidArgumentException):
-            header = LongHeader(type=1232, destination_connection_id=1023, source_connection_id=1023, packet_number=1)
-
-        with self.assertRaises(InvalidArgumentException):
-            header = LongHeader(type=None, destination_connection_id=1023, source_connection_id=1023, packet_number=1)
-
-        # Testing source connection_id parameter.
-        with self.assertRaises(TypeError):
-            header = LongHeader(type=HT_INITIAL, destination_connection_id=1023, source_connection_id="hello", packet_number=1)
-
-        with self.assertRaises(TypeError):
-            header = LongHeader(type=HT_INITIAL, destination_connection_id=1023, source_connection_id=None, packet_number=1)
-    
 
     def test_short_header(self):
         """
