@@ -206,13 +206,33 @@ class TestQUICPacket(unittest.TestCase):
         self.assertRaises(TypeError, CryptoFrame, offset=10, length=10, data=True)
 
 
-
     def test_ack_frame(self):
         pass
 
 
     def test_ack_range(self):
-        pass
+        
+        # Trying negative values for gap and ack_range_length
+        self.assertRaises(InvalidArgumentException, AckRange, gap=-1, ack_range_length=10)
+        self.assertRaises(InvalidArgumentException, AckRange, gap=1, ack_range_length=-10)
+
+        # Trying large values for gap and ack_range_length
+        self.assertRaises(InvalidArgumentException, AckRange, gap=123123123123123, ack_range_length=10)
+        self.assertRaises(InvalidArgumentException, AckRange, gap=1, ack_range_length=123123123123123)
+
+        # Incorrect types for gap.
+        self.assertRaises(TypeError, AckRange, gap="", ack_range_length=10)
+        self.assertRaises(TypeError, AckRange, gap=b"", ack_range_length=10)
+        self.assertRaises(TypeError, AckRange, gap=None, ack_range_length=10)
+        self.assertRaises(TypeError, AckRange, gap=123.123, ack_range_length=10)
+
+        # Incorrect types for ack_range_length.
+        self.assertRaises(TypeError, AckRange, gap=1, ack_range_length="")
+        self.assertRaises(TypeError, AckRange, gap=1, ack_range_length=b"")
+        self.assertRaises(TypeError, AckRange, gap=1, ack_range_length=None)
+        self.assertRaises(TypeError, AckRange, gap=1, ack_range_length=123.123)
+        self.assertRaises(TypeError, AckRange, gap=1, ack_range_length=dict())
+        self.assertRaises(TypeError, AckRange, gap=1, ack_range_length=[])
 
 
     def test_padding_frame(self):

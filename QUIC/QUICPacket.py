@@ -236,6 +236,12 @@ class AckRange:
 
     def __init__(self, gap: int, ack_range_length: int):
 
+        if not isinstance(gap, int) or isinstance(gap, bool):
+            raise TypeError("gap must be of type int.")
+        
+        if not isinstance(ack_range_length, int) or isinstance(ack_range_length, bool):
+            raise TypeError("ack_range_length must be of type int.")
+
         check_int_type("gap", gap)
         check_int_type("ack_range_length", ack_range_length)
 
