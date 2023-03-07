@@ -330,6 +330,15 @@ class CryptoFrame:
 
     def __init__(self, offset=0, length=0, data=b""):
 
+        if not isinstance(offset, int) or isinstance(offset, bool):
+            raise TypeError("offset must be of type int.")
+        
+        if not isinstance(length, int) or isinstance(length, bool):
+            raise TypeError("length must be of type int.")
+        
+        if not isinstance(data, bytes):
+            raise TypeError("data must be of type bytes.")
+
         check_long_type("offset", offset)
         check_short_type("length", length)        
 

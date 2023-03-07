@@ -173,7 +173,38 @@ class TestQUICPacket(unittest.TestCase):
 
 
     def test_crypto_frame(self):
-        pass
+        CryptoFrame(offset=10, length=10, data=b"")
+
+        # Trying negative values for offset
+        self.assertRaises(InvalidArgumentException, CryptoFrame, offset=-10, length=13, data=b"")
+
+        # Trying negative values for length.
+        self.assertRaises(InvalidArgumentException, CryptoFrame, offset=10, length=-13, data=b"")
+    
+        # Trying too large value for offset.
+        self.assertRaises(InvalidArgumentException, CryptoFrame, offset=123123123123123123123123, length=13, data=b"")
+
+        # Trying too large value for length.
+        self.assertRaises(InvalidArgumentException, CryptoFrame, offset=12, length=23123123123, data=b"")
+
+        # Trying incorrect types for offset.
+        self.assertRaises(TypeError, CryptoFrame, offset=b"", length=13, data=b"")
+        self.assertRaises(TypeError, CryptoFrame, offset="", length=13, data=b"")
+        self.assertRaises(TypeError, CryptoFrame, offset=10.123, length=13, data=b"")
+        self.assertRaises(TypeError, CryptoFrame, offset=True, length=13, data=b"")
+
+        # Incorrect types for length.
+        self.assertRaises(TypeError, CryptoFrame, offset=10, length=b"", data=b"")
+        self.assertRaises(TypeError, CryptoFrame, offset=10, length="", data=b"")
+        self.assertRaises(TypeError, CryptoFrame, offset=10, length=10.123, data=b"")
+        self.assertRaises(TypeError, CryptoFrame, offset=10, length=True, data=b"")
+
+        # Incorrect types for data.
+        self.assertRaises(TypeError, CryptoFrame, offset=10, length=10, data="")
+        self.assertRaises(TypeError, CryptoFrame, offset=10, length=10, data=123)
+        self.assertRaises(TypeError, CryptoFrame, offset=10, length=10, data=123.123)
+        self.assertRaises(TypeError, CryptoFrame, offset=10, length=10, data=True)
+
 
 
     def test_ack_frame(self):
