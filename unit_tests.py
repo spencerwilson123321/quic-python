@@ -53,7 +53,22 @@ class TestSenderSideController(unittest.TestCase):
         sc.packets_sent = {}
         lost = sc.detect_and_remove_lost_packets(largest_acknowledged)
         self.assertEqual(0, len(lost))
+    
 
+    def test_on_packet_loss(self):
+        sc = QUICSenderSideController()
+        self.assertEqual(sc.slow_start_threshold, INFINITY)
+
+        temp = sc.congestion_window  / 2
+        sc.packets_sent = {
+            0: PacketSentInfo(in_flight=True, sent_bytes=10, time_sent=0.1, ack_eliciting=True, packet_number=0, packet=Packet(header=ShortHeader(destination_connection_id=1024, packet_number=0))), 
+            1: PacketSentInfo(in_flight=True, sent_bytes=10, time_sent=0.1, ack_eliciting=True, packet_number=1, packet=Packet(header=ShortHeader(destination_connection_id=1024, packet_number=1))), 
+            2: PacketSentInfo(in_flight=True, sent_bytes=10, time_sent=0.1, ack_eliciting=True, packet_number=2, packet=Packet(header=ShortHeader(destination_connection_id=1024, packet_number=2)))}
+        lost = sc.detect_and_remove_lost_packets(4)
+
+        sc.on_packet_loss()
+        self.assertEqual(sc.slow_start_threshold, temp)
+    
 
 
 class TestNetworkController(unittest.TestCase):

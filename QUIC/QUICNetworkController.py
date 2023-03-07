@@ -762,8 +762,8 @@ class QUICSenderSideController:
         return packets_acked
 
 
-    def in_recovery(self, time_sent: float) -> bool:
-        return time_sent <= self.congestion_recovery_start_time
+    def in_recovery(self, time_last_loss: float) -> bool:
+        return time_last_loss <= self.congestion_recovery_start_time
 
 
     def send_packet_cc(self, packet: Packet, udp_socket: socket, connection_context: ConnectionContext, encryption_context: EncryptionContext or None) -> None:
