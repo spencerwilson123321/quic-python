@@ -184,6 +184,14 @@ class TestQUICPacket(unittest.TestCase):
         pass
 
 
+    def test_padding_frame(self):
+        pass
+
+
+    def test_connection_close_frame(self):
+        pass
+
+
 class TestEncryptionContext(unittest.TestCase):
 
     def test_encryption_context(self):
