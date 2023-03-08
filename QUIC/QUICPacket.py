@@ -236,6 +236,12 @@ class AckRange:
 
     def __init__(self, gap: int, ack_range_length: int):
 
+        if not isinstance(gap, int) or isinstance(gap, bool):
+            raise TypeError("gap must be of type int.")
+        
+        if not isinstance(ack_range_length, int) or isinstance(ack_range_length, bool):
+            raise TypeError("ack_range_length must be of type int.")
+
         check_int_type("gap", gap)
         check_int_type("ack_range_length", ack_range_length)
 
@@ -280,6 +286,22 @@ class AckFrame:
                 ack_range_count = 0,
                 first_ack_range = 0,
                 ack_range = []):
+
+        if not isinstance(largest_acknowledged, int) or isinstance(largest_acknowledged, bool):
+            raise TypeError("largest_acknowledged must be of type int.")
+        
+        if not isinstance(ack_delay, int) or isinstance(ack_delay, bool):
+            raise TypeError("ack_delay must be of type int.")
+        
+        if not isinstance(ack_range_count, int) or isinstance(ack_range_count, bool):
+            raise TypeError("ack_range_count must be of type int.")
+        
+        if not isinstance(first_ack_range, int) or isinstance(first_ack_range, bool):
+            raise TypeError("first_ack_range must be of type int.")
+        
+        if not isinstance(ack_range, list):
+            raise TypeError("ack_range must be of type list.")
+
 
         check_int_type("largest_acknowledged", largest_acknowledged)
         check_int_type("ack_delay", ack_delay)
@@ -330,6 +352,15 @@ class CryptoFrame:
 
     def __init__(self, offset=0, length=0, data=b""):
 
+        if not isinstance(offset, int) or isinstance(offset, bool):
+            raise TypeError("offset must be of type int.")
+        
+        if not isinstance(length, int) or isinstance(length, bool):
+            raise TypeError("length must be of type int.")
+        
+        if not isinstance(data, bytes):
+            raise TypeError("data must be of type bytes.")
+
         check_long_type("offset", offset)
         check_short_type("length", length)        
 
@@ -368,6 +399,18 @@ class StreamFrame:
     """
 
     def __init__(self, stream_id = 0, offset = 0, length = 0, data = b""):
+
+        if not isinstance(stream_id, int) or isinstance(stream_id, bool):
+            raise TypeError("stream_id must be of type int.")
+        
+        if not isinstance(offset, int) or isinstance(offset, bool):
+            raise TypeError("offset must be of type int.")
+        
+        if not isinstance(length, int) or isinstance(length, bool):
+            raise TypeError("length must be of type int.")
+        
+        if not isinstance(data, bytes):
+            raise TypeError("data must be of type bytes.")
 
         check_char_type("stream_id", stream_id)
         check_long_type("offset", offset)
@@ -419,11 +462,14 @@ class ConnectionCloseFrame:
     def __init__(self, error_code=0, reason_phrase_len=0, reason_phrase=b""):
         self.type = FT_CONNECTIONCLOSE
 
+        if not isinstance(error_code, int) or isinstance(error_code, bool):
+            raise TypeError("error_code must be of type int.")
+        
+        if not isinstance(reason_phrase_len, int) or isinstance(reason_phrase_len, bool):
+            raise TypeError("reason_phrase_len must be of type int.")
+
         check_char_type("error code", error_code)
         check_char_type("reason_phrase_len", reason_phrase_len)
-
-        if len(reason_phrase) != reason_phrase_len:
-            raise InvalidArgumentException("Reason phrase length does not match the given reason phrase.")
 
         self.error_code = error_code
         self.reason_phrase_len = reason_phrase_len
@@ -441,95 +487,6 @@ class ConnectionCloseFrame:
 
     def raw(self):
         return struct.pack("!BBB", self.type, self.error_code, self.reason_phrase_len) + self.reason_phrase
-
-
-# class ResetStreamFrame:
-
-#     def __init__(self, stream_id=b"", error_code=b"", final_size=b""):
-#         self.type = FT_RESETSTREAM
-#         self.stream_id = stream_id
-#         self.error_code = error_code
-#         self.final_size = final_size
-
-#     def raw(self):
-#         return self.type + self.stream_id + self.error_code + self.final_size
-
-
-# class StopSendingFrame:
-
-#     def __init__(self, stream_id=b"", error_code=b""):
-#         self.type = FT_STOPSENDING
-#         self.stream_id = stream_id
-#         self.error_code = error_code
-
-#     def raw(self):
-#         return self.type + self.stream_id + self.error_code
-
-
-# class MaxDataFrame:
-
-#     def __init__(self, max_data=b""):
-#         self.type = FT_MAXDATA
-#         self.max_data = max_data
-
-#     def raw(self):
-#         return self.type + self.max_data
-
-# class MaxStreamDataFrame:
-
-#     def __init__(self, stream_id=b"", max_stream_data=b""):
-#         self.type = FT_MAXSTREAMDATA
-#         self.stream_id = stream_id
-#         self.max_stream_data = max_stream_data
-
-#     def raw(self):
-#         return self.type + self.stream_id + self.max_stream_data
-
-# class MaxStreamsFrame:
-
-#     def __init__(self, max_streams=b""):
-#         self.type = FT_MAXSTREAMS
-#         self.max_streams = max_streams
-
-#     def raw(self):
-#         return self.type + self.max_streams
-
-# class DataBlockedFrame:
-
-#     def __init__(self, max_data=b""):
-#         self.type = FT_DATABLOCKED
-#         self.max_data = max_data
-
-#     def raw(self):
-#         return self.type + self.max_data
-
-# class StreamDataBlockedFrame:
-
-#     def __init__(self, stream_id=b"", max_stream_data=b""):
-#         self.type = FT_STREAMDATABLOCKED
-#         self.stream_id = stream_id
-#         self.max_stream_data = max_stream_data
-
-#     def raw(self):
-#         return self.type + self.stream_id + self.max_stream_data
-
-# class StreamsBlockedFrame:
-
-#     def __init__(self, max_streams=b""):
-#         self.type = FT_STREAMSBLOCKED
-#         self.max_streams = max_streams
-
-#     def raw(self):
-#         return self.type + self.max_streams
-
-
-# class HandshakeDoneFrame:
-
-#     def __init__(self):
-#         self.type = FT_HANDSHAKEDONE
-
-#     def raw(self):
-#         return self.type
 
 
 class LongHeader:
@@ -629,7 +586,7 @@ class LongHeader:
         return representation
 
 
-class ShortHeader():
+class ShortHeader:
     """
         ShortHeader can only have 1 type which is a 1RTT packet or Data packet.
         It contains only the destination connection ID instead of source and destination
@@ -641,8 +598,14 @@ class ShortHeader():
 
         if not isinstance(destination_connection_id, int):
             raise TypeError(f"destination_connection_id expected type int but got type {type(destination_connection_id)}")
+        
+        if isinstance(destination_connection_id, bool):
+            raise TypeError(f"destination_connection_id expected type int but got type {type(destination_connection_id)}")
 
         if not isinstance(packet_number, int):
+            raise TypeError(f"packet_number expected type int but got type {type(packet_number)}")
+
+        if isinstance(packet_number, bool):
             raise TypeError(f"packet_number expected type int but got type {type(packet_number)}")
 
         check_int_type("destination_connection_id", destination_connection_id)
