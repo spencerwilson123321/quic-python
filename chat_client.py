@@ -175,23 +175,28 @@ class ChatApplication:
 
 
     def validate_inputs(self, ip: str, port: str, username: str, password: str) -> bool:
+        
+        if len(ip) == 0 or len(port) == 0 or len(username) == 0 or len(password) == 0:
+            self.write_message_to_console("CLIENT: Required field(s) are empty.")
+            return False
+
         try:
             ip_address(ip)
         except ValueError:
-            self.write_message_to_console("Invalid IP address, try again.")
+            self.write_message_to_console("CLIENT: Invalid IPv4 address.")
             return False
         try:
             port = int(port)
             if port < 1 or port > 65535:
                 raise ValueError
         except ValueError:
-            self.write_message_to_console("'port' must be an integer between 1 and 65535.")
+            self.write_message_to_console("CLIENT: 'port' must be an integer between 1 and 65535.")
             return False
-        if len(username) == 0 or len(username) > 12:
-            self.write_message_to_console("Username cannot be empty or greater than 12 characters.")
+        if len(username) > 12:
+            self.write_message_to_console("CLIENT: Username cannot be greater than 12 characters.")
             return False
-        if len(password) == 0 or len(password) > 12:
-            self.write_message_to_console("Password cannot be empty or greater than 12 characters.")
+        if len(password) > 12:
+            self.write_message_to_console("CLIENT: Password cannot be greater than 12 characters.")
             return False
         return True
     
@@ -252,7 +257,7 @@ class ChatApplication:
 
     def on_click_disconnect(self, event):
         if not self.signed_in:
-            self.write_message_to_console("CHAT CLIENT: Cannot disconnect, not currently connected to a server.")
+            self.write_message_to_console("CLIENT: Not currently connected to a server.")
             return
         self.signed_in = False
 
@@ -260,7 +265,7 @@ class ChatApplication:
     def on_click_send(self, event):
         # 1. Check if we are currently connected.
         if not self.signed_in:
-            self.write_message_to_console("CHAT CLIENT: You must be signed into a server to send messages.")
+            self.write_message_to_console("CLIENT: You must be signed into a server to send messages.")
             return
         # 2. Get the message from the text box.
         message: str = self.messageview.message_entry.get("1.0", END)
@@ -269,7 +274,7 @@ class ChatApplication:
         self.messageview.message_entry.delete("1.0", END)
         # 4. Make sure the message is less than 256 characters.
         if len(message) > 256 or len(message) == 0:
-            self.write_message_to_console("CHAT CLIENT: Messages cannot be empty or greater than 256 characters.")
+            self.write_message_to_console("CLIENT: Messages cannot be empty or greater than 256 characters.")
             return
         # 5. Send the message to the server using the chat client.
         self.chat_client.send_message(message)
