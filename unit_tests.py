@@ -406,7 +406,7 @@ TEST_DB = "./test_database.txt"
 
 class TestDatabase(unittest.TestCase):
 
-    def test_exists(self):
+    def test_database(self):
         from os.path import isfile
 
         # Remove the test_database file.
