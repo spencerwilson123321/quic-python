@@ -289,7 +289,7 @@ class ChatApplication:
 
 
 if __name__ == "__main__":
-    ip = ARGS.local_ip
+    ip = ARGS.ip
     try:
         ip_address(ip)
     except ValueError:
