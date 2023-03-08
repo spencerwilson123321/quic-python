@@ -7,7 +7,7 @@ import argparse
 
 
 PARSER = argparse.ArgumentParser(prog="chat_client.py", description="A Tkinter Chat Client which uses the QUIC protocol.")
-PARSER.add_argument("local_ip", help="The local IPv4 address of this machine.")
+PARSER.add_argument("ip", help="The local IPv4 address of this machine.")
 ARGS = PARSER.parse_args()
 
 
