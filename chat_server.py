@@ -2,6 +2,14 @@ from QUIC import QUICSocket
 from database import Database
 from threading import Thread, Lock
 from select import poll, EPOLLIN
+from ipaddress import ip_address
+import argparse
+
+
+PARSER = argparse.ArgumentParser(prog="chat_server.py", description="A Chat Server which uses the QUIC protocol.")
+PARSER.add_argument("ip", help="The IPv4 address of this machine.")
+PARSER.add_argument("port", help="The port to run the application on.")
+ARGS = PARSER.parse_args()
 
 
 class ChatServer:
@@ -127,7 +135,22 @@ class ChatServer:
 
 if __name__ == "__main__":
 
-    server = ChatServer("10.0.0.131", 8000)
+    ip = ARGS.ip
+    port = ARGS.port
+
+    try:
+        ip_address(ip)
+    except ValueError:
+        print(f"ERROR: Invalid IPv4 address - {ip}")
+        exit(1)
+    
+    try:
+        port = int(port)
+    except ValueError:
+        print(f"ERROR: Port must be an integer - {port}")
+        exit(1)
+
+    server = ChatServer(ip, port)
     try:
         server.mainloop()
     except KeyboardInterrupt:

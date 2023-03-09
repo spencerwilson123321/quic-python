@@ -2,8 +2,14 @@ from tkinter import Tk, Frame, Entry, Label, Button, Text, END
 from QUIC import QUICSocket
 from ipaddress import ip_address
 from threading import Thread, Lock
-from time import sleep
 import select
+import argparse
+
+
+PARSER = argparse.ArgumentParser(prog="chat_client.py", description="A Tkinter Chat Client which uses the QUIC protocol.")
+PARSER.add_argument("ip", help="The local IPv4 address of this machine.")
+ARGS = PARSER.parse_args()
+
 
 def pad(input: str, pad_length: int) -> str:
     while len(input) < pad_length:
@@ -98,7 +104,7 @@ class ChatClient:
         return "Could not create account, username and password already exist."
 
 
-    def sign_in(self, ip: str, port: int, username: str, password: str) -> str:
+    def sign_in(self, ip: str, port: int, username: str, password: str) -> bool:
         reason = pad("sign in", 12)
         self.socket.connect((ip, port))
         self.socket.send(1, reason.encode("utf-8"))
@@ -171,7 +177,7 @@ class ChatApplication:
         self.poller.unregister(self.chat_client.socket._socket.fileno())
         self.chat_client.disconnect()
         self.chat_client = ChatClient(self.ip)
-        self.write_message_to_console("CHAT CLIENT: Disconnected from the server...")
+        self.write_message_to_console("CLIENT: Disconnected from the server...")
 
 
     def validate_inputs(self, ip: str, port: str, username: str, password: str) -> bool:
@@ -213,7 +219,7 @@ class ChatApplication:
 
     def on_click_create_account(self, event):
         if self.signed_in:
-            # Can't make an account if already signed in.
+            self.write_message_to_console("CLIENT: Cannot create account while signed in.")
             return None
         ip, port, username, password = self.get_all_entries()
         
@@ -231,6 +237,7 @@ class ChatApplication:
 
     def on_click_sign_in(self, event):
         if self.signed_in:
+            self.write_message_to_console("CLIENT: Already signed in.")
             return None
         ip, port, username, password = self.get_all_entries()
         
@@ -282,7 +289,11 @@ class ChatApplication:
 
 
 if __name__ == "__main__":
-
-    application = ChatApplication("10.0.0.159")
+    ip = ARGS.ip
+    try:
+        ip_address(ip)
+    except ValueError:
+        print(f"ERROR: Invalid IPv4 address - {ip}")
+        exit(1)
+    application = ChatApplication(ip)
     application.run()
-
