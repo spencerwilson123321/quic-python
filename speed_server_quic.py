@@ -3,8 +3,8 @@ from argparse import ArgumentParser
 
 PARSER = ArgumentParser()
 PARSER.add_argument("ip", help="IPv4 address")
-PARSER.add_argument("port", help="IPv4 address")
-PARSER.add_argument("n_bytes", help="IPv4 address")
+PARSER.add_argument("port", help="Port number")
+PARSER.add_argument("n_bytes", help="Number of bytes to receive.")
 
 ARGS = PARSER.parse_args()
 
