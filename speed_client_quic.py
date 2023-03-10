@@ -3,9 +3,9 @@ from time import perf_counter
 from argparse import ArgumentParser
 
 PARSER = ArgumentParser()
-PARSER.add_argument("local ip", help="Local IPv4 address.")
-PARSER.add_argument("server ip", help="Server IPv4 address.")
-PARSER.add_argument("server port", help="Server port number")
+PARSER.add_argument("local_ip", help="Local IPv4 address.")
+PARSER.add_argument("server_ip", help="Server IPv4 address.")
+PARSER.add_argument("server_port", help="Server port number")
 PARSER.add_argument("n_bytes", help="Number of bytes to send.")
 
 ARGS = PARSER.parse_args()

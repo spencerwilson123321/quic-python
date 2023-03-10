@@ -41,9 +41,12 @@ if __name__ == "__main__":
                         client_socket.sendto(datagram, client_address)
                     if fd == client_socket.fileno():
                         print("CLIENT --> SERVER")
-                        client_datagrams_received += 1
                         datagram, client_address = client_socket.recvfrom(4096)
-                        server_socket.sendto(datagram, server_address)
+                        if client_datagrams_received == 4:
+                            print("Dropping packet.")
+                        else:
+                            server_socket.sendto(datagram, server_address)
+                        client_datagrams_received += 1
     except KeyboardInterrupt:
         server_socket.close()
         client_socket.close()
