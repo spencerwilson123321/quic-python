@@ -11,7 +11,7 @@ if __name__ == "__main__":
 
     data = b""
     with open("data.txt", "rb") as f:
-        data = f.read()[0:800000]
+        data = f.read()[0:100000]
 
     print("--- Testing TCP Socket ---")
     tcp_client = socket(AF_INET, SOCK_STREAM)

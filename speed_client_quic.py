@@ -15,7 +15,7 @@ if __name__ == "__main__":
     data = b""
 
     with open("data.txt", "rb") as f:
-        data = f.read()[0:800000]
+        data = f.read()[0:100000]
     
     quic_start = perf_counter()
     client.send(1, data)
