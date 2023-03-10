@@ -237,8 +237,8 @@ class ReceiveStream:
         frames_to_remove = []
         frames = ""
         for frame in self.buffered_frames:
-            frames += frame.__repr__()
-        print(f"process_buffered_frames: buffered_frames {frames}")
+            frames += frame.__repr__() + '\n'
+        print(f"process_buffered_frames: buffered_frames\n {frames}")
         for frame in self.buffered_frames:
             if self.offset == frame.offset:
                 self.data += frame.data
