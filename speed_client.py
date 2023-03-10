@@ -29,7 +29,7 @@ if __name__ == "__main__":
 
     print("--- Testing TCP Socket ---")
     client = socket(AF_INET, SOCK_STREAM)
-    client.connect(("10.0.0.131", 8000))
+    client.connect(("10.0.0.131", 8001))
     tcp_start = perf_counter()
     client.sendall(data)
     tcp_end = perf_counter()

@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
 
     server = socket(AF_INET, SOCK_STREAM)
-    server.bind(("10.0.0.131", 8000))
+    server.bind(("10.0.0.131", 8001))
     server.listen(5)
     client = server.accept()
     data = b""
