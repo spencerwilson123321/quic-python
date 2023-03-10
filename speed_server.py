@@ -23,13 +23,13 @@ if __name__ == "__main__":
     print("QUIC done.")
 
 
-    server = socket(AF_INET, SOCK_STREAM)
-    server.bind(("10.0.0.131", 8001))
-    server.listen(5)
-    client = server.accept()
+    tcp_server = socket(AF_INET, SOCK_STREAM)
+    tcp_server.bind(("10.0.0.131", 8001))
+    tcp_server.listen(5)
+    client = tcp_server.accept()
     data = b""
     while len(data) < 800000:
         data += client.recv(4096)
     client.close()
-    server.close()
+    tcp_server.close()
     print("TCP done.")
