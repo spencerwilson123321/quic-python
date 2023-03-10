@@ -15,7 +15,7 @@ class EncryptionContext:
         if key:
             self.key = key
         else:
-            self.key = token_bytes(256)
+            self.key = token_bytes(32)
         self.nonce = nonce
         self.algorithm = algorithms.AES(self.key)
         self.cipher = Cipher(self.algorithm, mode="block", backend=None)
