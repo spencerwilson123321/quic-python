@@ -21,19 +21,7 @@ if __name__ == "__main__":
     quic_start = perf_counter()
     client.send(1, data)
     quic_end = perf_counter()
-
     client.close()
-
-
-    print("--- Testing TCP Socket ---")
-    tcp_client = socket(AF_INET, SOCK_STREAM)
-    tcp_client.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-    tcp_client.connect(("10.0.0.131", 8005))
-    tcp_start = perf_counter()
-    tcp_client.sendall(data)
-    tcp_end = perf_counter()
-    tcp_client.close()
 
     print("--- Results ---")
     print(f"QUIC: {quic_end-quic_start} seconds")
-    print(f"TCP: {tcp_end-tcp_start} seconds")
