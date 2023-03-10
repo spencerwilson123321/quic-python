@@ -1,5 +1,5 @@
 from QUIC import QUICSocket
-from socket import socket, AF_INET, SOCK_STREAM
+from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from time import perf_counter
 
 """
@@ -27,6 +27,7 @@ if __name__ == "__main__":
 
     print("--- Testing TCP Socket ---")
     tcp_client = socket(AF_INET, SOCK_STREAM)
+    tcp_client.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
     tcp_client.connect(("10.0.0.131", 8001))
     tcp_start = perf_counter()
     tcp_client.sendall(data)
