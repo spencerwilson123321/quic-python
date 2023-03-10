@@ -33,6 +33,7 @@ if __name__ == "__main__":
     pkt = Packet(header=hdr, frames=[frame])
 
     sock.sendto(pkt.raw(), address)
+    client.send(1, b"Hi")
     # msg = b""
     # while not msg:
     #     msg, disconnected = client.recv(1, 1024)
