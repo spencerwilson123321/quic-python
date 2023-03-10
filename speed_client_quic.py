@@ -1,5 +1,4 @@
 from QUIC import QUICSocket
-from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from time import perf_counter
 
 """
@@ -16,7 +15,7 @@ if __name__ == "__main__":
     data = b""
 
     with open("data.txt", "rb") as f:
-        data = f.read()[0:50000]
+        data = f.read()[0:800000]
     
     quic_start = perf_counter()
     client.send(1, data)
