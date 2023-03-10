@@ -16,5 +16,7 @@ if __name__ == "__main__":
     while len(data) < 100:
         bytes_read, status = client.recv(1, 10)
         data += bytes_read
+        if data:
+            print(data)
     print("Received all data.")
     client.send(1, b"all done")
