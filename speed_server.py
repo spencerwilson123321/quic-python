@@ -19,8 +19,6 @@ if __name__ == "__main__":
     while len(data) < 50000:
         received, disconnected = client.recv(1, 1024)
         data += received
-    print(f"Received data: {data}")
-    print("Client closed the connection.")
     client.release()           # Close the connection i.e. send ConnectionClose frame.
     print("QUIC done.")
 

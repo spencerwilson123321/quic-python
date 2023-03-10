@@ -22,8 +22,6 @@ if __name__ == "__main__":
     client.send(1, data)
     quic_end = perf_counter()
     
-    print(f"Sent: {data}")
-    print("Closing the connection...")
     client.close()
 
 
