@@ -1,6 +1,5 @@
-from QUIC import QUICSocket
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
-from time import perf_counter
+from sys import argv
 
 """
     Test Case #3:
@@ -10,26 +9,16 @@ from time import perf_counter
 """
 
 if __name__ == "__main__":
-    server = QUICSocket(local_ip="10.0.0.131")
-    server.listen(8000)
-    client = server.accept() # Accept a connection.
-    disconnected = False
-    data = b""
-    # while not disconnected:
-    while len(data) < 250000:
-        received, disconnected = client.recv(1, 1024)
-        data += received
-    client.release()           # Close the connection i.e. send ConnectionClose frame.
-    print("QUIC done.")
 
-
+    num = int(argv[1])
     tcp_server = socket(AF_INET, SOCK_STREAM)
     tcp_server.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
     tcp_server.bind(("10.0.0.131", 8005))
     tcp_server.listen()
+    print(f"Ready to read {num} bytes:")
     client, address = tcp_server.accept()
     data = b""
-    while len(data) < 250000:
+    while len(data) < num:
         data += client.recv(4096)
     client.close()
     tcp_server.close()
