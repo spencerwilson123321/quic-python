@@ -11,7 +11,7 @@ import time
 
 if __name__ == "__main__":
     client = QUICSocket(local_ip="10.0.0.159")
-    client.connect(address=("10.0.0.131", 8000))
+    client.connect(address=("10.0.0.159", 8001))
     msg = b"1234567890"
 
     for i in range(0, 4):    
