@@ -25,8 +25,8 @@ if __name__ == "__main__":
 
     tcp_server = socket(AF_INET, SOCK_STREAM)
     tcp_server.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-    tcp_server.bind(("10.0.0.131", 8001))
-    tcp_server.listen(5)
+    tcp_server.bind(("10.0.0.131", 8005))
+    tcp_server.listen()
     client, address = tcp_server.accept()
     data = b""
     while len(data) < 800000:

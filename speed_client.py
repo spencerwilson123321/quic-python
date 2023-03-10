@@ -28,7 +28,7 @@ if __name__ == "__main__":
     print("--- Testing TCP Socket ---")
     tcp_client = socket(AF_INET, SOCK_STREAM)
     tcp_client.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-    tcp_client.connect(("10.0.0.131", 8001))
+    tcp_client.connect(("10.0.0.131", 8005))
     tcp_start = perf_counter()
     tcp_client.sendall(data)
     tcp_end = perf_counter()
