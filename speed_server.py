@@ -16,7 +16,7 @@ if __name__ == "__main__":
     disconnected = False
     data = b""
     # while not disconnected:
-    while len(data) < 100000:
+    while len(data) < 300000:
         received, disconnected = client.recv(1, 1024)
         data += received
     client.release()           # Close the connection i.e. send ConnectionClose frame.
@@ -29,7 +29,7 @@ if __name__ == "__main__":
     tcp_server.listen()
     client, address = tcp_server.accept()
     data = b""
-    while len(data) < 100000:
+    while len(data) < 300000:
         data += client.recv(4096)
     client.close()
     tcp_server.close()
