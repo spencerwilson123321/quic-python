@@ -15,7 +15,7 @@ if __name__ == "__main__":
     msg = b"1234567890"
 
     print("Sending data...")
-    for i in range(0, 9):    
+    for i in range(0, 10):    
         client.send(1, msg)
         print(f"Sent: {msg}")
     print("Waiting for response...")
