@@ -636,6 +636,7 @@ class QUICNetworkController:
                 print(f"Buffering frame: offset {frame.offset}")
                 stream.buffer(frame)
             else:
+                print(f"Writing frame: offset {frame.offset}")
                 stream.write(frame.data)
             self._receive_streams[frame.stream_id] = stream
         else:
