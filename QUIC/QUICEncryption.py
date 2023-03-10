@@ -15,10 +15,10 @@ class EncryptionContext:
         if key:
             self.key = key
         else:
-            self.key = token_bytes(32)
+            self.key = token_bytes(128)
         self.nonce = nonce
-        self.algorithm = algorithms.ChaCha20(self.key, self.nonce)
-        self.cipher = Cipher(self.algorithm, mode=None, backend=None)
+        self.algorithm = algorithms.AES(self.key)
+        self.cipher = Cipher(self.algorithm, mode="block", backend=None)
         self.encryptor = self.cipher.encryptor()
         self.decryptor = self.cipher.decryptor()
 
