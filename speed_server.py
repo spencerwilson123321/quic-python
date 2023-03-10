@@ -29,7 +29,7 @@ if __name__ == "__main__":
     tcp_server.listen()
     client, address = tcp_server.accept()
     data = b""
-    while len(data) < 800000:
+    while len(data) < 50000:
         data += client.recv(4096)
     client.close()
     tcp_server.close()
