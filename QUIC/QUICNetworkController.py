@@ -633,6 +633,7 @@ class QUICNetworkController:
         if self.is_active_stream(frame.stream_id):
             stream = self._receive_streams[frame.stream_id]
             if frame.offset != stream.offset:
+                print(f"Buffering frame: offset {frame.offset}")
                 stream.buffer(frame)
             else:
                 stream.write(frame.data)
@@ -682,6 +683,7 @@ class QUICNetworkController:
 
         # Detect and handle packet loss.
         lost_packets = self._sender_side_controller.detect_and_remove_lost_packets(self.largest_acknowledged)
+        print(f"lost_packets: {lost_packets}")
         if lost_packets: # Packet loss detected.
             retransmissions = self._packetizer.packetize_retransmissions(lost_packets) # Creates new packets
             self.send_packets(retransmissions, udp_socket) # Retransmits packets.
@@ -705,6 +707,7 @@ class QUICSenderSideController:
     
 
     def on_packet_loss(self):
+        print("on_packet_loss: Packet loss!")
         if self.in_recovery(self.sent_time_of_last_loss):
             return
         self.slow_start_threshold = self.congestion_window / 2
