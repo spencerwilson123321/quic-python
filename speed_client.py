@@ -16,7 +16,7 @@ if __name__ == "__main__":
     data = b""
 
     with open("data.txt", "rb") as f:
-        data = f.read()[0:800000]
+        data = f.read()[0:50000]
     
     quic_start = perf_counter()
     client.send(1, data)
@@ -34,3 +34,7 @@ if __name__ == "__main__":
     client.sendall(data)
     tcp_end = perf_counter()
     client.close()
+
+    print("--- Results ---")
+    print(f"QUIC: {quic_end-quic_start} seconds")
+    print(f"TCP: {tcp_end-tcp_start} seconds")
