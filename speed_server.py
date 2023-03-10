@@ -27,7 +27,7 @@ if __name__ == "__main__":
     tcp_server.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
     tcp_server.bind(("10.0.0.131", 8001))
     tcp_server.listen(5)
-    client = tcp_server.accept()
+    client, address = tcp_server.accept()
     data = b""
     while len(data) < 800000:
         data += client.recv(4096)
