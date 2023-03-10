@@ -12,7 +12,9 @@ if __name__ == "__main__":
     server.listen(8000)
     client = server.accept() # Accept a connection.
     data = b""
-    while len(data) < 50:
-        bytes_read, status = client.recv(1, 50)
+    print("Receiving data...")
+    while len(data) < 100:
+        bytes_read, status = client.recv(1, 10)
         data += bytes_read
+    print("Received all data.")
     client.send(1, b"all done")

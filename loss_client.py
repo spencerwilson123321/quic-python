@@ -14,12 +14,13 @@ if __name__ == "__main__":
     client.connect(address=("10.0.0.159", 8001))
     msg = b"1234567890"
 
-    for i in range(0, 4):    
+    print("Sending data...")
+    for i in range(0, 9):    
         client.send(1, msg)
         print(f"Sent: {msg}")
-    
+    print("Waiting for response...")
     data = b""
     while not data:
         data, status = client.recv(1, 1024)
-
+    print("Done.")
     client.close()
