@@ -1,5 +1,13 @@
 from QUIC import QUICSocket
-from sys import argv
+from argparse import ArgumentParser
+
+PARSER = ArgumentParser()
+PARSER.add_argument("ip", help="IPv4 address")
+PARSER.add_argument("port", help="IPv4 address")
+PARSER.add_argument("n_bytes", help="IPv4 address")
+
+ARGS = PARSER.parse_args()
+
 
 """
     Test Case #3:
@@ -11,7 +19,9 @@ from sys import argv
 if __name__ == "__main__":
     server = QUICSocket(local_ip="10.0.0.131")
     server.listen(8000)
-    num = int(argv[1])
+    ip = ARGS.ip
+    port = ARGS.port
+    num = int(ARGS.n_bytes)
     print(f"Ready to read {num} bytes:")
     client = server.accept()
     disconnected = False
