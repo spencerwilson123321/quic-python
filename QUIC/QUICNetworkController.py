@@ -616,10 +616,10 @@ class QUICNetworkController:
                 break
         for datagram in datagrams:
             try:
-                if encryption_context:
-                    packet = parse_packet_bytes(encryption_context.decrypt(datagram))
-                else:
-                    packet = parse_packet_bytes(datagram)
+                # if encryption_context:
+                #     packet = parse_packet_bytes(encryption_context.decrypt(datagram))
+                # else:
+                packet = parse_packet_bytes(datagram)
             except PacketParserError:
                 continue # If a datagram fails to be parsed, just drop it.
             if packet.header.type == HT_INITIAL:
@@ -771,10 +771,10 @@ class QUICSenderSideController:
 
     def send_packet_cc(self, packet: Packet, udp_socket: socket, connection_context: ConnectionContext, encryption_context: EncryptionContext or None) -> None:
         # Send packets based on the internal congestion control state.
-        if encryption_context:
-            udp_socket.sendto(encryption_context.encrypt(packet.raw()), connection_context.get_peer_address())
-        else:
-            udp_socket.sendto(packet.raw(), connection_context.get_peer_address())
+        # if encryption_context:
+        #     udp_socket.sendto(encryption_context.encrypt(packet.raw()), connection_context.get_peer_address())
+        # else:
+        udp_socket.sendto(packet.raw(), connection_context.get_peer_address())
         self.bytes_in_flight += len(packet.raw())
         self.packets_sent[packet.header.packet_number] = PacketSentInfo(time_sent=time(), 
                                                                     in_flight=True,
@@ -786,10 +786,10 @@ class QUICSenderSideController:
 
     def send_non_ack_eliciting_packet(self, packet: Packet, udp_socket: socket, connection_context: ConnectionContext, encryption_context: EncryptionContext or None) -> None:
         # For non-ack eliciting packets we don't care about congestion control state.
-        if encryption_context:
-            udp_socket.sendto(encryption_context.encrypt(packet.raw()), connection_context.get_peer_address())
-        else:
-            udp_socket.sendto(packet.raw(), connection_context.get_peer_address())
+        # if encryption_context:
+        #     udp_socket.sendto(encryption_context.encrypt(packet.raw()), connection_context.get_peer_address())
+        # else:
+        udp_socket.sendto(packet.raw(), connection_context.get_peer_address())
         self.packets_sent[packet.header.packet_number] = PacketSentInfo(time_sent=time(), 
                                                                     in_flight=False,
                                                                     ack_eliciting=False,
