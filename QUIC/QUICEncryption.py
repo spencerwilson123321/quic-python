@@ -3,12 +3,9 @@
     and implementing encryption over the QUIC connection.
     It defines the EncryptionContext class.
 """
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms
-from cryptography.hazmat.primitives.ciphers.modes import CBC
-from secrets import token_bytes
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+import os
 
-# Hard coded for simplicity.
-temp = b'\xc0\x8bk ]I\x03\xecz\xb0vZ\xb7\xed*\xb9'
 
 class EncryptionContext:
 
@@ -16,21 +13,18 @@ class EncryptionContext:
         if key:
             self.key = key
         else:
-            self.key = token_bytes(32)
-        self.algorithm = algorithms.AES(self.key)
-        self.cipher = Cipher(self.algorithm, mode=CBC(temp), backend=None)
-        self.encryptor = self.cipher.encryptor()
-        self.decryptor = self.cipher.decryptor()
+            self.key = os.urandom(32)
+        self.iv = os.urandom(16)
+        self.cipher = Cipher(algorithms.AES(self.key), modes.CBC(self.iv))
 
-    def encrypt(self, plaintext: bytes) -> bytes:
-        """
-            Encrypts the given plaintext bytes.
-        """
-        return self.encryptor.update(plaintext)
+    def encrypt(self, data):
+        while len(data) % 16 != 0:
+            data += b" "
+        encryptor = self.cipher.encryptor()
+        return encryptor.update(data) + encryptor.finalize()
 
-    def decrypt(self, ciphertext: bytes) -> bytes:
-        """
-            Decrypts the given ciphertext bytes.
-        """
-        return self.decryptor.update(ciphertext)
-
+    def decrypt(self, data):
+        decryptor = self.cipher.decryptor()
+        plain = decryptor.update(data) + decryptor.finalize()
+        plain = plain.strip()
+        return plain
