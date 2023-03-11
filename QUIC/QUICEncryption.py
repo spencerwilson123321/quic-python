@@ -6,6 +6,8 @@
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import os
 
+iv =b'\xbc\x86\xdf\x7f\xb1\x19\xfa$\xf7G\xcb\x07\xbe/3\xa2'
+
 
 class EncryptionContext:
 
@@ -14,8 +16,7 @@ class EncryptionContext:
             self.key = key
         else:
             self.key = os.urandom(32)
-        self.iv = os.urandom(16)
-        self.cipher = Cipher(algorithms.AES(self.key), modes.CBC(self.iv))
+        self.cipher = Cipher(algorithms.AES(self.key), modes.CBC(iv))
 
     def encrypt(self, data):
         while len(data) % 16 != 0:
