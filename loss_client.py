@@ -1,5 +1,12 @@
 from QUIC import QUICSocket
-import time
+from argparse import ArgumentParser
+
+PARSER = ArgumentParser()
+PARSER.add_argument("local_ip")
+PARSER.add_argument("server_ip")
+PARSER.add_argument("server_port")
+
+ARGS = PARSER.parse_args()
 
 """
     Test Case #1:
@@ -10,8 +17,13 @@ import time
 """
 
 if __name__ == "__main__":
-    client = QUICSocket(local_ip="10.0.0.159")
-    client.connect(address=("10.0.0.159", 8001))
+
+    local_ip = ARGS.local_ip
+    server_ip = ARGS.server_ip
+    server_port = int(ARGS.server_port)
+
+    client = QUICSocket(local_ip=local_ip)
+    client.connect(address=(server_ip, server_port))
     msg = b"1234567890"
 
     print("Sending data...")
