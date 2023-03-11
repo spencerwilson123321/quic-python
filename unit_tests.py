@@ -386,11 +386,11 @@ class TestQUICPacket(unittest.TestCase):
 class TestEncryptionContext(unittest.TestCase):
 
     def test_encryption_context(self):
-        # TEST_KEY = urandom(32)
+        TEST_KEY = urandom(32)
         msg = b"Hello world!"
         encrypted = None
 
-        # ec = EncryptionContext(key=TEST_KEY)
+        ec = EncryptionContext(key=TEST_KEY)
         ec = EncryptionContext()
         
         encrypted = ec.encrypt(msg)
