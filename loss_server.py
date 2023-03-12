@@ -2,7 +2,8 @@ from QUIC import *
 from argparse import ArgumentParser
 
 PARSER = ArgumentParser()
-PARSER.add_argument("local_ip")
+PARSER.add_argument("local_ip", help="The IPv4 address of this machine.")
+PARSER.add_argument("port", help="The port number.")
 ARGS = PARSER.parse_args()
 
 """
@@ -13,8 +14,9 @@ ARGS = PARSER.parse_args()
 
 if __name__ == "__main__":
     local_ip = ARGS.local_ip
+    port = int(ARGS.port)
     server = QUICSocket(local_ip=local_ip)
-    server.listen(8000)
+    server.listen(port)
     client = server.accept() # Accept a connection.
     data = b""
     print("Receiving data...")
