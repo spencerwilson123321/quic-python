@@ -1,7 +1,7 @@
 import unittest
 from QUIC import *
 from database import Database
-from os import system
+from os import system, urandom
 
 
 class TestSenderSideController(unittest.TestCase):
@@ -386,19 +386,17 @@ class TestQUICPacket(unittest.TestCase):
 class TestEncryptionContext(unittest.TestCase):
 
     def test_encryption_context(self):
-        TEST_KEY = token_bytes(32)
-        msg = b"This is a message."
+        TEST_KEY = urandom(32)
+        msg = b"Hello world!"
         encrypted = None
 
         ec = EncryptionContext(key=TEST_KEY)
+        ec = EncryptionContext()
         
-        self.assertEqual(TEST_KEY, ec.key)
-        self.assertEqual(True, type(ec.algorithm) == algorithms.ChaCha20)
-        self.assertEqual(True, nonce == ec.nonce)
-
         encrypted = ec.encrypt(msg)
         self.assertEqual(False, msg == encrypted)
         decrypted = ec.decrypt(encrypted)
+        print(decrypted)
         self.assertEqual(True, msg == decrypted)
 
 

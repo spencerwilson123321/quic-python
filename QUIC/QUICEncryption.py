@@ -3,11 +3,11 @@
     and implementing encryption over the QUIC connection.
     It defines the EncryptionContext class.
 """
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms
-from secrets import token_bytes
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+import os
 
-# Hard coded for simplicity.
-nonce = b"[\x8bp\xcbY\x7fA\xed\x01\xba\xcb\x14\x96t\\`"
+iv =b'\xbc\x86\xdf\x7f\xb1\x19\xfa$\xf7G\xcb\x07\xbe/3\xa2'
+
 
 class EncryptionContext:
 
@@ -15,22 +15,17 @@ class EncryptionContext:
         if key:
             self.key = key
         else:
-            self.key = token_bytes(32)
-        self.nonce = nonce
-        self.algorithm = algorithms.ChaCha20(self.key, self.nonce)
-        self.cipher = Cipher(self.algorithm, mode=None, backend=None)
-        self.encryptor = self.cipher.encryptor()
-        self.decryptor = self.cipher.decryptor()
+            self.key = os.urandom(32)
+        self.cipher = Cipher(algorithms.AES(self.key), modes.CBC(iv))
 
-    def encrypt(self, plaintext: bytes) -> bytes:
-        """
-            Encrypts the given plaintext bytes.
-        """
-        return self.encryptor.update(plaintext)
+    def encrypt(self, data):
+        while len(data) % 16 != 0:
+            data += b" "
+        encryptor = self.cipher.encryptor()
+        return encryptor.update(data) + encryptor.finalize()
 
-    def decrypt(self, ciphertext: bytes) -> bytes:
-        """
-            Decrypts the given ciphertext bytes.
-        """
-        return self.decryptor.update(ciphertext)
-
+    def decrypt(self, data):
+        decryptor = self.cipher.decryptor()
+        plain = decryptor.update(data) + decryptor.finalize()
+        plain = plain.strip()
+        return plain
