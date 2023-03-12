@@ -1,5 +1,14 @@
 from QUIC import QUICSocket
-from time import sleep
+from argparse import ArgumentParser
+
+PARSER = ArgumentParser()
+PARSER.add_argument("local_ip", help="The IPv4 address of this machine.")
+PARSER.add_argument("server_ip", help="The IPv4 address of the server.")
+PARSER.add_argument("server_port", help="The port number of the server.")
+
+ARGS = PARSER.parse_args()
+
+
 """
     Test Case #3:
         1. Connect to the server.
@@ -8,8 +17,13 @@ from time import sleep
 """
 
 if __name__ == "__main__":
-    client = QUICSocket(local_ip="10.0.0.159")
-    client.connect(address=("10.0.0.131", 8000))
+
+    local_ip = ARGS.local_ip
+    server_ip = ARGS.server_ip
+    server_port = int(ARGS.server_port)
+
+    client = QUICSocket(local_ip=local_ip)
+    client.connect(address=(server_ip, server_port))
     data = b""
     with open("data.txt", "rb") as f:
         data = f.read()[0:10000]

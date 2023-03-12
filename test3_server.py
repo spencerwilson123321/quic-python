@@ -1,4 +1,12 @@
 from QUIC import QUICSocket
+from argparse import ArgumentParser
+
+PARSER = ArgumentParser()
+PARSER.add_argument("ip", help="The IPv4 address of this machine.")
+PARSER.add_argument("port", help="The port number.")
+
+ARGS = PARSER.parse_args()
+
 
 """
     Test Case #3:
@@ -8,8 +16,11 @@ from QUIC import QUICSocket
 """
 
 if __name__ == "__main__":
-    server = QUICSocket(local_ip="10.0.0.131")
-    server.listen(8000)
+    ip = ARGS.ip
+    port = int(ARGS.port)
+
+    server = QUICSocket(local_ip=ip)
+    server.listen(port)
     client = server.accept() # Accept a connection.
     disconnected = False
     data = b""
