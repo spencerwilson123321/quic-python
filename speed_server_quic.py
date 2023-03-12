@@ -17,11 +17,11 @@ ARGS = PARSER.parse_args()
 """
 
 if __name__ == "__main__":
-    server = QUICSocket(local_ip="10.0.0.131")
-    server.listen(8000)
     ip = ARGS.ip
-    port = ARGS.port
+    port = int(ARGS.port)
     num = int(ARGS.n_bytes)
+    server = QUICSocket(local_ip=ip)
+    server.listen(port)
     print(f"Ready to read {num} bytes:")
     client = server.accept()
     disconnected = False
