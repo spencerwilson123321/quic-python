@@ -29,7 +29,7 @@ ACK_FRAME_SIZE = 17    # Not including the ack range field.
 ACK_RANGE_SIZE = 8     # Size of a single ack range.
 CONNECTION_CLOSE_FRAME_SIZE = 3
 
-QUIC_VERSION = 0x36
+QUIC_VERSION = 0x01
 CONN_ID_LEN = 0x04
 PKT_NUM_LEN = 0x04
 
