@@ -14,10 +14,11 @@ MAX_INT = 4294967295              # 4 bytes max - Use I in struct.pack
 MAX_SHORT = 65535                 # 2 bytes max - Use H in struct.pack
 MAX_CHAR = 255                    # 1 byte max  - Use B in struct.pack
 
-HT_INITIAL = 0x80
-HT_HANDSHAKE = 0x82
-HT_RETRY = 0x83
-HT_DATA = 0x04
+HT_INITIAL = 0xC0 # 11000000
+HT_0RTT = 0xD0 # 11010000
+HT_HANDSHAKE = 0xE0 # 11100000
+HT_RETRY = 0xF0 # 11110000
+HT_DATA = 0x40 # 0100 0000
 
 LONG_HEADER_SIZE = 19 # num bytes
 SHORT_HEADER_SIZE = 9 # num bytes
